@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Growth Assistant · Mini‑App (MVP Demo)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      /* UI‑Kit токены (из ТЗ) */
+      --ga-green:#2E7D32; /* primary */
+      --ga-blue:#1E88E5;  /* accent  */
+      --ga-success:#4CAF50;
+      --ga-error:#E53935;
+      --ga-bg:#FFFFFF;
+      --ga-surface:#F5F5F5;
+      --ga-text:#212121;
+      --ga-subtext:#757575;
+      --ga-border:#E0E0E0;
+      --radius-xl:16px;
+      --radius-lg:12px;
+      --shadow-sm:0 2px 8px rgba(0,0,0,.06);
+      --shadow-md:0 8px 24px rgba(0,0,0,.08);
+      --h1:24px; --h2:20px; --body:16px; --caption:14px; --micro:12px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:var(--ga-bg); color:var(--ga-text);
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+    .app{min-height:100%; display:flex; flex-direction:column;}
+    header{
+      position:sticky; top:0; z-index:10;
+      background:var(--ga-bg); border-bottom:1px solid var(--ga-border);
+      padding:12px env(safe-area-inset-left) 12px env(safe-area-inset-right);
+    }
+    .topbar{display:flex; align-items:center; gap:12px; max-width:960px; margin:0 auto; padding:0 12px}
+    .brand{display:flex; align-items:center; gap:10px}
+    .logo{width:28px;height:28px;border-radius:8px; background:linear-gradient(135deg,var(--ga-green),#3FB950 70%); display:grid;place-items:center; color:#fff; font-weight:700}
+    .title{font-size:18px; font-weight:700}
+    .status-pill{margin-left:auto; font-size:12px; padding:6px 10px; border-radius:999px; background:#E8F5E9; color:var(--ga-green); border:1px solid #C8E6C9}
+
+    main{flex:1; max-width:960px; width:100%; margin:0 auto; padding:12px 12px 88px;}
+
+    /* Cards */
+    .card{background:var(--ga-surface); border:1px solid var(--ga-border); border-radius:var(--radius-xl); padding:14px; box-shadow:var(--shadow-sm)}
+    .card + .card{margin-top:12px}
+
+    /* Focus banner */
+    .focus-banner{display:flex; flex-direction:column; gap:10px}
+    .focus-row{display:flex; gap:10px; align-items:center}
+    input[type="text"].focus-input{
+      flex:1; border:1px solid var(--ga-border); border-radius:12px; padding:12px 12px; font-size:16px; background:#fff;
+    }
+    .btn{height:44px; padding:0 14px; border-radius:12px; border:1px solid transparent; background:var(--ga-green); color:#fff; font-weight:600; cursor:pointer}
+    .btn.secondary{background:transparent; color:var(--ga-blue); border-color:var(--ga-blue)}
+    .btn.ghost{background:var(--ga-surface); color:var(--ga-text); border-color:var(--ga-border)}
+    .btn.icon{width:44px; display:grid; place-items:center}
+    .btn:active{transform:translateY(1px)}
+    .muted{color:var(--ga-subtext)}
+
+    /* Task list */
+    .tasks{display:flex; flex-direction:column; gap:8px}
+    .task{
+      display:flex; align-items:center; gap:10px; background:#fff; border:1px solid var(--ga-border); border-radius:12px; padding:10px; transition:box-shadow .15s ease, transform .1s ease; cursor:grab
+    }
+    .task.dragging{opacity:.7; box-shadow:var(--shadow-md); transform:scale(1.01)}
+    .task .title{font-weight:600}
+    .task .due{margin-left:auto; font-size:12px; color:#546E7A; background:#ECEFF1; padding:6px 8px; border-radius:999px}
+    .task .menu{margin-left:4px; border:none; background:transparent; font-size:18px; color:#9E9E9E; cursor:pointer}
+    .chip{font-size:12px; padding:4px 8px; border-radius:999px; border:1px solid var(--ga-border); background:#fff; color:#455A64}
+
+    /* Sparkline */
+    .sparkline{width:100%; height:40px}
+
+    /* Quick add */
+    .quick-add{display:flex; gap:8px}
+
+    /* Route */
+    .route-stage{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+    .stage{display:flex; align-items:center; gap:8px}
+    .stage .dot{width:8px;height:8px;border-radius:50%; background:#B0BEC5}
+    .stage.active .dot{background:var(--ga-blue)}
+    .step{display:flex; gap:10px; align-items:flex-start}
+    .badge{font-size:12px; padding:6px 8px; border-radius:999px; background:#E3F2FD; color:var(--ga-blue); border:1px solid #BBDEFB}
+
+    /* HADI board */
+    .board{display:grid; grid-template-columns:repeat(4, minmax(240px,1fr)); gap:12px; align-items:start}
+    .column{background:var(--ga-surface); border:1px solid var(--ga-border); border-radius:16px; padding:10px; min-height:220px}
+    .column h3{font-size:14px; margin:4px 4px 8px}
+    .hadi-card{background:#fff; border:1px solid var(--ga-border); border-radius:12px; padding:10px; margin:8px 4px; cursor:grab}
+    .hadi-card.dragging{opacity:.7; box-shadow:var(--shadow-md)}
+    .meta{font-size:12px; color:#546E7A}
+
+    /* Calendar (agenda mock) */
+    .agenda{display:grid; grid-template-columns:80px 1fr; border:1px solid var(--ga-border); border-radius:16px; overflow:hidden}
+    .hours{background:var(--ga-surface); border-right:1px solid var(--ga-border)}
+    .hour{height:48px; padding:6px 8px; font-size:12px; color:#78909C; border-bottom:1px dashed #ECEFF1}
+    .slots{position:relative}
+    .slot{height:48px; border-bottom:1px dashed #F1F3F4; position:relative}
+    .event{position:absolute; left:8px; right:8px; background:#E8F5E9; color:#1B5E20; border:1px solid #C8E6C9; border-radius:12px; padding:8px; font-size:12px; box-shadow:var(--shadow-sm)}
+
+    /* Metrics */
+    .kpi-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px}
+    .kpi{background:#fff; border:1px solid var(--ga-border); border-radius:16px; padding:12px}
+    .kpi .value{font-size:22px; font-weight:700}
+    .kpi .delta.up{color:var(--ga-success)}
+    .kpi .delta.down{color:var(--ga-error)}
+    .bars{height:64px; display:flex; align-items:flex-end; gap:6px}
+    .bar{flex:1; background:#E3F2FD}
+
+    /* Settings */
+    .form{display:grid; grid-template-columns:1fr; gap:12px}
+    .field{display:flex; flex-direction:column; gap:6px}
+    .field input, .field select{height:44px; padding:0 12px; border-radius:12px; border:1px solid var(--ga-border); background:#fff}
+    .switch{display:flex; align-items:center; gap:10px}
+
+    /* Bottom nav */
+    nav{
+      position:fixed; bottom:0; left:0; right:0; z-index:10;
+      background:var(--ga-bg); border-top:1px solid var(--ga-border);
+      padding:6px env(safe-area-inset-left) calc(6px + env(safe-area-inset-bottom)) env(safe-area-inset-right);
+    }
+    .tabs{max-width:960px; margin:0 auto; display:grid; grid-template-columns:repeat(6,1fr); gap:6px}
+    .tab{display:flex; flex-direction:column; align-items:center; justify-content:center; height:56px; gap:4px; border-radius:12px; color:#607D8B}
+    .tab.active{color:var(--ga-green); background:#E8F5E9; font-weight:600}
+
+    /* Utilities */
+    .row{display:flex; gap:10px; align-items:center}
+    .space{flex:1}
+    h1{font-size:var(--h1); margin:6px 0 10px}
+    h2{font-size:var(--h2); margin:6px 0 10px}
+
+    /* Responsive */
+    @media (max-width:420px){
+      .board{grid-template-columns:1fr 1fr}
+    }
+    @media (min-width:768px){
+      main{padding-bottom:100px}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">GA</div>
+        <div class="title">Growth Assistant</div>
+      </div>
+      <div class="status-pill" id="status-pill">Working</div>
+    </div>
+  </header>
+
+  <main>
+    <!-- TODAY -->
+    <section id="screen-today" class="screen">
+      <h1>Сегодня</h1>
+      <div class="card focus-banner">
+        <div class="row">
+          <input id="focusInput" class="focus-input" placeholder="Фокус дня" value="5 интервью клиентов + лендинг" />
+          <button class="btn" onclick="saveFocus()">Сохранить</button>
+          <button class="btn secondary" onclick="snooze()">Snooze</button>
+        </div>
+        <div class="muted" id="focusMeta">Напоминание в 09:00 • нед. планёрка: Пт 17:30</div>
+      </div>
+
+      <h2>Топ‑3 задачи</h2>
+      <div id="taskList" class="tasks" aria-label="Перетащи, чтобы отсортировать">
+        <!-- задачи подставятся из JS -->
+      </div>
+
+      <div class="card">
+        <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:8px">
+          <strong>Прогресс недели</strong>
+          <span class="chip" id="progressChip">3/7 дней</span>
+        </div>
+        <svg viewBox="0 0 200 40" class="sparkline" id="spark"></svg>
+      </div>
+
+      <div class="card quick-add">
+        <button class="btn icon" title="Добавить задачу" onclick="openQuickAdd('task')">➕</button>
+        <button class="btn ghost" onclick="openQuickAdd('hypothesis')">Гипотеза</button>
+        <button class="btn ghost" onclick="openQuickAdd('note')">Заметка</button>
+      </div>
+    </section>
+
+    <!-- ROUTE -->
+    <section id="screen-route" class="screen" hidden>
+      <h1>Маршрут</h1>
+      <div class="card route-stage">
+        <div class="stage"><span class="dot"></span>Идея</div>
+        <div class="stage active"><span class="dot"></span>Ремесло → Предприниматель</div>
+        <div class="stage"><span class="dot"></span>Рост</div>
+        <span class="space"></span>
+        <button class="btn secondary" onclick="aiNextStep()">Следующий шаг (AI)</button>
+      </div>
+      <div class="card step">
+        <div class="badge">todo</div>
+        <div>
+          <div class="title"><strong>Сформулировать оффер + назначить 5 интервью</strong></div>
+          <div class="meta">Критерий готовности: есть записи/инсайты • Дедлайн: 26.10</div>
+        </div>
+      </div>
+      <div class="card step">
+        <div class="badge" style="background:#E8F5E9; color:#1B5E20; border-color:#C8E6C9">doing</div>
+        <div>
+          <div class="title"><strong>Лендинг оффера</strong></div>
+          <div class="meta">Готово, когда опубликован URL • Дедлайн: 23.10</div>
+        </div>
+      </div>
+      <div class="card step">
+        <div class="badge" style="background:#E3F2FD; color:#1565C0; border-color:#BBDEFB">todo</div>
+        <div>
+          <div class="title"><strong>Запуск канала трафика №1</strong></div>
+          <div class="meta">Бюджет ≥ 3 000 ₽ • Дедлайн: 24.10</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HADI -->
+    <section id="screen-hadi" class="screen" hidden>
+      <h1>HADI</h1>
+      <div class="board" id="hadiBoard">
+        <div class="column" data-col="Planned"><h3>Planned</h3></div>
+        <div class="column" data-col="Running"><h3>Running</h3></div>
+        <div class="column" data-col="Review"><h3>Review</h3></div>
+        <div class="column" data-col="Done"><h3>Done</h3></div>
+      </div>
+    </section>
+
+    <!-- CALENDAR (agenda mock) -->
+    <section id="screen-calendar" class="screen" hidden>
+      <h1>Календарь (неделя)</h1>
+      <div class="agenda">
+        <div class="hours" id="hours"></div>
+        <div class="slots" id="slots"></div>
+      </div>
+      <div style="margin-top:10px" class="muted">OAuth к Google Calendar / iCal будет подключён в реальной версии.</div>
+    </section>
+
+    <!-- METRICS -->
+    <section id="screen-metrics" class="screen" hidden>
+      <h1>Метрики</h1>
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="muted">Лиды / неделя</div>
+          <div class="value">32 <span class="delta up">▲ +8</span></div>
+          <div class="bars" id="bars1"></div>
+        </div>
+        <div class="kpi">
+          <div class="muted">Конверсия, %</div>
+          <div class="value">1.6% <span class="delta up">▲ +0.4</span></div>
+          <div class="bars" id="bars2"></div>
+        </div>
+        <div class="kpi">
+          <div class="muted">Выручка / нед.</div>
+          <div class="value">₽ 128 000 <span class="delta down">▼ −12 000</span></div>
+          <div class="bars" id="bars3"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="screen-settings" class="screen" hidden>
+      <h1>Настройки</h1>
+      <div class="card form">
+        <div class="field">
+          <label>Имя</label>
+          <input placeholder="Имя" value="Дмитрий" />
+        </div>
+        <div class="field">
+          <label>Таймзона</label>
+          <select>
+            <option>Europe/Helsinki (UTC+3)</option>
+            <option>Europe/Moscow (UTC+3)</option>
+            <option>Asia/Almaty (UTC+6)</option>
+          </select>
+        </div>
+        <div class="switch">
+          <input type="checkbox" id="notif" checked />
+          <label for="notif">Ежедневные уведомления</label>
+        </div>
+        <div class="row">
+          <button class="btn">Подписка: Базовый · 990 ₽</button>
+          <button class="btn secondary">Сменить тариф</button>
+        </div>
+        <div class="row">
+          <button class="btn ghost">Подключить Google Calendar</button>
+          <button class="btn ghost">Добавить iCal URL</button>
+        </div>
+        <div class="row">
+          <button class="btn ghost">Экспорт CSV</button>
+          <button class="btn ghost">Экспорт PDF (неделя)</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <nav>
+    <div class="tabs">
+      <button class="tab active" data-target="today">🏠<span class="micro">Сегодня</span></button>
+      <button class="tab" data-target="route">🧭<span class="micro">Маршрут</span></button>
+      <button class="tab" data-target="hadi">🧪<span class="micro">HADI</span></button>
+      <button class="tab" data-target="calendar">🗓️<span class="micro">Календарь</span></button>
+      <button class="tab" data-target="metrics">📊<span class="micro">Метрики</span></button>
+      <button class="tab" data-target="settings">⚙️<span class="micro">Настройки</span></button>
+    </div>
+  </nav>
+</div>
+
+<!-- Quick Add modal (very light) -->
+<div id="modal" hidden style="position:fixed; inset:0; display:grid; place-items:center; background:rgba(0,0,0,.35)">
+  <div class="card" style="background:#fff; width:min(520px,92vw)">
+    <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:8px">
+      <strong id="modalTitle">Добавить</strong>
+      <button class="menu" onclick="closeModal()">✕</button>
+    </div>
+    <div class="field">
+      <input id="modalInput" placeholder="Текст..." />
+    </div>
+    <div class="row" style="justify-content:flex-end; margin-top:8px">
+      <button class="btn secondary" onclick="closeModal()">Отмена</button>
+      <button class="btn" onclick="confirmAdd()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* --- Mock data (из примера <ASSISTANT_OUTPUT>) --- */
+  const state = {
+    focus: '5 интервью клиентов + лендинг',
+    reminders: { daily_focus_time: '09:00', weekly_planning_slot: 'Пт 17:30' },
+    tasks: [
+      { id: 1, title: 'Провести 5 интервью', due: '26.10', ready: 'есть записи/инсайты', status:'todo' },
+      { id: 2, title: 'Сверстать лендинг оффера', due: '23.10', ready: 'опубликован URL', status:'doing' },
+      { id: 3, title: 'Запустить канал трафика №1', due: '24.10', ready: 'вкл. реклама ≥3 000 ₽', status:'todo' },
+    ],
+    progress: [2,3,4,2,5,3,4],
+    hadi: [
+      { id:'h1', col:'Planned', title:'Сегмент X → пробные 8%', H:'оффер Y', A:'лендинг + канал', D:'leads:30, trial:8%', deadline:'27.10' },
+      { id:'h2', col:'Running', title:'Конверсия визит→лид 1.2%→1.8%', H:'улучшим заголовок', A:'A/B', D:'v2l:+0.6', deadline:'25.10' },
+      { id:'h3', col:'Review', title:'Реферал‑мини', H:'10% новых из рефералов', A:'пост + код', D:'ref:10%', deadline:'22.10' },
+      { id:'h4', col:'Done', title:'Сократить TTV', H:'быстрее 20%', A:'онбординг', D:'ttv:-20%', deadline:'15.10' },
+    ]
+  }
+
+  /* --- Tabs --- */
+  document.querySelectorAll('.tab').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'))
+      btn.classList.add('active')
+      const target = btn.dataset.target
+      document.querySelectorAll('.screen').forEach(s=> s.hidden = true)
+      document.getElementById('screen-'+target).hidden = false
+      window.scrollTo({ top:0, behavior:'smooth' })
+    })
+  })
+
+  /* --- Focus --- */
+  function saveFocus(){
+    state.focus = document.getElementById('focusInput').value.trim() || state.focus
+    toast('Фокус сохранён')
+  }
+  function snooze(){ toast('Напомню через 3 часа') }
+
+  /* --- Tasks render with drag‑reorder & quick menu --- */
+  const taskList = document.getElementById('taskList')
+  function renderTasks(){
+    taskList.innerHTML = ''
+    state.tasks.forEach(t=>{
+      const el = document.createElement('div'); el.className = 'task'; el.draggable = true; el.dataset.id = t.id
+      el.innerHTML = `
+        <input type="checkbox" ${t.status==='done'?'checked':''} onchange="toggleDone(${t.id}, this.checked)">
+        <div>
+          <div class="title">${t.title}</div>
+          <div class="muted">Готово, когда ${t.ready}</div>
+        </div>
+        <span class="chip">${t.status}</span>
+        <span class="due">до ${t.due}</span>
+        <button class="menu" onclick="openTaskMenu(${t.id}, this)">⋯</button>
+      `
+      addDragHandlers(el, state.tasks, (a,b)=>a.id===b.id, renderTasks)
+      taskList.appendChild(el)
+    })
+  }
+  function toggleDone(id, checked){
+    const t = state.tasks.find(x=>x.id===id); if(!t) return
+    t.status = checked ? 'done' : 'todo'; toast(checked?'Задача выполнена':'Вернули в работу')
+  }
+  function openTaskMenu(id, btn){
+    const menu = document.createElement('div')
+    menu.style.position='absolute'; menu.style.background='#fff'; menu.style.border='1px solid var(--ga-border)';
+    menu.style.borderRadius='12px'; menu.style.boxShadow='var(--shadow-md)'; menu.style.padding='6px';
+    const actions=[
+      ['Сдвинуть на завтра', ()=>shiftDue(id,1)],
+      ['Разбить на 2 шага', ()=>splitTask(id)],
+      ['Удалить', ()=>removeTask(id)]
+    ]
+    actions.forEach(([label,fn])=>{
+      const it=document.createElement('button'); it.className='btn ghost'; it.style.width='100%'; it.style.margin='4px 0'; it.textContent=label; it.onclick=()=>{fn(); menu.remove()}
+      menu.appendChild(it)
+    })
+    const rect = btn.getBoundingClientRect()
+    menu.style.left = (rect.left - 160) + 'px';
+    menu.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+    document.body.appendChild(menu)
+    const onClick=e=>{ if(!menu.contains(e.target)) {menu.remove(); document.removeEventListener('click', onClick)} }
+    setTimeout(()=>document.addEventListener('click', onClick),0)
+  }
+  function shiftDue(id, days){ toast('Дедлайн перенесён') }
+  function splitTask(id){ toast('Созданы подзадачи (демо)') }
+  function removeTask(id){ state.tasks = state.tasks.filter(t=>t.id!==id); renderTasks(); toast('Удалено') }
+
+  /* --- DnD helpers --- */
+  function addDragHandlers(el, list, eq, rerender){
+    let dragIndex
+    el.addEventListener('dragstart', e=>{ el.classList.add('dragging'); dragIndex = [...el.parentNode.children].indexOf(el) })
+    el.addEventListener('dragend', e=>{ el.classList.remove('dragging') })
+    el.addEventListener('dragover', e=>{ e.preventDefault(); const over = e.currentTarget; const overIndex = [...over.parentNode.children].indexOf(over)
+      const dragging = over.parentNode.querySelector('.dragging'); if(!dragging || dragging===over) return
+      if(overIndex>dragIndex) over.after(dragging); else over.before(dragging)
+    })
+    el.addEventListener('drop', e=>{
+      const ids = [...el.parentNode.children].map(n=>+n.dataset.id)
+      list.sort((a,b)=> ids.indexOf(a.id) - ids.indexOf(b.id))
+      rerender()
+    })
+  }
+
+  /* --- Sparkline --- */
+  function renderSpark(){
+    const svg = document.getElementById('spark'); const w=200, h=40; const max=Math.max(...state.progress)
+    const pts = state.progress.map((v,i)=>[i*(w/(state.progress.length-1)), h - (v/max)*(h-6) - 3])
+    const d = pts.map((p,i)=> (i?'L':'M')+p[0]+','+p[1]).join(' ')
+    svg.innerHTML = `<path d="${d}" fill="none" stroke="${getComputedStyle(document.documentElement).getPropertyValue('--ga-green').trim()}" stroke-width="2"/><circle cx="${pts[pts.length-1][0]}" cy="${pts[pts.length-1][1]}" r="3" fill="${getComputedStyle(document.documentElement).getPropertyValue('--ga-green').trim()}"/>`
+  }
+
+  /* --- HADI board DnD --- */
+  function renderHADI(){
+    const cols = document.querySelectorAll('.column')
+    cols.forEach(c=> c.querySelectorAll('.hadi-card').forEach(n=>n.remove()))
+    state.hadi.forEach(card=>{
+      const el = document.createElement('div'); el.className='hadi-card'; el.draggable=true; el.dataset.id=card.id
+      el.innerHTML = `
+        <div style="font-weight:600; margin-bottom:4px">${card.title}</div>
+        <div class="meta">H: ${card.H}</div>
+        <div class="meta">A: ${card.A}</div>
+        <div class="meta">D: ${card.D}</div>
+        <div class="meta">Дедлайн: ${card.deadline}</div>`
+      el.addEventListener('dragstart',()=> el.classList.add('dragging'))
+      el.addEventListener('dragend',()=> el.classList.remove('dragging'))
+      document.querySelector(`.column[data-col="${card.col}"]`).appendChild(el)
+    })
+    document.querySelectorAll('.column').forEach(col=>{
+      col.addEventListener('dragover', e=>{
+        e.preventDefault(); const dragging = document.querySelector('.hadi-card.dragging'); if(!dragging) return
+        col.appendChild(dragging)
+      })
+      col.addEventListener('drop', e=>{
+        const dragging = col.querySelector('.hadi-card.dragging'); if(!dragging) return
+        const id = dragging.dataset.id
+        const card = state.hadi.find(x=>x.id===id); card.col = col.dataset.col
+        toast(`Статус: ${card.col}`)
+      })
+    })
+  }
+
+  /* --- Agenda mock --- */
+  function renderAgenda(){
+    const hours = document.getElementById('hours'); const slots = document.getElementById('slots')
+    hours.innerHTML = ''; slots.innerHTML=''
+    for(let h=9; h<=18; h++){
+      const hour = document.createElement('div'); hour.className='hour'; hour.textContent = (h<10?'0':'')+h+':00'; hours.appendChild(hour)
+      const slot = document.createElement('div'); slot.className='slot'; slot.dataset.h=h; slots.appendChild(slot)
+    }
+    // Demo events
+    addEvent(10, 1, 'Интервью #1')
+    addEvent(11, 1, 'Интервью #2')
+    addEvent(15, 2, 'Лендинг — правки')
+  }
+  function addEvent(startHour, duration, title){
+    const slots = document.getElementById('slots'); const first = slots.querySelector(`.slot[data-h="${startHour}"]`)
+    const ev = document.createElement('div'); ev.className='event'; ev.style.top = ( (startHour-9)*48 + 6) + 'px'; ev.style.height = (duration*48 - 12) + 'px'; ev.textContent = title
+    slots.appendChild(ev)
+  }
+
+  /* --- Metrics bars --- */
+  function renderBars(id, values){
+    const el = document.getElementById(id); el.innerHTML=''
+    values.forEach(v=>{ const b=document.createElement('div'); b.className='bar'; b.style.height=(10+v*8)+'px'; el.appendChild(b) })
+  }
+
+  /* --- Modal --- */
+  let currentAddType = 'task'
+  function openQuickAdd(type){ currentAddType = type; document.getElementById('modalTitle').textContent = {
+    task:'Новая задача', hypothesis:'Новая гипотеза', note:'Новая заметка'
+  }[type]; document.getElementById('modal').hidden = false; document.getElementById('modalInput').focus() }
+  function closeModal(){ document.getElementById('modal').hidden = true }
+  function confirmAdd(){
+    const val = document.getElementById('modalInput').value.trim(); if(!val) return closeModal()
+    if(currentAddType==='task'){ state.tasks.push({ id:Date.now(), title:val, due:'—', ready:'критерий', status:'todo' }); renderTasks() }
+    else if(currentAddType==='hypothesis'){ state.hadi.push({ id:'h'+Date.now(), col:'Planned', title:val, H:'...', A:'...', D:'...', deadline:'—' }); renderHADI() }
+    closeModal(); toast('Добавлено')
+  }
+
+  /* --- Toast --- */
+  function toast(msg){
+    const t = document.createElement('div'); t.textContent = msg; t.style.cssText = 'position:fixed;bottom:86px;left:50%;transform:translateX(-50%);background:#212121;color:#fff;padding:10px 14px;border-radius:12px;box-shadow:var(--shadow-md);opacity:.98;z-index:99'
+    document.body.appendChild(t); setTimeout(()=>{t.style.transition='opacity .4s'; t.style.opacity='0'; setTimeout(()=>t.remove(), 400)}, 900)
+  }
+
+  /* --- AI next step (mock) --- */
+  function aiNextStep(){ toast('AI предложит следующий шаг (демо)') }
+
+  /* --- Init --- */
+  function init(){
+    document.getElementById('focusInput').value = state.focus
+    document.getElementById('focusMeta').textContent = `Напоминание в ${state.reminders.daily_focus_time} • нед. планёрка: ${state.reminders.weekly_planning_slot}`
+    renderTasks(); renderSpark(); renderHADI(); renderAgenda();
+    renderBars('bars1',[2,3,4,5,3,4,6]); renderBars('bars2',[1,1,2,2,3,3,4]); renderBars('bars3',[4,3,5,6,5,4,3])
+  }
+  init()
+</script>
+</body>
+</html>
