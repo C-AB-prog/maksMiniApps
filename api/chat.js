@@ -1,19 +1,16 @@
-// api/chat.js — Vercel Edge Function + OpenAI + function calling
+// /api/chat  — Vercel Edge Function with OpenAI + function calling
 export const config = { runtime: 'edge' };
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
-const MODEL = 'gpt-4o-mini'; // быстрый и недорогой; можно заменить на более мощный
+const MODEL = 'gpt-4o-mini'; // быстрая и недорогая модель
 
 const systemPrompt = `
-Ты — Growth Assistant. Отвечай коротко и по делу.
-Когда уместно — вызывай одну из функций:
-1) add_task(title, list?, due_date?, due_time?)
-2) set_focus(text)
-3) add_event(title, date, start, dur?)
-Всегда сначала думай, потом действуй. Язык ответа — русский.
+Ты — Growth Assistant. Отвечай кратко, дружелюбно и по делу.
+Если запрос про задачи/фокус/календарь — используй функцию (tools) и верни действия.
+Функции: add_task(title, list?, due_date?, due_time?), set_focus(text), add_event(title, date, start, dur?).
+Язык ответа: русский.
 `;
 
-// объявляем инструменты (функции), которыми модель может пользоваться
 const tools = [
   {
     type: 'function',
@@ -24,9 +21,9 @@ const tools = [
         type: 'object',
         properties: {
           title: { type: 'string' },
-          list: { type: 'string', enum: ['today', 'week', 'backlog'], default: 'today' },
-          due_date: { type: 'string', description: 'YYYY-MM-DD' },
-          due_time: { type: 'string', description: 'HH:MM' }
+          list: { type: 'string', enum: ['today','week','backlog'] },
+          due_date: { type: 'string', description:'YYYY-MM-DD' },
+          due_time: { type: 'string', description:'HH:MM' }
         },
         required: ['title']
       }
@@ -48,14 +45,14 @@ const tools = [
     type: 'function',
     function: {
       name: 'add_event',
-      description: 'Добавить событие в календарь',
+      description: 'Создать событие в календаре',
       parameters: {
         type: 'object',
         properties: {
           title: { type: 'string' },
-          date:  { type: 'string', description: 'YYYY-MM-DD' },
+          date: { type: 'string', description: 'YYYY-MM-DD' },
           start: { type: 'string', description: 'HH:MM' },
-          dur:   { type: 'number', description: 'длительность в минутах', default: 60 }
+          dur: { type: 'number', description: 'минуты', default: 60 }
         },
         required: ['title','date','start']
       }
@@ -71,16 +68,13 @@ export default async function handler(req) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return json({ error: 'NO_OPENAI_KEY' }, 500);
 
-  const { message, history = [] } = await req.json().catch(() => ({ message: '' }));
-
-  // собираем историю переписки (если захочешь хранить на сервере — сюда прилетит)
+  const { message = '', history = [] } = await req.json().catch(() => ({ message: '' }));
   const messages = [
     { role: 'system', content: systemPrompt },
-    ...history,                      // [{role:'user'|'assistant', content:'...'}]
-    { role: 'user', content: String(message || '') }
+    ...history,
+    { role: 'user', content: String(message) }
   ];
 
-  // 1 вызов модели: получаем текст + возможные tool_calls
   const r = await fetch(OPENAI_URL, {
     method: 'POST',
     headers: {
@@ -103,20 +97,17 @@ export default async function handler(req) {
   const data = await r.json();
   const msg = data?.choices?.[0]?.message || {};
   const reply = msg.content || 'Готово.';
-  const toolCalls = msg.tool_calls || [];
-
-  // Преобразуем tool_calls → actions для фронта
-  const actions = toolCalls.map(tc => {
+  const calls = msg.tool_calls || [];
+  const actions = calls.map(tc => {
     let args = {};
     try { args = JSON.parse(tc.function?.arguments || '{}'); } catch {}
     return { type: tc.function?.name, args };
   });
 
-  // Возвращаем и ответ, и действия (фронт применит actions локально)
   return json({ reply, actions });
 }
 
-// helpers
+/* helpers */
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), {
     status,
