@@ -10,13 +10,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root{
-      --accent:#3B82F6;
-      --accent-2:#60A5FA;
-      --bg:#FAFAFB;
-      --surface:#FFFFFF;
-      --line:#EDEEF2;
-      --text:#0F172A;
-      --muted:#6B7280;
+      --accent:#3B82F6; --accent-2:#60A5FA;
+      --bg:#FAFAFB; --surface:#FFFFFF; --line:#EDEEF2;
+      --text:#0F172A; --muted:#6B7280;
       --r-lg:14px; --r-md:12px; --r-sm:10px;
       --sh-xs:0 1px 2px rgba(15,23,42,.04);
       --h1:clamp(18px,4vw,22px); --h2:clamp(15px,3.4vw,17px); --body:15px; --cap:12px;
@@ -24,7 +20,7 @@
     }
     *,*::before,*::after{box-sizing:border-box}
     html,body{height:100%}
-    body{margin:0; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size:var(--body); color:var(--text); background:var(--bg); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; -webkit-tap-highlight-color:transparent}
+    body{margin:0; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size:var(--body); color:var(--text); background:var(--bg); -webkit-font-smoothing:antialiased}
     img,svg{max-width:100%; display:block}
     button,input,select,textarea{font:inherit}
 
@@ -45,7 +41,6 @@
     h1{font-size:var(--h1); margin:var(--sp-2) 0 var(--sp-2)}
     h2{font-size:var(--h2); margin:0 0 var(--sp-2) 0}
     .sub{color:var(--muted); font-size:var(--cap)}
-
     .row{display:flex; gap:var(--sp-2); align-items:center; flex-wrap:nowrap}
     .input{height:44px; padding:0 12px; width:100%; border-radius:12px; border:1px solid var(--line); background:#fff}
     .input.readonly{background:#F8FAFC; color:#334155}
@@ -57,7 +52,7 @@
 
     .list{display:flex; flex-direction:column; gap:8px}
     .item{display:flex; align-items:center; gap:8px; padding:10px; background:#fff; border:1px solid var(--line); border-radius:12px; min-width:0}
-    .check{appearance:none; width:20px; height:20px; border-radius:6px; border:1px solid var(--line); background:#fff; cursor:pointer}
+    .check{appearance:none; width:20px; height:20px; border-radius:6px; border:1px solid var(--line); background:#fff}
     .check:checked{background:var(--accent); border-color:var(--accent)}
     .body{flex:1; min-width:0}
     .title{font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -98,9 +93,6 @@
     .sheet-head{display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--line)}
     .sheet-body{max-height:45vh; overflow:auto; padding:10px; display:flex; flex-direction:column; gap:8px}
     .sheet-input{display:flex; gap:8px; padding:10px; border-top:1px solid var(--line)}
-    .bubble{max-width:85%; padding:10px 12px; border:1px solid var(--line); border-radius:12px}
-    .bubble.me{align-self:flex-end; background:#EEF2FF; border-color:#CBD5E1}
-    .bubble.bot{align-self:flex-start; background:#F8FAFC}
 
     @media (min-width:720px){
       .board{grid-template-columns:repeat(4, minmax(220px,1fr))}
@@ -258,14 +250,18 @@
 </div>
 
 <script>
+// ===== Настройки =====
+var CHAT_API = '/api/chat'; // Vercel serverless (api/chat.js)
+
 // ===== ES5-compatible JS (Telegram-safe) =====
 (function(){
-  // --- State & storage ---
+  // --- State ---
   var lists = { today:[], week:[], backlog:[] };
   var events = [];
   var focusText = '';
   var showAll=false, picked='today', currentDate=todayStr();
 
+  // --- Storage ---
   function load(){ try{ var L=localStorage.getItem('ga_lists'); if(L) lists=JSON.parse(L) }catch(e){}
     try{ var E=localStorage.getItem('ga_events'); if(E) events=JSON.parse(E) }catch(e){}
     try{ var F=localStorage.getItem('ga_focus'); if(F) focusText=F }catch(e){} }
@@ -287,97 +283,36 @@
 
   // --- Tasks ---
   function pickList(btn){ var chips=qa('.card .chip'); for(var i=0;i<chips.length;i++){ chips[i].classList.remove('active') } btn.classList.add('active'); picked=btn.getAttribute('data-list')||'today' }
-  function taskRow(t){ var el=document.createElement('div'); el.className='item'; el.innerHTML=
-    '<input type="checkbox" class="check" '+(t.done?'checked':'')+' data-id="'+t.id+'">\
-     <div class="body"><div class="title">'+esc(t.title)+'</div><div class="hint">'+esc(t.hint||'')+'</div></div>\
-     <span class="tag">'+esc(t.due||'—')+'</span>\
-     <button class="more" data-action="menu" data-id="'+t.id+'">⋯</button>'; return el }
+  function taskRow(t){ var el=document.createElement('div'); el.className='item'; el.innerHTML='<input type="checkbox" class="check" '+(t.done?'checked':'')+' data-id="'+t.id+'">\
+    <div class="body"><div class="title">'+esc(t.title)+'</div><div class="hint">'+esc(t.hint||'')+'</div></div>\
+    <span class="tag">'+esc(t.due||'—')+'</span>\
+    <button class="more" data-action="menu" data-id="'+t.id+'">⋯</button>'; return el }
   function renderToday(){ var box=q('#todayList'); if(!box) return; box.innerHTML=''; var merged=[].concat(lists.today); var items=showAll? merged : merged.slice(0,3); if(!items.length){ box.innerHTML='<div class="sub">Пока пусто</div>'; return } for(var i=0;i<items.length;i++){ box.appendChild(taskRow(items[i])) } }
   function renderPlan(){ var keys=['today','week','backlog']; for(var a=0;a<keys.length;a++){ var k=keys[a], box=q('#list-'+k); if(!box) continue; box.innerHTML=''; for(var i=0;i<lists[k].length;i++){ box.appendChild(taskRow(lists[k][i])) } } }
   function quickAdd(){ var input=q('#add'); if(!input) return; var title=(input.value||'').trim(); if(!title){ toast('Введите название'); return } var d=q('#dueDate')?q('#dueDate').value:''; var t=q('#dueTime')?q('#dueTime').value:''; var due=d? (ddmm(d)+(t?(' '+t):'')) : '—'; lists[picked].unshift({id:Date.now(), title:title, hint:'', due:due, done:false}); input.value=''; if(q('#dueDate')) q('#dueDate').value=''; if(q('#dueTime')) q('#dueTime').value=''; save(); renderToday(); renderPlan(); toast('Добавлено') }
   function toggleAll(){ showAll=!showAll; var b=q('#toggleBtn'); if(b) b.textContent= showAll? 'Скрыть лишнее':'Показать всё'; renderToday() }
-  function findTask(id){ id=+id; var pools=['today','week','backlog']; for(var p=0;p<pools.length;p++){ var arr=lists[pools[p]]; for(var i=0;i<arr.length;i++){ if(arr[i].id===id){ return {list:pools[p], idx:i, task:arr[i]} } } } return null }
-  document.addEventListener('change', function(e){
-    var t=e.target;
-    if(t && t.className==='check'){ var id=t.getAttribute('data-id'); var res=findTask(id); if(res){ res.task.done = !!t.checked; save() } }
-    if(t && t.id==='calDate'){ currentDate=t.value; renderAgenda() }
-  });
 
   // --- Calendar ---
   function renderAgenda(){ var hours=q('#hours'), slots=q('#slots'); if(!hours||!slots) return; hours.innerHTML=''; slots.innerHTML=''; var h; for(h=9;h<=18;h++){ var hr=document.createElement('div'); hr.className='hour'; hr.textContent=(h<10?'0':'')+h+':00'; hours.appendChild(hr); var sl=document.createElement('div'); sl.className='slot'; slots.appendChild(sl) } for(var i=0;i<events.length;i++){ var ev=events[i]; if(ev.date!==currentDate) continue; var top=((parseInt(ev.start.split(':')[0],10)-9)*40) + (parseInt(ev.start.split(':')[1],10)/60)*40 + 6; var height=(ev.dur/60)*40 - 12; var e=document.createElement('div'); e.className='event'; e.style.top=top+'px'; e.style.height=Math.max(28,height)+'px'; e.textContent=ev.title+' · '+ev.start; slots.appendChild(e) } }
   function addEvent(){ var t=q('#evtTitle').value.trim(); var d=q('#calDate').value; var s=q('#evtStart').value||'10:00'; var dur=parseInt(q('#evtDur').value,10)||60; if(!d){ toast('Выберите дату'); return } if(!t){ toast('Название пустое'); return } events.push({id:Date.now(), date:d, start:s, dur:dur, title:t}); q('#evtTitle').value=''; save(); renderAgenda(); toast('Событие добавлено') }
 
-  // --- Chat / minimal “LLM” ---
+  // --- Chat (real fetch) ---
   function appendMsg(who, text){ var box=q('#chatBox'); if(!box) return; var b=document.createElement('div'); b.className='bubble '+(who==='me'?'me':'bot'); b.textContent=text; box.appendChild(b); box.scrollTop=box.scrollHeight }
-  function parseTasksFromText(txt){ var out=[]; var parts=txt.split(/\n|,|;|·|•|\d+\)|- /); for(var i=0;i<parts.length;i++){ var s=(parts[i]||'').trim(); if(s && s.length>2){ out.push({title:s}) } } return out }
-  function llmRespond(text){
-    var t=(text||'').toLowerCase(); var actions=[]; var reply='';
-    // add tasks from free text
-    if(/добав(ь|и)|задач|список|todo/.test(t) || /\n|,/.test(text)){
-      var tasks=parseTasksFromText(text);
-      for(var i=0;i<tasks.length;i++){ actions.push({type:'add_task', title:tasks[i].title, list:'today'}) }
-      reply = tasks.length ? ('Добавил '+tasks.length+' задач(и). Можно задать дедлайн датой.') : 'Готов добавить задачи. Напишите списком.';
-      return {reply:reply, actions:actions};
-    }
-    // set focus: "Фокус: ... "
-    if(/фокус/.test(t) && text.indexOf(':')>-1){
-      var val=text.split(':').slice(1).join(':').trim();
-      if(val){ actions.push({type:'set_focus', text:val}); reply='Записал фокус дня.'; return {reply:reply, actions:actions} }
-    }
-    // HADI hint
-    if(/hadi|гипотез|эксперим/.test(t)){
-      reply='HADI: H — гипотеза; A — действие; D — метрика; I — интервал. Напишите H:, A:, D:, I: — оформлю.';
-      return {reply:reply, actions:actions};
-    }
-    // calendar help
-    if(/календар|событ/.test(t)){
-      reply='Добавьте событие через форму над календарём: дата, время, длительность.';
-      return {reply:reply, actions:actions};
-    }
-    reply='Могу разложить на задачи, оформить HADI или поставить событие в календарь.';
-    return {reply:reply, actions:actions};
-  }
-  function applyActions(actions){
-    if(!actions||!actions.length) return;
-    for(var i=0;i<actions.length;i++){
-      var a=actions[i];
-      if(a.type==='add_task'){
-        lists[a.list||'today'].unshift({id:Date.now()+i, title:a.title, hint:'', due:'—', done:false});
-      } else if(a.type==='set_focus'){
-        focusText=a.text;
-        q('#focus').value=focusText;
-        lockFocusUI(true);
-        updateFocusChip();
-      }
-    }
-    save(); renderToday(); renderPlan();
-  }
   function openChat(){ q('#chatSheet').hidden=false }
   function closeChat(){ q('#chatSheet').hidden=true }
-  function chatSend(){
-    var inp=q('#chatInput'); var v=(inp.value||'').trim(); if(!v) return;
-    appendMsg('me', v); inp.value='';
-    var out=llmRespond(v); applyActions(out.actions);
-    setTimeout(function(){ appendMsg('bot', out.reply) }, 180);
+  function chatSend(){ var inp=q('#chatInput'); var v=(inp.value||'').trim(); if(!v) return; appendMsg('me', v); inp.value='';
+    fetch(CHAT_API, { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ message:v, user_id:'demo' }) })
+      .then(function(r){ return r.json() })
+      .then(function(d){ appendMsg('bot', d && d.reply ? d.reply : '...') })
+      .catch(function(){ appendMsg('bot','Сервис недоступен, попробуйте позже.') });
   }
 
   // --- Plan sub-tabs ---
-  function switchPlan(view){
-    var tabs=qa('.plan-tab'); for(var i=0;i<tabs.length;i++){ tabs[i].classList.remove('active') }
-    var btn=q('.plan-tab[data-view="'+view+'"]'); if(btn) btn.classList.add('active');
-    var views=['lists','hadi','metrics'];
-    for(var j=0;j<views.length;j++){ var id='plan-view-'+views[j]; var el=q('#'+id); if(el) el.hidden = (views[j]!==view) }
-  }
+  function switchPlan(view){ var tabs=qa('.plan-tab'); for(var i=0;i<tabs.length;i++){ tabs[i].classList.remove('active') } var btn=q('.plan-tab[data-view="'+view+'"]'); if(btn) btn.classList.add('active'); var views=['lists','hadi','metrics']; for(var j=0;j<views.length;j++){ var id='plan-view-'+views[j]; var el=q('#'+id); if(el) el.hidden = (views[j]!==view) } }
 
   // --- Delegated events ---
-  document.addEventListener('click', function(e){
-    var el=e.target;
-    while(el&&el!==document){
-      if(el.getAttribute&&(el.getAttribute('data-action')||el.getAttribute('data-target')||el.getAttribute('data-list')||el.className.indexOf('plan-tab')>-1)){ break }
-      el=el.parentNode
-    }
+  document.addEventListener('click', function(e){ var el=e.target; while(el&&el!==document){ if(el.getAttribute&&(el.getAttribute('data-action')||el.getAttribute('data-target')||el.getAttribute('data-list')||el.className.indexOf('plan-tab')>-1)){ break } el=el.parentNode }
     if(!el||el===document) return;
-
     var act=el.getAttribute('data-action');
     if(act==='saveFocus'){ saveFocus(); e.preventDefault(); return }
     if(act==='editFocus'){ editFocus(); e.preventDefault(); return }
@@ -387,29 +322,19 @@
     if(act==='chatSend'){ chatSend(); e.preventDefault(); return }
     if(act==='openChat'){ openChat(); e.preventDefault(); return }
     if(act==='closeChat'){ closeChat(); e.preventDefault(); return }
-
     if(el.getAttribute('data-list')){ pickList(el); e.preventDefault(); return }
     if(el.className.indexOf('plan-tab')>-1){ switchPlan(el.getAttribute('data-view')); e.preventDefault(); return }
-
-    var target=el.getAttribute('data-target');
-    if(target){
-      var buttons=qa('.dock-item'); for(var i=0;i<buttons.length;i++){ buttons[i].classList.remove('active') }
-      el.classList.add('active');
-      var screens=qa('.screen'); for(var s=0;s<screens.length;s++){ screens[s].hidden=true }
-      var scr=q('#screen-'+target); if(scr) scr.hidden=false;
-      window.scrollTo(0,0);
-      e.preventDefault(); return
-    }
+    var target=el.getAttribute('data-target'); if(target){ var buttons=qa('.dock-item'); for(var i=0;i<buttons.length;i++){ buttons[i].classList.remove('active') } el.classList.add('active'); var screens=qa('.screen'); for(var s=0;s<screens.length;s++){ screens[s].hidden=true } var scr=q('#screen-'+target); if(scr) scr.hidden=false; window.scrollTo(0,0); e.preventDefault(); return }
   });
+  document.addEventListener('change', function(e){ var el=e.target; if(el&&el.id==='calDate'){ currentDate=el.value; renderAgenda() } });
+  var addEl=q('#add'); if(addEl){ addEl.addEventListener('keydown', function(ev){ if(ev.key==='Enter'||ev.keyCode===13){ quickAdd() } }) }
+  var chatEl=q('#chatInput'); if(chatEl){ chatEl.addEventListener('keydown', function(ev){ if(ev.key==='Enter'||ev.keyCode===13){ chatSend() } }) }
 
   // --- Init ---
-  function init(){
-    load();
-    if(q('#focus')){ q('#focus').value=focusText||''; lockFocusUI(!!focusText) }
-    updateFocusChip();
-    renderToday(); renderPlan();
-    q('#calDate').value=currentDate; renderAgenda();
-    switchPlan('lists');
+  function init(){ load(); if(!lists.today.length&&!lists.week.length&&!lists.backlog.length){ lists.today=[{id:1,title:'Провести 5 интервью по JTBD',hint:'готово, когда есть записи/инсайты',due:'26.10',done:false},{id:2,title:'Лендинг оффера v1',hint:'опубликован URL',due:'23.10',done:false},{id:3,title:'Запуск канала трафика №1',hint:'вкл. реклама ≥3 000 ₽',due:'24.10',done:false}] }
+    q('#calDate').value=todayStr(); renderAgenda();
+    if(q('#focus')){ q('#focus').value=focusText||''; lockFocusUI(!!focusText) } updateFocusChip();
+    renderToday(); renderPlan(); switchPlan('lists');
   }
   init();
 })();
