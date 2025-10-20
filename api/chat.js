@@ -1,13 +1,13 @@
-// Vercel Serverless Function: /api/chat
-export default function handler(req, res) {
-  // простая поддержка preflight (если когда-то будешь вызывать с чужого домена)
+// CommonJS-версия — без сюрпризов
+module.exports = (req, res) => {
+  // preflight (на будущее)
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', 'content-type');
     return res.status(204).end();
   }
-
   if (req.method !== 'POST') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
     return res.status(405).json({ error: 'Use POST' });
   }
 
@@ -19,7 +19,6 @@ export default function handler(req, res) {
   else if (/hadi|гипотез/.test(text)) reply = 'Формат HADI: H, A, D, I. Напиши — оформлю.';
   else if (/календар|событ/.test(text)) reply = 'Укажи дату/время — поставлю событие.';
 
-  // если фронт и API будут на одном домене — CORS не нужен, но не мешает:
   res.setHeader('Access-Control-Allow-Origin', '*');
-  return res.status(200).json({ reply, echo: { user_id } });
-}
+  res.status(200).json({ reply, echo: { user_id } });
+};
