@@ -4,20 +4,19 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#ffffff" />
-  <title>Growth Assistant · Ultra‑Minimal Mobile</title>
+  <title>Growth Assistant · Mini App</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    /* === Ultra‑minimal, neutral light, mobile‑first === */
     :root{
-      --accent:#3B82F6;         /* single brand accent */
-      --bg:#FAFAFB;             /* app bg */
-      --surface:#FFFFFF;        /* card */
-      --line:#EDEEF2;           /* hairline */
-      --text:#0F172A;           /* primary */
-      --muted:#6B7280;          /* secondary */
-      --ok:#16A34A; --warn:#EA580C; --err:#DC2626;
+      --accent:#3B82F6;
+      --accent-2:#60A5FA;
+      --bg:#FAFAFB;
+      --surface:#FFFFFF;
+      --line:#EDEEF2;
+      --text:#0F172A;
+      --muted:#6B7280;
       --r-lg:14px; --r-md:12px; --r-sm:10px;
       --sh-xs:0 1px 2px rgba(15,23,42,.04);
       --h1:clamp(18px,4vw,22px); --h2:clamp(15px,3.4vw,17px); --body:15px; --cap:12px;
@@ -29,43 +28,36 @@
     img,svg{max-width:100%; display:block}
     button,input,select,textarea{font:inherit}
 
-    /* Layout */
     .app{min-height:100%; display:flex; flex-direction:column}
     header{position:sticky; top:0; z-index:20; background:#fff; border-bottom:1px solid var(--line)}
-    .topbar{display:flex; align-items:center; gap:var(--sp-2); padding:var(--sp-2) var(--sp-3)}
+    .topbar{display:flex; align-items:center; gap:var(--sp-2); padding:var(--sp-2) var(--sp-3); max-width:960px; margin:0 auto}
     .brand{display:flex; align-items:center; gap:var(--sp-2)}
-    .dot{width:18px;height:18px;border-radius:6px; background:var(--accent)}
+    .dot{width:18px;height:18px;border-radius:6px; background:linear-gradient(135deg,var(--accent),var(--accent-2))}
     .title{font-weight:700}
+    .actions{margin-left:auto; display:flex; align-items:center; gap:10px}
+    .mini-chip{font-size:12px; padding:4px 8px; border-radius:999px; background:#EEF2FF; color:#1D4ED8; border:1px solid #CBD5E1}
+    .icon-btn{display:grid; place-items:center; width:32px; height:32px; border-radius:10px; border:1px solid var(--line); background:#fff; color:#0F172A}
 
-    .seg{display:flex; gap:6px; overflow:auto; padding:0 var(--sp-3) var(--sp-2)}
-    .seg button{height:34px; padding:0 12px; border-radius:999px; border:1px solid var(--line); background:#fff; color:#111827}
-    .seg button.active{border-color:var(--accent); color:#0B4DD9}
+    main{flex:1; padding:0 var(--sp-3) calc(120px + env(safe-area-inset-bottom)); max-width:960px; margin:0 auto}
 
-    main{flex:1; padding:0 var(--sp-3) calc(120px + env(safe-area-inset-bottom))}
-
-    /* Cards */
     .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); padding:var(--sp-3); box-shadow:var(--sh-xs)}
     .card + .card{margin-top:var(--sp-3)}
-
     h1{font-size:var(--h1); margin:var(--sp-2) 0 var(--sp-2)}
     h2{font-size:var(--h2); margin:0 0 var(--sp-2) 0}
     .sub{color:var(--muted); font-size:var(--cap)}
 
-    /* Inputs & buttons */
-    .row{display:flex; gap:var(--sp-2); align-items:center}
+    .row{display:flex; gap:var(--sp-2); align-items:center; flex-wrap:nowrap}
     .input{height:44px; padding:0 12px; width:100%; border-radius:12px; border:1px solid var(--line); background:#fff}
-    .btn{height:44px; padding:0 14px; border-radius:12px; border:0; background:linear-gradient(135deg,var(--accent),#60A5FA); color:#fff; font-weight:700; box-shadow:0 6px 14px rgba(59,130,246,.18)}
-    .btn.ghost{background:#fff; color:#111827; border-color:var(--line)}
+    .input.readonly{background:#F8FAFC; color:#334155}
+    .btn{height:44px; padding:0 14px; border-radius:12px; border:0; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; font-weight:700; box-shadow:0 6px 14px rgba(59,130,246,.18)}
+    .btn.ghost{background:#fff; color:#111827; border:1px solid var(--line); box-shadow:none; font-weight:600}
 
-    /* Quick add (single‑step) */
-    .quick{display:flex; gap:8px}
-    .chip{height:34px; padding:0 10px; border-radius:999px; border:1px solid var(--line); background:#fff; font-size:12px; color:#111827}
+    .chip{height:34px; padding:0 10px; border-radius:999px; border:1px solid var(--line); background:#fff; font-size:12px; color:#111827; cursor:pointer}
     .chip.active{border-color:transparent; color:#0B4DD9; background:linear-gradient(135deg,#EEF2FF,#E0EAFF)}
 
-    /* List */
     .list{display:flex; flex-direction:column; gap:8px}
     .item{display:flex; align-items:center; gap:8px; padding:10px; background:#fff; border:1px solid var(--line); border-radius:12px; min-width:0}
-    .check{appearance:none; width:20px; height:20px; border-radius:6px; border:1px solid var(--line); background:#fff}
+    .check{appearance:none; width:20px; height:20px; border-radius:6px; border:1px solid var(--line); background:#fff; cursor:pointer}
     .check:checked{background:var(--accent); border-color:var(--accent)}
     .body{flex:1; min-width:0}
     .title{font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -73,41 +65,30 @@
     .tag{font-size:11px; color:#0F766E; background:#ECFDF5; border:1px solid #A7F3D0; padding:4px 6px; border-radius:999px; white-space:nowrap}
     .more{border:none; background:transparent; font-size:18px; color:#9CA3AF}
 
-    /* Context menu */
-    .ctx{position:fixed; z-index:40; background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:var(--sh-xs); padding:6px; min-width:160px}
-    .act{display:block; width:100%; text-align:left; border:none; background:#fff; padding:8px 10px; border-radius:8px; font-size:14px}
-    .act:hover{background:#F8FAFC}
+    /* Plan sub-tabs */
+    .plan-tabs{display:flex; gap:6px; overflow:auto; padding-bottom:6px; margin-bottom:10px}
+    .plan-tab{height:34px; padding:0 12px; border-radius:999px; border:1px solid var(--line); background:#fff; cursor:pointer}
+    .plan-tab.active{border-color:transparent; background:linear-gradient(135deg,#EEF2FF,#E0EAFF); color:#0B4DD9}
 
-    /* Secondary screens */
-    .kpi-grid{display:grid; grid-template-columns:repeat(2, minmax(140px,1fr)); gap:10px}
-    .kpi{background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px}
-    .kpi .value{font-weight:700}
-
+    /* HADI board */
     .board{display:grid; grid-template-columns:repeat(2, minmax(160px,1fr)); gap:10px}
     .column{background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px; min-height:180px}
     .hcard{background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px; margin:6px 2px}
 
+    /* Calendar */
     .agenda{display:grid; grid-template-columns:60px 1fr; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#fff}
     .hour{height:40px; padding:6px 6px; font-size:12px; color:#6B7280; border-bottom:1px dashed #E5E7EB}
     .slot{height:40px; border-bottom:1px dashed #E5E7EB; position:relative}
     .event{position:absolute; left:6px; right:6px; background:#E3F2FD; color:#0B4DD9; border:1px solid #BFDBFE; border-radius:10px; padding:6px; font-size:12px}
 
-    /* Bottom dock (floating, modern, tap-safe) */
+    /* Bottom dock */
     .dock{position:fixed; left:50%; bottom:12px; transform:translateX(-50%); z-index:50; width:min(520px,92%); padding-bottom:env(safe-area-inset-bottom); pointer-events:none}
-    .dock-inner{display:grid; grid-template-columns:repeat(6,1fr); gap:4px; background:rgba(255,255,255,.9); backdrop-filter:saturate(140%) blur(10px); border:1px solid var(--line); border-radius:16px; padding:8px; box-shadow:0 10px 28px rgba(15,23,42,.12); pointer-events:auto}
-    .dock-item{height:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; border-radius:10px; color:#667085; font-size:12px; border:none; background:transparent; cursor:pointer}
+    .dock-inner{display:grid; grid-template-columns:repeat(4,1fr); gap:4px; background:rgba(255,255,255,.88); backdrop-filter:saturate(140%) blur(10px); border:1px solid var(--line); border-radius:18px; padding:8px; box-shadow:0 10px 28px rgba(15,23,42,.12); pointer-events:auto}
+    .dock-item{height:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; border-radius:10px; color:#667085; font-size:12px; border:none; background:transparent; cursor:pointer; transition:transform .12s ease}
+    .dock-item:active{transform:scale(.98)}
     .dock-item.active{background:#F3F4F6; color:#0F172A; font-weight:600}
     .dock svg{width:20px; height:20px}
-    .fab{display:none}
     @media (max-width: 430px){ .dock-item span{display:none} }
-
-    @media (min-width:720px){ .kpi-grid{grid-template-columns:repeat(3, minmax(220px,1fr))} .board{grid-template-columns:repeat(4, minmax(220px,1fr))} .agenda{grid-template-columns:80px 1fr} .hour,.slot{height:48px} }
-  .bubble{max-width:85%; padding:10px 12px; border:1px solid var(--line); border-radius:12px}
-    .bubble.me{align-self:flex-end; background:#EEF2FF; border-color:#CBD5E1}
-    .bubble.bot{align-self:flex-start; background:#F8FAFC}
-  .actions{margin-left:auto; display:flex; align-items:center; gap:10px}
-    .icon-btn{display:grid; place-items:center; width:32px; height:32px; border-radius:10px; border:1px solid var(--line); background:#fff; color:#0F172A}
-    .mini-chip{font-size:12px; padding:4px 8px; border-radius:999px; background:#EEF2FF; color:#1D4ED8; border:1px solid #CBD5E1}
 
     /* Chat sheet */
     .sheet{position:fixed; inset:0; z-index:60}
@@ -117,11 +98,15 @@
     .sheet-head{display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--line)}
     .sheet-body{max-height:45vh; overflow:auto; padding:10px; display:flex; flex-direction:column; gap:8px}
     .sheet-input{display:flex; gap:8px; padding:10px; border-top:1px solid var(--line)}
+    .bubble{max-width:85%; padding:10px 12px; border:1px solid var(--line); border-radius:12px}
+    .bubble.me{align-self:flex-end; background:#EEF2FF; border-color:#CBD5E1}
+    .bubble.bot{align-self:flex-start; background:#F8FAFC}
 
-    /* Refined dock */
-    .dock-inner{background:rgba(255,255,255,.88); border-radius:18px; border:1px solid #E6E8EE; box-shadow:0 10px 28px rgba(15,23,42,.12)}
-    .dock-item{transition:transform .12s ease}
-    .dock-item:active{transform:scale(.98)}
+    @media (min-width:720px){
+      .board{grid-template-columns:repeat(4, minmax(220px,1fr))}
+      .agenda{grid-template-columns:80px 1fr}
+      .hour,.slot{height:48px}
+    }
   </style>
 </head>
 <body>
@@ -132,17 +117,11 @@
       <div class="actions">
         <span id="focusChip" class="mini-chip" hidden>Фокус: —</span>
         <button class="icon-btn" data-action="openChat" title="Чат">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H7l-4 3V5a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a4 4 0 0 1-4 4H7l-4 3V5a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
+          </svg>
         </button>
       </div>
-    </div>
-    <div class="seg" role="tablist" aria-label="Навигация">
-      <button class="active" data-target="today" role="tab" aria-selected="true">Сегодня</button>
-      <button data-target="plan" role="tab">План</button>
-      <button data-target="hadi" role="tab">HADI</button>
-      <button data-target="calendar" role="tab">Календарь</button>
-      <button data-target="metrics" role="tab">Метрики</button>
-      <button data-target="settings" role="tab">Настройки</button>
     </div>
   </header>
 
@@ -153,8 +132,11 @@
 
       <div class="card">
         <h2>Фокус дня</h2>
-        <div class="row"><input id="focus" class="input" placeholder="Самое главное сегодня…"><button class="btn" data-action="saveFocus">Сохранить</button></div>
-        <div class="sub" style="margin-top:6px">Пример: «5 интервью + черновик лендинга»</div>
+        <div class="row">
+          <input id="focus" class="input" placeholder="Самое главное сегодня…">
+          <button class="btn" data-action="saveFocus" id="saveFocusBtn">Сохранить</button>
+          <button class="icon-btn" data-action="editFocus" id="editFocusBtn" title="Редактировать" style="display:none">✎</button>
+        </div>
       </div>
 
       <div class="card" aria-label="Быстрое добавление задачи">
@@ -165,50 +147,51 @@
         </div>
         <div class="row" style="flex-wrap:wrap; margin-top:8px">
           <span class="sub">Список:</span>
-          <button class="chip active" data-list="today" onclick="pickList(this)">Сегодня</button>
-          <button class="chip" data-list="week" onclick="pickList(this)">Неделя</button>
-          <button class="chip" data-list="backlog" onclick="pickList(this)">Бэклог</button>
+          <button class="chip active" data-list="today">Сегодня</button>
+          <button class="chip" data-list="week">Неделя</button>
+          <button class="chip" data-list="backlog">Бэклог</button>
           <span class="sub" style="margin-left:auto">Дедлайн:</span>
           <input id="dueDate" class="input" type="date" style="max-width:150px">
           <input id="dueTime" class="input" type="time" style="max-width:120px">
         </div>
-        <div class="sub" style="margin-top:6px">Можно не заполнять дату/время — задача добавится без дедлайна</div>
-      </div>
-        <div class="quick" style="margin-top:8px">
-          <button class="chip active" data-list="today" onclick="pickList(this)">Сегодня</button>
-          <button class="chip" data-list="week" onclick="pickList(this)">Неделя</button>
-          <button class="chip" data-list="backlog" onclick="pickList(this)">Бэклог</button>
-        </div>
-        <div class="sub" style="margin-top:6px">Подсказки: @26.10 — дедлайн · /неделя — список</div>
       </div>
 
       <div class="card" role="region" aria-labelledby="tTitle">
-        <div class="row" style="justify-content:space-between; align-items:center"><h2 id="tTitle">Задачи на сегодня</h2><button class="btn ghost" onclick="toggleAll()" id="toggleBtn">Показать всё</button></div>
+        <div class="row" style="justify-content:space-between; align-items:center">
+          <h2 id="tTitle">Задачи на сегодня</h2>
+          <button class="btn ghost" data-action="toggleAll" id="toggleBtn">Показать всё</button>
+        </div>
         <div id="todayList" class="list"></div>
       </div>
-
-      <div class="card" role="region" aria-labelledby="wTitle">
-        <h2 id="wTitle">Прогресс недели</h2>
-        <svg viewBox="0 0 200 40" id="spark"></svg>
-      </div>
     </section>
 
-    <!-- PLAN (все списки) -->
+    <!-- PLAN -->
     <section id="screen-plan" class="screen" hidden>
       <h1>План</h1>
-      <div class="card"><h2>Сегодня</h2><div id="list-today" class="list"></div></div>
-      <div class="card"><h2>На неделе</h2><div id="list-week" class="list"></div></div>
-      <div class="card"><h2>Бэклог</h2><div id="list-backlog" class="list"></div></div>
-    </section>
-
-    <!-- HADI -->
-    <section id="screen-hadi" class="screen" hidden>
-      <h1>HADI</h1>
-      <div class="board">
-        <div class="column" data-col="Planned"><strong>Planned</strong></div>
-        <div class="column" data-col="Running"><strong>Running</strong></div>
-        <div class="column" data-col="Review"><strong>Review</strong></div>
-        <div class="column" data-col="Done"><strong>Done</strong></div>
+      <div class="plan-tabs" role="tablist">
+        <button class="plan-tab active" data-view="lists">Списки</button>
+        <button class="plan-tab" data-view="hadi">HADI</button>
+        <button class="plan-tab" data-view="metrics">Метрики</button>
+      </div>
+      <div id="plan-view-lists">
+        <div class="card"><h2>Сегодня</h2><div id="list-today" class="list"></div></div>
+        <div class="card"><h2>На неделе</h2><div id="list-week" class="list"></div></div>
+        <div class="card"><h2>Бэклог</h2><div id="list-backlog" class="list"></div></div>
+      </div>
+      <div id="plan-view-hadi" hidden>
+        <div class="board">
+          <div class="column" data-col="Planned"><strong>Planned</strong></div>
+          <div class="column" data-col="Running"><strong>Running</strong></div>
+          <div class="column" data-col="Review"><strong>Review</strong></div>
+          <div class="column" data-col="Done"><strong>Done</strong></div>
+        </div>
+      </div>
+      <div id="plan-view-metrics" hidden>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="sub">Лиды / неделя</div><div class="value">—</div></div>
+          <div class="kpi"><div class="sub">Конверсия</div><div class="value">—</div></div>
+          <div class="kpi"><div class="sub">Выручка / нед.</div><div class="value">—</div></div>
+        </div>
       </div>
     </section>
 
@@ -229,34 +212,9 @@
       <div class="agenda"><div class="hours" id="hours"></div><div class="slots" id="slots"></div></div>
     </section>
 
-    <!-- METRICS -->
-    <section id="screen-metrics" class="screen" hidden>
-      <h1>Метрики</h1>
-      <div class="kpi-grid">
-        <div class="kpi"><div class="sub">Лиды / неделя</div><div class="value">32</div></div>
-        <div class="kpi"><div class="sub">Конверсия</div><div class="value">1.6%</div></div>
-        <div class="kpi"><div class="sub">Выручка / нед.</div><div class="value">₽ 128 000</div></div>
-      </div>
-    </section>
-
     <!-- SETTINGS -->
-    <div class="sheet" id="chatSheet" hidden>
-      <div class="sheet-backdrop" data-action="closeChat"></div>
-      <div class="sheet-panel">
-        <div class="sheet-head">
-          <strong>Чат с ассистентом</strong>
-          <button class="icon-btn" data-action="closeChat" title="Закрыть">✕</button>
-        </div>
-        <div class="sheet-body" id="chatBox"></div>
-        <div class="sheet-input">
-          <input id="chatInput" class="input" placeholder="Спросите про план, HADI или задачи…">
-          <button class="btn" data-action="chatSend">Отправить</button>
-        </div>
-      </div>
-    </div>
-
     <section id="screen-settings" class="screen" hidden>
-      <h1>Настройки</h1>
+      <h1>Профиль</h1>
       <div class="card"><div class="sub">Таймзона: Europe/Helsinki · Уведомления: вкл</div></div>
     </section>
   </main>
@@ -271,10 +229,6 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l7-2 7 2 4-1v13l-4 1-7-2-7 2-3-1V5z"/></svg>
         <span>План</span>
       </button>
-      <button class="dock-item" data-target="hadi" title="HADI">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22h12"/><path d="M9 22V10l6-6v18"/></svg>
-        <span>HADI</span>
-      </button>
       <button class="dock-item" data-target="calendar" title="Календарь">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
         <span>Календарь</span>
@@ -285,94 +239,180 @@
       </button>
     </div>
   </nav>
+
+  <!-- CHAT SHEET -->
+  <div class="sheet" id="chatSheet" hidden>
+    <div class="sheet-backdrop" data-action="closeChat"></div>
+    <div class="sheet-panel">
+      <div class="sheet-head">
+        <strong>Чат с ассистентом</strong>
+        <button class="icon-btn" data-action="closeChat" title="Закрыть">✕</button>
+      </div>
+      <div class="sheet-body" id="chatBox"></div>
+      <div class="sheet-input">
+        <input id="chatInput" class="input" placeholder="Спросите про план, HADI или задачи…">
+        <button class="btn" data-action="chatSend">Отправить</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-// ===== ES5-compatible JS (stable for Telegram WebView) =====
+// ===== ES5-compatible JS (Telegram-safe) =====
 (function(){
-  // --- State ---
+  // --- State & storage ---
   var lists = { today:[], week:[], backlog:[] };
-  var showAll=false, picked='today';
-  var events=[], currentDate=todayStr();
-  var focusText='';
+  var events = [];
+  var focusText = '';
+  var showAll=false, picked='today', currentDate=todayStr();
 
-  // --- LocalStorage helpers ---
   function load(){ try{ var L=localStorage.getItem('ga_lists'); if(L) lists=JSON.parse(L) }catch(e){}
     try{ var E=localStorage.getItem('ga_events'); if(E) events=JSON.parse(E) }catch(e){}
     try{ var F=localStorage.getItem('ga_focus'); if(F) focusText=F }catch(e){} }
   function save(){ try{ localStorage.setItem('ga_lists', JSON.stringify(lists)); localStorage.setItem('ga_events', JSON.stringify(events)); localStorage.setItem('ga_focus', focusText||'') }catch(e){} }
 
-  // --- Seeds (only if пусто) ---
-  function seed(){ if(!lists.today.length && !lists.week.length && !lists.backlog.length){
-      lists.today=[
-        {id:1,title:'Провести 5 интервью по JTBD',hint:'готово, когда есть записи/инсайты',due:'26.10',done:false},
-        {id:2,title:'Лендинг оффера v1',hint:'опубликован URL',due:'23.10',done:false},
-        {id:3,title:'Запуск канала трафика №1',hint:'вкл. реклама ≥3 000 ₽',due:'24.10',done:false}
-      ];
-    }
-    if(!events.length){ events.push({id:101,date:currentDate,start:'10:00',dur:60,title:'Интервью #1'}); events.push({id:102,date:currentDate,start:'15:00',dur:90,title:'Лендинг — правки'}) }
-  }
-
   // --- Utils ---
   function q(s){return document.querySelector(s)}; function qa(s){return document.querySelectorAll(s)}
-  function esc(s){return String(s).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]})}
+  function esc(s){return String(s).replace(/[&<>\"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]})}
   function toast(msg){ var t=document.createElement('div'); t.textContent=msg; t.style.cssText='position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:#0F172A;color:#fff;padding:10px 12px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);opacity:.98;z-index:99'; document.body.appendChild(t); setTimeout(function(){t.style.transition="opacity .4s"; t.style.opacity='0'; setTimeout(function(){t.parentNode&&t.parentNode.removeChild(t)},400)},900) }
   function todayStr(){ var d=new Date(); return d.toISOString().slice(0,10) }
   function ddmm(dstr){ if(!dstr) return '—'; var p=dstr.split('-'); return p[2]+'.'+p[1] }
   function truncate(s, n){ if(!s) return ''; return s.length>n? s.slice(0,n-1)+'…': s }
 
-  // --- UI helpers ---
-  function updateFocusChip(){ var chip=q('#focusChip'); if(!chip) return; if(focusText){ chip.textContent='Фокус: '+truncate(focusText,26); chip.hidden=false } else { chip.hidden=true } }
-  function switchScreen(target, selector){ var i, el; var nodes=qa(selector||'.dock-item'); for(i=0;i<nodes.length;i++){ nodes[i].classList.remove('active') } el=document.querySelector((selector||'.dock-item')+'[data-target="'+target+'"]'); if(el) el.classList.add('active'); var screens=qa('.screen'); for(i=0;i<screens.length;i++){ screens[i].hidden=true } el=q('#screen-'+target); if(el) el.hidden=false; window.scrollTo(0,0) }
-
   // --- Focus ---
-  function saveFocus(){ var input=q('#focus'); var v=(input&&input.value||'').trim(); if(!v){ toast('Введите фокус дня'); return } focusText=v; updateFocusChip(); save(); toast('Фокус сохранён') }
+  function updateFocusChip(){ var chip=q('#focusChip'); if(!chip) return; if(focusText){ chip.textContent='Фокус: '+truncate(focusText,26); chip.hidden=false } else { chip.hidden=true } }
+  function lockFocusUI(lock){ var input=q('#focus'); var saveBtn=q('#saveFocusBtn'); var editBtn=q('#editFocusBtn'); if(!input) return; if(lock){ input.readOnly=true; input.classList.add('readonly'); if(saveBtn) saveBtn.style.display='none'; if(editBtn) editBtn.style.display='grid' } else { input.readOnly=false; input.classList.remove('readonly'); if(saveBtn) saveBtn.style.display='inline-block'; if(editBtn) editBtn.style.display='none'; setTimeout(function(){input.focus()},0) } }
+  function saveFocus(){ var input=q('#focus'); var v=(input&&input.value||'').trim(); if(!v){ toast('Введите фокус дня'); return } focusText=v; updateFocusChip(); lockFocusUI(true); save(); toast('Фокус сохранён') }
+  function editFocus(){ lockFocusUI(false) }
 
   // --- Tasks ---
   function pickList(btn){ var chips=qa('.card .chip'); for(var i=0;i<chips.length;i++){ chips[i].classList.remove('active') } btn.classList.add('active'); picked=btn.getAttribute('data-list')||'today' }
-  function quickAdd(){ var input=q('#add'); if(!input) return; var title=(input.value||'').trim(); if(!title){ toast('Введите название'); return } var d=q('#dueDate')?q('#dueDate').value:''; var t=q('#dueTime')?q('#dueTime').value:''; var due=d? (ddmm(d)+(t?(' '+t):'')) : '—'; lists[picked].unshift({id:Date.now(), title:title, hint:'критерий готовности', due:due, done:false}); input.value=''; if(q('#dueDate')) q('#dueDate').value=''; if(q('#dueTime')) q('#dueTime').value=''; save(); renderToday(); renderPlan(); toast('Добавлено') }
-
-  function taskRow(t){ var el=document.createElement('div'); el.className='item'; el.innerHTML='<input type="checkbox" class="check" '+(t.done?'checked':'')+' data-id="'+t.id+'">\
-    <div class="body"><div class="title">'+esc(t.title)+'</div><div class="hint">'+esc(t.hint||'')+'</div></div>\
-    <span class="tag">'+esc(t.due)+'</span>\
-    <button class="more" data-action="menu" data-id="'+t.id+'">⋯</button>'; return el }
-  function renderToday(){ var box=q('#todayList'); if(!box) return; box.innerHTML=''; var merged=[].concat(lists.today); var items=showAll? merged : merged.slice(0,3); if(!items.length){ box.innerHTML='<div class="sub">Добавьте первую задачу выше</div>'; return } for(var i=0;i<items.length;i++){ box.appendChild(taskRow(items[i])) } }
+  function taskRow(t){ var el=document.createElement('div'); el.className='item'; el.innerHTML=
+    '<input type="checkbox" class="check" '+(t.done?'checked':'')+' data-id="'+t.id+'">\
+     <div class="body"><div class="title">'+esc(t.title)+'</div><div class="hint">'+esc(t.hint||'')+'</div></div>\
+     <span class="tag">'+esc(t.due||'—')+'</span>\
+     <button class="more" data-action="menu" data-id="'+t.id+'">⋯</button>'; return el }
+  function renderToday(){ var box=q('#todayList'); if(!box) return; box.innerHTML=''; var merged=[].concat(lists.today); var items=showAll? merged : merged.slice(0,3); if(!items.length){ box.innerHTML='<div class="sub">Пока пусто</div>'; return } for(var i=0;i<items.length;i++){ box.appendChild(taskRow(items[i])) } }
   function renderPlan(){ var keys=['today','week','backlog']; for(var a=0;a<keys.length;a++){ var k=keys[a], box=q('#list-'+k); if(!box) continue; box.innerHTML=''; for(var i=0;i<lists[k].length;i++){ box.appendChild(taskRow(lists[k][i])) } } }
+  function quickAdd(){ var input=q('#add'); if(!input) return; var title=(input.value||'').trim(); if(!title){ toast('Введите название'); return } var d=q('#dueDate')?q('#dueDate').value:''; var t=q('#dueTime')?q('#dueTime').value:''; var due=d? (ddmm(d)+(t?(' '+t):'')) : '—'; lists[picked].unshift({id:Date.now(), title:title, hint:'', due:due, done:false}); input.value=''; if(q('#dueDate')) q('#dueDate').value=''; if(q('#dueTime')) q('#dueTime').value=''; save(); renderToday(); renderPlan(); toast('Добавлено') }
   function toggleAll(){ showAll=!showAll; var b=q('#toggleBtn'); if(b) b.textContent= showAll? 'Скрыть лишнее':'Показать всё'; renderToday() }
+  function findTask(id){ id=+id; var pools=['today','week','backlog']; for(var p=0;p<pools.length;p++){ var arr=lists[pools[p]]; for(var i=0;i<arr.length;i++){ if(arr[i].id===id){ return {list:pools[p], idx:i, task:arr[i]} } } } return null }
+  document.addEventListener('change', function(e){
+    var t=e.target;
+    if(t && t.className==='check'){ var id=t.getAttribute('data-id'); var res=findTask(id); if(res){ res.task.done = !!t.checked; save() } }
+    if(t && t.id==='calDate'){ currentDate=t.value; renderAgenda() }
+  });
 
   // --- Calendar ---
   function renderAgenda(){ var hours=q('#hours'), slots=q('#slots'); if(!hours||!slots) return; hours.innerHTML=''; slots.innerHTML=''; var h; for(h=9;h<=18;h++){ var hr=document.createElement('div'); hr.className='hour'; hr.textContent=(h<10?'0':'')+h+':00'; hours.appendChild(hr); var sl=document.createElement('div'); sl.className='slot'; slots.appendChild(sl) } for(var i=0;i<events.length;i++){ var ev=events[i]; if(ev.date!==currentDate) continue; var top=((parseInt(ev.start.split(':')[0],10)-9)*40) + (parseInt(ev.start.split(':')[1],10)/60)*40 + 6; var height=(ev.dur/60)*40 - 12; var e=document.createElement('div'); e.className='event'; e.style.top=top+'px'; e.style.height=Math.max(28,height)+'px'; e.textContent=ev.title+' · '+ev.start; slots.appendChild(e) } }
   function addEvent(){ var t=q('#evtTitle').value.trim(); var d=q('#calDate').value; var s=q('#evtStart').value||'10:00'; var dur=parseInt(q('#evtDur').value,10)||60; if(!d){ toast('Выберите дату'); return } if(!t){ toast('Название пустое'); return } events.push({id:Date.now(), date:d, start:s, dur:dur, title:t}); q('#evtTitle').value=''; save(); renderAgenda(); toast('Событие добавлено') }
 
-  // --- Chat (sheet) ---
+  // --- Chat / minimal “LLM” ---
   function appendMsg(who, text){ var box=q('#chatBox'); if(!box) return; var b=document.createElement('div'); b.className='bubble '+(who==='me'?'me':'bot'); b.textContent=text; box.appendChild(b); box.scrollTop=box.scrollHeight }
-  function botReply(text){ var t=text.toLowerCase(); var out=''; if(t.indexOf('задач')>-1){ out='Предлагаю топ‑3 на сегодня: 1) Интервью (30мин) 2) Правки лендинга (45мин) 3) Пост‑анонс (20мин).'; } else if(t.indexOf('hadi')>-1||t.indexOf('гипотез')>-1){ out='HADI: H — «Заголовок ↑ v2l на 0.5п.п.»; A — A/B; D — v2l; I — 7 дней.'; } else if(t.indexOf('календар')>-1){ out='Добавьте событие через форму над сеткой: название, время, длительность.'; } else { out='Могу помочь с планом дня, HADI или календарём. Спросите что-то конкретнее.'; } setTimeout(function(){ appendMsg('bot', out) }, 250) }
+  function parseTasksFromText(txt){ var out=[]; var parts=txt.split(/\n|,|;|·|•|\d+\)|- /); for(var i=0;i<parts.length;i++){ var s=(parts[i]||'').trim(); if(s && s.length>2){ out.push({title:s}) } } return out }
+  function llmRespond(text){
+    var t=(text||'').toLowerCase(); var actions=[]; var reply='';
+    // add tasks from free text
+    if(/добав(ь|и)|задач|список|todo/.test(t) || /\n|,/.test(text)){
+      var tasks=parseTasksFromText(text);
+      for(var i=0;i<tasks.length;i++){ actions.push({type:'add_task', title:tasks[i].title, list:'today'}) }
+      reply = tasks.length ? ('Добавил '+tasks.length+' задач(и). Можно задать дедлайн датой.') : 'Готов добавить задачи. Напишите списком.';
+      return {reply:reply, actions:actions};
+    }
+    // set focus: "Фокус: ... "
+    if(/фокус/.test(t) && text.indexOf(':')>-1){
+      var val=text.split(':').slice(1).join(':').trim();
+      if(val){ actions.push({type:'set_focus', text:val}); reply='Записал фокус дня.'; return {reply:reply, actions:actions} }
+    }
+    // HADI hint
+    if(/hadi|гипотез|эксперим/.test(t)){
+      reply='HADI: H — гипотеза; A — действие; D — метрика; I — интервал. Напишите H:, A:, D:, I: — оформлю.';
+      return {reply:reply, actions:actions};
+    }
+    // calendar help
+    if(/календар|событ/.test(t)){
+      reply='Добавьте событие через форму над календарём: дата, время, длительность.';
+      return {reply:reply, actions:actions};
+    }
+    reply='Могу разложить на задачи, оформить HADI или поставить событие в календарь.';
+    return {reply:reply, actions:actions};
+  }
+  function applyActions(actions){
+    if(!actions||!actions.length) return;
+    for(var i=0;i<actions.length;i++){
+      var a=actions[i];
+      if(a.type==='add_task'){
+        lists[a.list||'today'].unshift({id:Date.now()+i, title:a.title, hint:'', due:'—', done:false});
+      } else if(a.type==='set_focus'){
+        focusText=a.text;
+        q('#focus').value=focusText;
+        lockFocusUI(true);
+        updateFocusChip();
+      }
+    }
+    save(); renderToday(); renderPlan();
+  }
   function openChat(){ q('#chatSheet').hidden=false }
   function closeChat(){ q('#chatSheet').hidden=true }
-  function chatSend(){ var inp=q('#chatInput'); var v=(inp.value||'').trim(); if(!v) return; appendMsg('me', v); inp.value=''; botReply(v) }
+  function chatSend(){
+    var inp=q('#chatInput'); var v=(inp.value||'').trim(); if(!v) return;
+    appendMsg('me', v); inp.value='';
+    var out=llmRespond(v); applyActions(out.actions);
+    setTimeout(function(){ appendMsg('bot', out.reply) }, 180);
+  }
+
+  // --- Plan sub-tabs ---
+  function switchPlan(view){
+    var tabs=qa('.plan-tab'); for(var i=0;i<tabs.length;i++){ tabs[i].classList.remove('active') }
+    var btn=q('.plan-tab[data-view="'+view+'"]'); if(btn) btn.classList.add('active');
+    var views=['lists','hadi','metrics'];
+    for(var j=0;j<views.length;j++){ var id='plan-view-'+views[j]; var el=q('#'+id); if(el) el.hidden = (views[j]!==view) }
+  }
 
   // --- Delegated events ---
-  document.addEventListener('click', function(e){ var el=e.target; while(el&&el!==document){ if(el.getAttribute&&(el.getAttribute('data-action')||el.getAttribute('data-target')||el.getAttribute('data-list'))){ break } el=el.parentNode }
+  document.addEventListener('click', function(e){
+    var el=e.target;
+    while(el&&el!==document){
+      if(el.getAttribute&&(el.getAttribute('data-action')||el.getAttribute('data-target')||el.getAttribute('data-list')||el.className.indexOf('plan-tab')>-1)){ break }
+      el=el.parentNode
+    }
     if(!el||el===document) return;
+
     var act=el.getAttribute('data-action');
     if(act==='saveFocus'){ saveFocus(); e.preventDefault(); return }
+    if(act==='editFocus'){ editFocus(); e.preventDefault(); return }
     if(act==='quickAdd'){ quickAdd(); e.preventDefault(); return }
     if(act==='toggleAll'){ toggleAll(); e.preventDefault(); return }
     if(act==='addEvent'){ addEvent(); e.preventDefault(); return }
     if(act==='chatSend'){ chatSend(); e.preventDefault(); return }
     if(act==='openChat'){ openChat(); e.preventDefault(); return }
     if(act==='closeChat'){ closeChat(); e.preventDefault(); return }
+
     if(el.getAttribute('data-list')){ pickList(el); e.preventDefault(); return }
-    var target=el.getAttribute('data-target'); if(target){ switchScreen(target, el.className.indexOf('seg')>-1?'.seg button':'.dock-item'); e.preventDefault(); return }
+    if(el.className.indexOf('plan-tab')>-1){ switchPlan(el.getAttribute('data-view')); e.preventDefault(); return }
+
+    var target=el.getAttribute('data-target');
+    if(target){
+      var buttons=qa('.dock-item'); for(var i=0;i<buttons.length;i++){ buttons[i].classList.remove('active') }
+      el.classList.add('active');
+      var screens=qa('.screen'); for(var s=0;s<screens.length;s++){ screens[s].hidden=true }
+      var scr=q('#screen-'+target); if(scr) scr.hidden=false;
+      window.scrollTo(0,0);
+      e.preventDefault(); return
+    }
   });
-  document.addEventListener('change', function(e){ var el=e.target; if(el&&el.id==='calDate'){ currentDate=el.value; renderAgenda() } });
-  var addEl=q('#add'); if(addEl){ addEl.addEventListener('keydown', function(ev){ if(ev.key==='Enter'||ev.keyCode===13){ quickAdd() } }) }
-  var chatEl=q('#chatInput'); if(chatEl){ chatEl.addEventListener('keydown', function(ev){ if(ev.key==='Enter'||ev.keyCode===13){ chatSend() } }) }
 
   // --- Init ---
-  function init(){ load(); seed(); q('#calDate').value=currentDate; if(q('#focus')) q('#focus').value = focusText||''; updateFocusChip(); renderToday(); renderPlan(); renderAgenda(); switchScreen('today', '.dock-item') }
+  function init(){
+    load();
+    if(q('#focus')){ q('#focus').value=focusText||''; lockFocusUI(!!focusText) }
+    updateFocusChip();
+    renderToday(); renderPlan();
+    q('#calDate').value=currentDate; renderAgenda();
+    switchPlan('lists');
+  }
   init();
 })();
 </script>
-<script>(function(){function qa(s){return document.querySelectorAll(s)}function q(s){return document.querySelector(s)}function switchScreen2(t,sel){var nodes=qa(sel||'.dock-item');for(var i=0;i<nodes.length;i++){nodes[i].classList.remove('active')}var btn=q((sel||'.dock-item')+'[data-target="'+t+'"]');if(btn){btn.classList.add('active')}var screens=qa('.screen');for(var j=0;j<screens.length;j++){screens[j].hidden=true}var scr=q('#screen-'+t);if(scr){scr.hidden=false}window.scrollTo(0,0)}window.switchScreen=switchScreen2;document.addEventListener('click',function(ev){var el=ev.target;while(el&&el!==document){if(el.getAttribute&&(el.getAttribute('data-target')||el.getAttribute('data-action'))){break}el=el.parentNode}if(!el||el===document)return;var tgt=el.getAttribute('data-target');if(tgt){switchScreen2(tgt,el.className.indexOf('seg')>-1?'.seg button':'.dock-item');ev.preventDefault()}var act=el.getAttribute('data-action');if(act==='quickAdd'){var i=q('#add');if(i&&i.value){var box=q('#todayList');if(box){var d=document.createElement('div');d.className='item';d.innerHTML='<div class=\"body\"><div class=\"title\">'+i.value+'</div></div>';box.insertBefore(d,box.firstChild);i.value=''}}ev.preventDefault()}if(act==='saveFocus'){ev.preventDefault()}if(act==='toggleAll'){var btn=q('#toggleBtn');if(btn){btn.textContent=(btn.textContent.indexOf('Показать')>-1?'Скрыть лишнее':'Показать всё')}ev.preventDefault()}})})();</script></body>
+</body>
 </html>
