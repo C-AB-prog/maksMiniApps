@@ -1,5 +1,7 @@
-// /api/ping — быстрый тест "жив ли бэкенд"
-module.exports = (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.status(200).json({ ok: true, time: new Date().toISOString() });
-};
+// /api/ping — быстрая проверка
+export const config = { runtime: 'edge' };
+export default async function handler() {
+  return new Response(JSON.stringify({ ok:true, edge:true, time:new Date().toISOString() }), {
+    headers: { 'content-type':'application/json', 'access-control-allow-origin':'*' }
+  });
+}
