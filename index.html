@@ -54,13 +54,13 @@
     /* Inputs & buttons */
     .row{display:flex; gap:var(--sp-2); align-items:center}
     .input{height:44px; padding:0 12px; width:100%; border-radius:12px; border:1px solid var(--line); background:#fff}
-    .btn{height:44px; padding:0 14px; border-radius:12px; border:1px solid var(--accent); background:var(--accent); color:#fff; font-weight:600}
+    .btn{height:44px; padding:0 14px; border-radius:12px; border:0; background:linear-gradient(135deg,var(--accent),#60A5FA); color:#fff; font-weight:700; box-shadow:0 6px 14px rgba(59,130,246,.18)}
     .btn.ghost{background:#fff; color:#111827; border-color:var(--line)}
 
     /* Quick add (single‑step) */
     .quick{display:flex; gap:8px}
     .chip{height:34px; padding:0 10px; border-radius:999px; border:1px solid var(--line); background:#fff; font-size:12px; color:#111827}
-    .chip.active{border-color:var(--accent); color:#0B4DD9}
+    .chip.active{border-color:transparent; color:#0B4DD9; background:linear-gradient(135deg,#EEF2FF,#E0EAFF)}
 
     /* List */
     .list{display:flex; flex-direction:column; gap:8px}
@@ -99,12 +99,29 @@
     .dock-item.active{background:#F3F4F6; color:#0F172A; font-weight:600}
     .dock svg{width:20px; height:20px}
     .fab{display:none}
-    @media (max-width: 380px){ .dock-item span{display:none} }
+    @media (max-width: 430px){ .dock-item span{display:none} }
 
     @media (min-width:720px){ .kpi-grid{grid-template-columns:repeat(3, minmax(220px,1fr))} .board{grid-template-columns:repeat(4, minmax(220px,1fr))} .agenda{grid-template-columns:80px 1fr} .hour,.slot{height:48px} }
   .bubble{max-width:85%; padding:10px 12px; border:1px solid var(--line); border-radius:12px}
     .bubble.me{align-self:flex-end; background:#EEF2FF; border-color:#CBD5E1}
     .bubble.bot{align-self:flex-start; background:#F8FAFC}
+  .actions{margin-left:auto; display:flex; align-items:center; gap:10px}
+    .icon-btn{display:grid; place-items:center; width:32px; height:32px; border-radius:10px; border:1px solid var(--line); background:#fff; color:#0F172A}
+    .mini-chip{font-size:12px; padding:4px 8px; border-radius:999px; background:#EEF2FF; color:#1D4ED8; border:1px solid #CBD5E1}
+
+    /* Chat sheet */
+    .sheet{position:fixed; inset:0; z-index:60}
+    .sheet[hidden]{display:none}
+    .sheet-backdrop{position:absolute; inset:0; background:rgba(15,23,42,.3); backdrop-filter:blur(3px)}
+    .sheet-panel{position:absolute; left:0; right:0; bottom:0; background:#fff; border-top-left-radius:16px; border-top-right-radius:16px; box-shadow:0 -12px 34px rgba(0,0,0,.18); border:1px solid var(--line)}
+    .sheet-head{display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--line)}
+    .sheet-body{max-height:45vh; overflow:auto; padding:10px; display:flex; flex-direction:column; gap:8px}
+    .sheet-input{display:flex; gap:8px; padding:10px; border-top:1px solid var(--line)}
+
+    /* Refined dock */
+    .dock-inner{background:rgba(255,255,255,.88); border-radius:18px; border:1px solid #E6E8EE; box-shadow:0 10px 28px rgba(15,23,42,.12)}
+    .dock-item{transition:transform .12s ease}
+    .dock-item:active{transform:scale(.98)}
   </style>
 </head>
 <body>
@@ -112,6 +129,12 @@
   <header>
     <div class="topbar">
       <div class="brand"><div class="dot" aria-hidden="true"></div><div class="title">Growth Assistant</div></div>
+      <div class="actions">
+        <span id="focusChip" class="mini-chip" hidden>Фокус: —</span>
+        <button class="icon-btn" data-action="openChat" title="Чат">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H7l-4 3V5a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
+        </button>
+      </div>
     </div>
     <div class="seg" role="tablist" aria-label="Навигация">
       <button class="active" data-target="today" role="tab" aria-selected="true">Сегодня</button>
@@ -130,7 +153,7 @@
 
       <div class="card">
         <h2>Фокус дня</h2>
-        <div class="row"><input id="focus" class="input" placeholder="Самое главное сегодня…"><button class="btn" onclick="saveFocus()">Сохранить</button></div>
+        <div class="row"><input id="focus" class="input" placeholder="Самое главное сегодня…"><button class="btn" data-action="saveFocus">Сохранить</button></div>
         <div class="sub" style="margin-top:6px">Пример: «5 интервью + черновик лендинга»</div>
       </div>
 
@@ -217,18 +240,20 @@
     </section>
 
     <!-- SETTINGS -->
-    <section id="screen-chat" class="screen" hidden>
-      <h1>Чат с ассистентом</h1>
-      <div class="card" id="chatBox" style="max-height:380px; overflow:auto; display:flex; flex-direction:column; gap:8px">
-        <!-- сообщения -->
-      </div>
-      <div class="card" style="margin-top:10px">
-        <div class="row" style="gap:8px">
+    <div class="sheet" id="chatSheet" hidden>
+      <div class="sheet-backdrop" data-action="closeChat"></div>
+      <div class="sheet-panel">
+        <div class="sheet-head">
+          <strong>Чат с ассистентом</strong>
+          <button class="icon-btn" data-action="closeChat" title="Закрыть">✕</button>
+        </div>
+        <div class="sheet-body" id="chatBox"></div>
+        <div class="sheet-input">
           <input id="chatInput" class="input" placeholder="Спросите про план, HADI или задачи…">
           <button class="btn" data-action="chatSend">Отправить</button>
         </div>
       </div>
-    </section>
+    </div>
 
     <section id="screen-settings" class="screen" hidden>
       <h1>Настройки</h1>
@@ -245,10 +270,6 @@
       <button class="dock-item" data-target="plan" title="План">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l7-2 7 2 4-1v13l-4 1-7-2-7 2-3-1V5z"/></svg>
         <span>План</span>
-      </button>
-      <button class="dock-item" data-target="chat" title="Чат">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H7l-4 3V5a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
-        <span>Чат</span>
       </button>
       <button class="dock-item" data-target="hadi" title="HADI">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22h12"/><path d="M9 22V10l6-6v18"/></svg>
@@ -267,88 +288,89 @@
 </div>
 
 <script>
-// ===== ES5-compatible JS (no arrow functions/at) =====
+// ===== ES5-compatible JS (stable for Telegram WebView) =====
 (function(){
   // --- State ---
   var lists = { today:[], week:[], backlog:[] };
-  var showAll = false; var picked = 'today';
-  var events = []; var currentDate = todayStr();
+  var showAll=false, picked='today';
+  var events=[], currentDate=todayStr();
+  var focusText='';
 
-  // seed tasks
-  lists.today = [
-    {id:1,title:'Провести 5 интервью по JTBD',hint:'готово, когда есть записи/инсайты',due:'26.10',done:false},
-    {id:2,title:'Лендинг оффера v1',hint:'опубликован URL',due:'23.10',done:false},
-    {id:3,title:'Запуск канала трафика №1',hint:'вкл. реклама ≥3 000 ₽',due:'24.10',done:false}
-  ];
-  // seed calendar
-  events.push({id:101,date:currentDate,start:'10:00',dur:60,title:'Интервью #1'});
-  events.push({id:102,date:currentDate,start:'15:00',dur:90,title:'Лендинг — правки'});
+  // --- LocalStorage helpers ---
+  function load(){ try{ var L=localStorage.getItem('ga_lists'); if(L) lists=JSON.parse(L) }catch(e){}
+    try{ var E=localStorage.getItem('ga_events'); if(E) events=JSON.parse(E) }catch(e){}
+    try{ var F=localStorage.getItem('ga_focus'); if(F) focusText=F }catch(e){} }
+  function save(){ try{ localStorage.setItem('ga_lists', JSON.stringify(lists)); localStorage.setItem('ga_events', JSON.stringify(events)); localStorage.setItem('ga_focus', focusText||'') }catch(e){} }
+
+  // --- Seeds (only if пусто) ---
+  function seed(){ if(!lists.today.length && !lists.week.length && !lists.backlog.length){
+      lists.today=[
+        {id:1,title:'Провести 5 интервью по JTBD',hint:'готово, когда есть записи/инсайты',due:'26.10',done:false},
+        {id:2,title:'Лендинг оффера v1',hint:'опубликован URL',due:'23.10',done:false},
+        {id:3,title:'Запуск канала трафика №1',hint:'вкл. реклама ≥3 000 ₽',due:'24.10',done:false}
+      ];
+    }
+    if(!events.length){ events.push({id:101,date:currentDate,start:'10:00',dur:60,title:'Интервью #1'}); events.push({id:102,date:currentDate,start:'15:00',dur:90,title:'Лендинг — правки'}) }
+  }
 
   // --- Utils ---
-  function q(sel){ return document.querySelector(sel) }
-  function qa(sel){ return document.querySelectorAll(sel) }
-  function esc(s){ return String(s).replace(/[&<>"']/g, function(m){ return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[m] }) }
-  function toast(msg){ var t=document.createElement('div'); t.textContent=msg; t.style.cssText='position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 12px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);opacity:.98;z-index:99'; document.body.appendChild(t); setTimeout(function(){t.style.transition='opacity .4s'; t.style.opacity='0'; setTimeout(function(){t.parentNode&&t.parentNode.removeChild(t)},400)},900) }
+  function q(s){return document.querySelector(s)}; function qa(s){return document.querySelectorAll(s)}
+  function esc(s){return String(s).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]})}
+  function toast(msg){ var t=document.createElement('div'); t.textContent=msg; t.style.cssText='position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:#0F172A;color:#fff;padding:10px 12px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);opacity:.98;z-index:99'; document.body.appendChild(t); setTimeout(function(){t.style.transition="opacity .4s"; t.style.opacity='0'; setTimeout(function(){t.parentNode&&t.parentNode.removeChild(t)},400)},900) }
   function todayStr(){ var d=new Date(); return d.toISOString().slice(0,10) }
   function ddmm(dstr){ if(!dstr) return '—'; var p=dstr.split('-'); return p[2]+'.'+p[1] }
+  function truncate(s, n){ if(!s) return ''; return s.length>n? s.slice(0,n-1)+'…': s }
 
-  // --- Navigation ---
-  function switchScreen(target, selector){
-    var i, el; var nodes = qa(selector||'.dock-item');
-    for(i=0;i<nodes.length;i++){ nodes[i].classList.remove('active') }
-    el = document.querySelector((selector||'.dock-item')+'[data-target="'+target+'"]'); if(el) el.classList.add('active');
-    var screens = qa('.screen'); for(i=0;i<screens.length;i++){ screens[i].hidden = true }
-    el = q('#screen-'+target); if(el) el.hidden = false; window.scrollTo(0,0)
-  }
+  // --- UI helpers ---
+  function updateFocusChip(){ var chip=q('#focusChip'); if(!chip) return; if(focusText){ chip.textContent='Фокус: '+truncate(focusText,26); chip.hidden=false } else { chip.hidden=true } }
+  function switchScreen(target, selector){ var i, el; var nodes=qa(selector||'.dock-item'); for(i=0;i<nodes.length;i++){ nodes[i].classList.remove('active') } el=document.querySelector((selector||'.dock-item')+'[data-target="'+target+'"]'); if(el) el.classList.add('active'); var screens=qa('.screen'); for(i=0;i<screens.length;i++){ screens[i].hidden=true } el=q('#screen-'+target); if(el) el.hidden=false; window.scrollTo(0,0) }
 
   // --- Focus ---
-  function saveFocus(){ toast('Фокус сохранён') }
+  function saveFocus(){ var input=q('#focus'); var v=(input&&input.value||'').trim(); if(!v){ toast('Введите фокус дня'); return } focusText=v; updateFocusChip(); save(); toast('Фокус сохранён') }
 
-  // --- Quick add with date/time pickers ---
-  function pickList(btn){ var chips=qa('.quick .chip, .card .chip'); for(var i=0;i<chips.length;i++){ chips[i].classList.remove('active') } btn.classList.add('active'); picked=btn.getAttribute('data-list')||'today' }
-  function quickAdd(){ var input=q('#add'); if(!input) return; var title=(input.value||'').trim(); if(!title) return; var d=q('#dueDate').value; var t=q('#dueTime').value; var due = d? (ddmm(d)+(t?(' '+t):'')) : '—'; lists[picked].unshift({id:Date.now(), title:title, hint:'критерий готовности', due:due, done:false}); input.value=''; q('#dueDate').value=''; q('#dueTime').value=''; renderToday(); renderPlan(); toast('Добавлено') }
+  // --- Tasks ---
+  function pickList(btn){ var chips=qa('.card .chip'); for(var i=0;i<chips.length;i++){ chips[i].classList.remove('active') } btn.classList.add('active'); picked=btn.getAttribute('data-list')||'today' }
+  function quickAdd(){ var input=q('#add'); if(!input) return; var title=(input.value||'').trim(); if(!title){ toast('Введите название'); return } var d=q('#dueDate')?q('#dueDate').value:''; var t=q('#dueTime')?q('#dueTime').value:''; var due=d? (ddmm(d)+(t?(' '+t):'')) : '—'; lists[picked].unshift({id:Date.now(), title:title, hint:'критерий готовности', due:due, done:false}); input.value=''; if(q('#dueDate')) q('#dueDate').value=''; if(q('#dueTime')) q('#dueTime').value=''; save(); renderToday(); renderPlan(); toast('Добавлено') }
 
-  // --- Renderers ---
   function taskRow(t){ var el=document.createElement('div'); el.className='item'; el.innerHTML='<input type="checkbox" class="check" '+(t.done?'checked':'')+' data-id="'+t.id+'">\
-      <div class="body"><div class="title">'+esc(t.title)+'</div><div class="hint">'+esc(t.hint||'')+'</div></div>\
-      <span class="tag">'+esc(t.due)+'</span>\
-      <button class="more" data-action="menu" data-id="'+t.id+'">⋯</button>'; return el }
-  function renderToday(){ var box=q('#todayList'); if(!box) return; box.innerHTML=''; var merged=[].concat(lists.today); var items = showAll? merged : merged.slice(0,3); if(!items.length){ box.innerHTML='<div class="sub">Добавьте первую задачу выше</div>'; return } for(var i=0;i<items.length;i++){ box.appendChild(taskRow(items[i])) } }
-  function renderPlan(){ var k,box,i; var keys=['today','week','backlog']; for(var a=0;a<keys.length;a++){ k=keys[a]; box=q('#list-'+k); if(!box) continue; box.innerHTML=''; for(i=0;i<lists[k].length;i++){ box.appendChild(taskRow(lists[k][i])) } } }
+    <div class="body"><div class="title">'+esc(t.title)+'</div><div class="hint">'+esc(t.hint||'')+'</div></div>\
+    <span class="tag">'+esc(t.due)+'</span>\
+    <button class="more" data-action="menu" data-id="'+t.id+'">⋯</button>'; return el }
+  function renderToday(){ var box=q('#todayList'); if(!box) return; box.innerHTML=''; var merged=[].concat(lists.today); var items=showAll? merged : merged.slice(0,3); if(!items.length){ box.innerHTML='<div class="sub">Добавьте первую задачу выше</div>'; return } for(var i=0;i<items.length;i++){ box.appendChild(taskRow(items[i])) } }
+  function renderPlan(){ var keys=['today','week','backlog']; for(var a=0;a<keys.length;a++){ var k=keys[a], box=q('#list-'+k); if(!box) continue; box.innerHTML=''; for(var i=0;i<lists[k].length;i++){ box.appendChild(taskRow(lists[k][i])) } } }
+  function toggleAll(){ showAll=!showAll; var b=q('#toggleBtn'); if(b) b.textContent= showAll? 'Скрыть лишнее':'Показать всё'; renderToday() }
 
-  // --- Actions ---
-  function toggleAll(){ showAll=!showAll; var b=q('#toggleBtn'); if(b) b.textContent = showAll? 'Скрыть лишнее':'Показать всё'; renderToday() }
+  // --- Calendar ---
+  function renderAgenda(){ var hours=q('#hours'), slots=q('#slots'); if(!hours||!slots) return; hours.innerHTML=''; slots.innerHTML=''; var h; for(h=9;h<=18;h++){ var hr=document.createElement('div'); hr.className='hour'; hr.textContent=(h<10?'0':'')+h+':00'; hours.appendChild(hr); var sl=document.createElement('div'); sl.className='slot'; slots.appendChild(sl) } for(var i=0;i<events.length;i++){ var ev=events[i]; if(ev.date!==currentDate) continue; var top=((parseInt(ev.start.split(':')[0],10)-9)*40) + (parseInt(ev.start.split(':')[1],10)/60)*40 + 6; var height=(ev.dur/60)*40 - 12; var e=document.createElement('div'); e.className='event'; e.style.top=top+'px'; e.style.height=Math.max(28,height)+'px'; e.textContent=ev.title+' · '+ev.start; slots.appendChild(e) } }
+  function addEvent(){ var t=q('#evtTitle').value.trim(); var d=q('#calDate').value; var s=q('#evtStart').value||'10:00'; var dur=parseInt(q('#evtDur').value,10)||60; if(!d){ toast('Выберите дату'); return } if(!t){ toast('Название пустое'); return } events.push({id:Date.now(), date:d, start:s, dur:dur, title:t}); q('#evtTitle').value=''; save(); renderAgenda(); toast('Событие добавлено') }
 
-  // --- Calendar (day agenda) ---
-  function renderAgenda(){ var hours=q('#hours'), slots=q('#slots'); if(!hours||!slots) return; hours.innerHTML=''; slots.innerHTML=''; var h; for(h=9;h<=18;h++){ var hr=document.createElement('div'); hr.className='hour'; hr.textContent=(h<10?'0':'')+h+':00'; hours.appendChild(hr); var sl=document.createElement('div'); sl.className='slot'; slots.appendChild(sl) }
-    // events for currentDate
-    for(var i=0;i<events.length;i++){ var ev=events[i]; if(ev.date!==currentDate) continue; var top=((parseInt(ev.start.split(':')[0],10)-9)*40) + (parseInt(ev.start.split(':')[1],10)/60)*40 + 6; var height=(ev.dur/60)*40 - 12; var e=document.createElement('div'); e.className='event'; e.style.top=top+'px'; e.style.height=Math.max(28,height)+'px'; e.textContent=ev.title+' · '+ev.start; slots.appendChild(e) }
-  }
-  function addEvent(){ var t=q('#evtTitle').value.trim(); var d=q('#evtDate').value || q('#calDate').value; var s=q('#evtStart').value || '10:00'; var dur=parseInt(q('#evtDur').value, 10)||60; if(!d){ toast('Выберите дату'); return } if(!t){ toast('Название пустое'); return } events.push({id:Date.now(), date:d, start:s, dur:dur, title:t}); q('#evtTitle').value=''; renderAgenda(); toast('Событие добавлено') }
-
-  // --- Chat (LLM‑stub) ---
+  // --- Chat (sheet) ---
   function appendMsg(who, text){ var box=q('#chatBox'); if(!box) return; var b=document.createElement('div'); b.className='bubble '+(who==='me'?'me':'bot'); b.textContent=text; box.appendChild(b); box.scrollTop=box.scrollHeight }
-  function botReply(text){ var t=text.toLowerCase(); var out=''; if(t.indexOf('задач')>-1){ out='Предлагаю 3 шага на сегодня:\n1) 1 интервью (30 мин)\n2) Правки лендинга (45 мин)\n3) Написать пост‑анонс (20 мин)'; } else if(t.indexOf('hadi')>-1||t.indexOf('гипотез')>-1){ out='Сформируем HADI: H — «Новый заголовок увеличит v2l на 0.5 п.п.»; A — A/B сплит на лендинге; D — v2l; I — неделя.'; } else if(t.indexOf('календар')>-1){ out='Хочешь добавить событие? Заполни форму над календарём — выбери дату и время.'; } else { out='Понял. Если нужно — могу разложить на шаги, предложить HADI или расписать план на день.'; } setTimeout(function(){ appendMsg('bot', out) }, 300) }
+  function botReply(text){ var t=text.toLowerCase(); var out=''; if(t.indexOf('задач')>-1){ out='Предлагаю топ‑3 на сегодня: 1) Интервью (30мин) 2) Правки лендинга (45мин) 3) Пост‑анонс (20мин).'; } else if(t.indexOf('hadi')>-1||t.indexOf('гипотез')>-1){ out='HADI: H — «Заголовок ↑ v2l на 0.5п.п.»; A — A/B; D — v2l; I — 7 дней.'; } else if(t.indexOf('календар')>-1){ out='Добавьте событие через форму над сеткой: название, время, длительность.'; } else { out='Могу помочь с планом дня, HADI или календарём. Спросите что-то конкретнее.'; } setTimeout(function(){ appendMsg('bot', out) }, 250) }
+  function openChat(){ q('#chatSheet').hidden=false }
+  function closeChat(){ q('#chatSheet').hidden=true }
   function chatSend(){ var inp=q('#chatInput'); var v=(inp.value||'').trim(); if(!v) return; appendMsg('me', v); inp.value=''; botReply(v) }
 
-  // --- Global handlers ---
+  // --- Delegated events ---
   document.addEventListener('click', function(e){ var el=e.target; while(el&&el!==document){ if(el.getAttribute&&(el.getAttribute('data-action')||el.getAttribute('data-target')||el.getAttribute('data-list'))){ break } el=el.parentNode }
-    if(!el||el===document) return; var act=el.getAttribute('data-action');
+    if(!el||el===document) return;
+    var act=el.getAttribute('data-action');
+    if(act==='saveFocus'){ saveFocus(); e.preventDefault(); return }
     if(act==='quickAdd'){ quickAdd(); e.preventDefault(); return }
     if(act==='toggleAll'){ toggleAll(); e.preventDefault(); return }
-    if(act==='chatSend'){ chatSend(); e.preventDefault(); return }
     if(act==='addEvent'){ addEvent(); e.preventDefault(); return }
+    if(act==='chatSend'){ chatSend(); e.preventDefault(); return }
+    if(act==='openChat'){ openChat(); e.preventDefault(); return }
+    if(act==='closeChat'){ closeChat(); e.preventDefault(); return }
     if(el.getAttribute('data-list')){ pickList(el); e.preventDefault(); return }
     var target=el.getAttribute('data-target'); if(target){ switchScreen(target, el.className.indexOf('seg')>-1?'.seg button':'.dock-item'); e.preventDefault(); return }
   });
   document.addEventListener('change', function(e){ var el=e.target; if(el&&el.id==='calDate'){ currentDate=el.value; renderAgenda() } });
-
-  // Enter on inputs
   var addEl=q('#add'); if(addEl){ addEl.addEventListener('keydown', function(ev){ if(ev.key==='Enter'||ev.keyCode===13){ quickAdd() } }) }
   var chatEl=q('#chatInput'); if(chatEl){ chatEl.addEventListener('keydown', function(ev){ if(ev.key==='Enter'||ev.keyCode===13){ chatSend() } }) }
 
   // --- Init ---
-  function init(){ renderToday(); renderPlan(); q('#calDate').value=currentDate; q('#evtDate') && (q('#evtDate').value=currentDate); renderAgenda(); switchScreen('today', '.dock-item'); appendMsg('bot','Привет! Я ассистент. Напишите, чем помочь: задачи, план, HADI или календарь.') }
+  function init(){ load(); seed(); q('#calDate').value=currentDate; if(q('#focus')) q('#focus').value = focusText||''; updateFocusChip(); renderToday(); renderPlan(); renderAgenda(); switchScreen('today', '.dock-item') }
   init();
 })();
 </script>
