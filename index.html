@@ -239,8 +239,15 @@
   ]
 
   /* === Nav === */
-  document.querySelectorAll('.seg button').forEach(b=> b.addEventListener('click',()=> switchScreen(b.dataset.target, '.seg button')))
-  document.querySelectorAll('.dock-item').forEach(b=> b.addEventListener('click',()=>{ const t=b.dataset.target; if(t) switchScreen(t, '.dock-item') }))=> switchScreen(b.dataset.target, '.tab')))
+  // Delegated clicks for nav (устойчиво в WebView)
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.seg button, .dock-item');
+    if(!btn) return;
+    const target = btn.dataset.target;
+    if(!target) return;
+    const isSeg = !!btn.closest('.seg');
+    switchScreen(target, isSeg ? '.seg button' : '.dock-item');
+  });=>{ const t=b.dataset.target; if(t) switchScreen(t, '.dock-item') }))=> switchScreen(b.dataset.target, '.tab')))
   function switchScreen(target, selector){ document.querySelectorAll(selector).forEach(x=>x.classList.remove('active')); const btn=document.querySelector(`${selector}[data-target="${target}"]`); if(btn) btn.classList.add('active'); document.querySelectorAll('.screen').forEach(s=> s.hidden=true); const scr=document.getElementById('screen-'+target); if(scr) scr.hidden=false; window.scrollTo({top:0,behavior:'smooth'}) }
   function openAdd(){ switchScreen('today', '.dock-item'); const i=document.getElementById('add'); if(i){ i.focus(); i.scrollIntoView({behavior:'smooth', block:'center'}) } }[data-target="${target}"]`).classList.add('active'); document.querySelectorAll('.screen').forEach(s=> s.hidden=true); document.getElementById('screen-'+target).hidden=false; window.scrollTo({top:0,behavior:'smooth'}) }
 
@@ -270,7 +277,7 @@
   function docClose(e){ if(ctx && !ctx.contains(e.target)) closeMenu() }
 
   /* === Sparkline === */
-  function renderSpark(){ const svg=document.getElementById('spark'); const w=200,h=40; const v=[2,3,4,2,5,3,4]; const max=Math.max(...v); const pts=v.map((val,i)=>[i*(w/(v.length-1)), h - (val/max)*(h-6)-3]); const d=pts.map((p,i)=>(i?'L':'M')+p[0]+','+p[1]).join(' '); svg.innerHTML=`<path d="${d}" fill="none" stroke="${getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()}" stroke-width="2"/><circle cx="${pts.at(-1)[0]}" cy="${pts.at(-1)[1]}" r="3" fill="${getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()}"/>` }
+  function renderSpark(){ const svg=document.getElementById('spark'); const w=200,h=40; const v=[2,3,4,2,5,3,4]; const max=Math.max(...v); const pts=v.map((val,i)=>[i*(w/(v.length-1)), h - (val/max)*(h-6)-3]); const d=pts.map((p,i)=>(i?'L':'M')+p[0]+','+p[1]).join(' '); svg.innerHTML=`<path d="${d}" fill="none" stroke="${getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()}" stroke-width="2"/><circle cx="${pts[pts.length-1][0]}" cy="${pts[pts.length-1][1]}" r="3" fill="${getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()}"/>` }
 
   /* === Utils === */
   function esc(s){ return String(s).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])) }
