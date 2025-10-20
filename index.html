@@ -92,11 +92,14 @@
     .slot{height:40px; border-bottom:1px dashed #E5E7EB; position:relative}
     .event{position:absolute; left:6px; right:6px; background:#E3F2FD; color:#0B4DD9; border:1px solid #BFDBFE; border-radius:10px; padding:6px; font-size:12px}
 
-    /* Bottom nav (super light) */
-    nav{position:fixed; bottom:0; left:0; right:0; z-index:10; background:#fff; border-top:1px solid var(--line); padding:6px env(safe-area-inset-left) calc(6px + env(safe-area-inset-bottom)) env(safe-area-inset-right)}
-    .tabs{display:grid; grid-template-columns:repeat(5,1fr); max-width:960px; margin:0 auto; gap:4px}
-    .tab{display:flex; flex-direction:column; align-items:center; justify-content:center; height:52px; gap:2px; border-radius:10px; color:#6B7280; font-size:12px}
-    .tab.active{color:#111827; background:#F3F4F6}
+    /* Bottom dock (floating, modern) */
+    .dock{position:fixed; left:50%; bottom:12px; transform:translateX(-50%); z-index:50; width:min(520px,92%); padding-bottom:env(safe-area-inset-bottom)}
+    .dock-inner{display:grid; grid-template-columns:repeat(6,1fr); gap:4px; background:rgba(255,255,255,.86); backdrop-filter:saturate(140%) blur(10px); border:1px solid var(--line); border-radius:16px; padding:6px; box-shadow:0 10px 28px rgba(15,23,42,.12)}
+    .dock-item{height:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; border-radius:10px; color:#667085; font-size:12px; border:none; background:transparent; cursor:pointer}
+    .dock-item.active{background:#F3F4F6; color:#0F172A; font-weight:600}
+    .dock svg{width:20px; height:20px}
+    .fab{position:absolute; left:50%; transform:translate(-50%,-22px); width:56px; height:56px; border-radius:16px; border:none; background:var(--accent); color:#fff; display:grid; place-items:center; box-shadow:0 14px 30px rgba(59,130,246,.35)}
+    .fab span{font-size:26px; line-height:1}
 
     @media (min-width:720px){ .kpi-grid{grid-template-columns:repeat(3, minmax(220px,1fr))} .board{grid-template-columns:repeat(4, minmax(220px,1fr))} .agenda{grid-template-columns:80px 1fr} .hour,.slot{height:48px} }
   </style>
@@ -195,14 +198,33 @@
     </section>
   </main>
 
-  <nav>
-    <div class="tabs">
-      <button class="tab active" data-target="today">🏠<span class="micro">Сегодня</span></button>
-      <button class="tab" data-target="plan">🧭<span class="micro">План</span></button>
-      <button class="tab" data-target="hadi">🧪<span class="micro">HADI</span></button>
-      <button class="tab" data-target="calendar">🗓️<span class="micro">Календарь</span></button>
-      <button class="tab" data-target="metrics">📊<span class="micro">Метрики</span></button>
-      <button class="tab" data-target="settings">⚙️<span class="micro">Настройки</span></button>
+  <nav class="dock" role="navigation" aria-label="Нижняя навигация">
+    <button class="fab" onclick="openAdd()" aria-label="Добавить"><span>＋</span></button>
+    <div class="dock-inner">
+      <button class="dock-item active" data-target="today" title="Сегодня">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7"/><path d="M9 22V12h6v10"/></svg>
+        <span>Сегодня</span>
+      </button>
+      <button class="dock-item" data-target="plan" title="План">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l7-2 7 2 4-1v13l-4 1-7-2-7 2-3-1V5z"/></svg>
+        <span>План</span>
+      </button>
+      <button class="dock-item" data-target="hadi" title="HADI">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22h12"/><path d="M9 22V10l6-6v18"/></svg>
+        <span>HADI</span>
+      </button>
+      <button class="dock-item" data-target="calendar" title="Календарь">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span>Календарь</span>
+      </button>
+      <button class="dock-item" data-target="metrics" title="Метрики">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4v8H3zM10 8h4v12h-4zM17 4h4v16h-4z"/></svg>
+        <span>Метрики</span>
+      </button>
+      <button class="dock-item" data-target="settings" title="Настройки">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82 2 2 0 1 1-3.3 0 1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.82-.33 2 2 0 1 1 0-3.3 1.65 1.65 0 0 0 1.82-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6c.26 0 .51-.1.72-.28A1.65 1.65 0 0 0 11 4a2 2 0 1 1 2 0c.29 0 .56.1.78.28.21.18.46.28.72.32a1.65 1.65 0 0 0 1.4-.48l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.41.41-.57.99-.43 1.54.07.28.11.56.11.86z"/></svg>
+        <span>Настройки</span>
+      </button>
     </div>
   </nav>
 </div>
@@ -223,8 +245,9 @@
 
   /* === Nav === */
   document.querySelectorAll('.seg button').forEach(b=> b.addEventListener('click',()=> switchScreen(b.dataset.target, '.seg button')))
-  document.querySelectorAll('.tab').forEach(b=> b.addEventListener('click',()=> switchScreen(b.dataset.target, '.tab')))
-  function switchScreen(target, selector){ document.querySelectorAll(selector).forEach(x=>x.classList.remove('active')); document.querySelector(`${selector}[data-target="${target}"]`).classList.add('active'); document.querySelectorAll('.screen').forEach(s=> s.hidden=true); document.getElementById('screen-'+target).hidden=false; window.scrollTo({top:0,behavior:'smooth'}) }
+  document.querySelectorAll('.dock-item').forEach(b=> b.addEventListener('click',()=>{ const t=b.dataset.target; if(t) switchScreen(t, '.dock-item') }))=> switchScreen(b.dataset.target, '.tab')))
+  function switchScreen(target, selector){ document.querySelectorAll(selector).forEach(x=>x.classList.remove('active')); const btn=document.querySelector(`${selector}[data-target="${target}"]`); if(btn) btn.classList.add('active'); document.querySelectorAll('.screen').forEach(s=> s.hidden=true); const scr=document.getElementById('screen-'+target); if(scr) scr.hidden=false; window.scrollTo({top:0,behavior:'smooth'}) }
+  function openAdd(){ switchScreen('today', '.dock-item'); const i=document.getElementById('add'); if(i){ i.focus(); i.scrollIntoView({behavior:'smooth', block:'center'}) } }[data-target="${target}"]`).classList.add('active'); document.querySelectorAll('.screen').forEach(s=> s.hidden=true); document.getElementById('screen-'+target).hidden=false; window.scrollTo({top:0,behavior:'smooth'}) }
 
   /* === Focus === */
   function saveFocus(){ toast('Фокус сохранён') }
