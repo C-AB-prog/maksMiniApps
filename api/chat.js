@@ -1,5 +1,7 @@
-// /api/chat — Vercel Edge Function + OpenAI + function calling
+// api/chat.js
 export const config = { runtime: 'edge' };
+
+import { verifyTelegramInit, parseTelegramUser } from './_utils/tg.js';
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 const MODEL = 'gpt-4o-mini';
@@ -35,21 +37,39 @@ const tools = [
 
 export default async function handler(req) {
   if (req.method && req.method !== 'POST') return json({ error:'Use POST' }, 405);
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return json({ error:'NO_OPENAI_KEY' }, 500);
 
+  // 1) Проверка Telegram initData
+  const initData = req.headers.get('x-telegram-init') || '';
+  const botToken = process.env.BOT_TOKEN || '';
+  const ok = await verifyTelegramInit(initData, botToken);
+  if (!ok) return json({ error:'INVALID_TELEGRAM_SIGNATURE' }, 401);
+
+  // 2) Пользователь из Telegram
+  const user = parseTelegramUser(initData);
+  const tgId = user && user.id ? String(user.id) : 'anon';
+
+  // 3) Тело запроса
   const { message = '', history = [] } = await req.json().catch(() => ({ message:'' }));
-  const payload = {
-    model: MODEL, temperature: 0.3,
-    messages: [{ role:'system', content:systemPrompt }, ...history, { role:'user', content:String(message) }],
-    tools
-  };
 
+  // 4) Запрос к OpenAI (Chat Completions + tools)
   const r = await fetch(OPENAI_URL, {
     method:'POST',
-    headers:{ 'authorization':`Bearer ${apiKey}`, 'content-type':'application/json' },
-    body: JSON.stringify(payload)
+    headers:{
+      'authorization': `Bearer ${process.env.OPENAI_API_KEY || ''}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      temperature: 0.3,
+      messages: [
+        { role:'system', content:systemPrompt },
+        ...history,
+        { role:'user', content:`[tg:${tgId}] ${String(message)}` }
+      ],
+      tools
+    })
   });
+
   if (!r.ok) return json({ error:'OPENAI_ERROR', detail: await safe(r) }, 502);
 
   const data = await r.json();
