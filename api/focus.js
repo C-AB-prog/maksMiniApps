@@ -2,16 +2,18 @@
 export const config = { runtime: 'nodejs' };
 
 import { sql } from '@vercel/postgres';
-import { ensureTables, verifyTelegramInit, upsertUserFromInit, ok, err } from './_utils/db.js';
+import {
+  ensureTables, requestIsSigned, getOrCreateUser, ok, err
+} from './_utils/db.js';
 
 export default async function handler(req) {
   try {
     const init = req.headers.get('x-telegram-init') || '';
     const botToken = process.env.BOT_TOKEN || '';
-    if (!verifyTelegramInit(init, botToken)) return err(401, 'INVALID_TELEGRAM_SIGNATURE');
+    if (!requestIsSigned(init, botToken)) return err(401, 'INVALID_TELEGRAM_SIGNATURE');
 
     await ensureTables();
-    const user = await upsertUserFromInit(init);
+    const user = await getOrCreateUser(init);
     if (!user) return err(400,'NO_TELEGRAM_USER');
 
     if (req.method === 'GET') {
