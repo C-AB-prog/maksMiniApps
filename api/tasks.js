@@ -1,28 +1,27 @@
 // api/tasks.js
-// Runtime: Node (нужен доступ к Postgres)
 export const config = { runtime: 'nodejs' };
 
 import { sql } from '@vercel/postgres';
-import { ensureTables, verifyTelegramInit, upsertUserFromInit, ok, err } from './_utils/db.js';
+import {
+  ensureTables, requestIsSigned, getOrCreateUser, ok, err
+} from './_utils/db.js';
 import crypto from 'crypto';
 
 export default async function handler(req) {
   try {
-    if (!['GET','POST'].includes(req.method)) {
-      return err(405, 'Method Not Allowed');
-    }
+    if (!['GET','POST'].includes(req.method)) return err(405,'Method Not Allowed');
 
     const init = req.headers.get('x-telegram-init') || '';
     const botToken = process.env.BOT_TOKEN || '';
-    if (!verifyTelegramInit(init, botToken)) return err(401, 'INVALID_TELEGRAM_SIGNATURE');
+    if (!requestIsSigned(init, botToken)) return err(401,'INVALID_TELEGRAM_SIGNATURE');
 
     await ensureTables();
-    const user = await upsertUserFromInit(init);
-    if (!user) return err(400, 'NO_TELEGRAM_USER');
+    const user = await getOrCreateUser(init);
+    if (!user) return err(400,'NO_TELEGRAM_USER');
 
     if (req.method === 'GET') {
       const url = new URL(req.url);
-      const list = url.searchParams.get('list'); // today|week|backlog (опционально)
+      const list = url.searchParams.get('list');
       let rows;
       if (list) {
         rows = (await sql`
@@ -37,14 +36,18 @@ export default async function handler(req) {
           ORDER BY created_at DESC
         `).rows;
       }
-      const items = rows.map(r => ({ ...r, due_date: r.due_date ? r.due_date.toISOString().slice(0,10) : null, due_time: r.due_time ? r.due_time.toString().slice(0,5) : null }));
+      const items = rows.map(r => ({
+        ...r,
+        due_date: r.due_date ? r.due_date.toISOString().slice(0,10) : null,
+        due_time: r.due_time ? r.due_time.toString().slice(0,5) : null
+      }));
       return ok({ items });
     }
 
     if (req.method === 'POST') {
       const body = await req.json().catch(()=> ({}));
       const { title, list='today', due_date=null, due_time=null, hint=null } = body || {};
-      if (!title) return err(400, 'TITLE_REQUIRED');
+      if (!title) return err(400,'TITLE_REQUIRED');
       if (!['today','week','backlog'].includes(list)) return err(400,'INVALID_LIST');
 
       const id = crypto.randomUUID();
