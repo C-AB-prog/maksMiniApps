@@ -9,15 +9,24 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root{ --accent:#3B82F6; --accent-2:#60A5FA; --bg:#F8FAFF; --surface:#FFFFFF; --line:#E5E7F0; --text:#0F172A; --muted:#667085;
+    :root{
+      --accent:#3B82F6; --accent-2:#60A5FA;
+      --bg:#F8FAFF; --surface:#FFFFFF; --line:#E5E7F0;
+      --text:#0F172A; --muted:#667085;
       --r-lg:16px; --sh-xs:0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(59,130,246,.06);
-      --h1:clamp(18px,4vw,22px); --h2:clamp(15px,3.4vw,17px); --body:15px; --cap:12px; --sp-2:10px; --sp-3:12px; --sp-4:16px; }
+      --h1:clamp(18px,4vw,22px); --h2:clamp(15px,3.4vw,17px); --body:15px; --cap:12px;
+      --sp-2:10px; --sp-3:12px; --sp-4:16px;
+    }
     *,*::before,*::after{box-sizing:border-box}
     html,body{height:100%}
-    body{margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; font-size:var(--body); color:var(--text);
-      background: radial-gradient(1200px 600px at 80% -10%, rgba(96,165,250,.18), transparent 60%),
-                  radial-gradient(1200px 600px at -10% 100%, rgba(59,130,246,.12), transparent 60%),
-                  linear-gradient(#F9FBFF, #F6F9FF);}
+    body{
+      margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      font-size:var(--body); color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 80% -10%, rgba(96,165,250,.18), transparent 60%),
+        radial-gradient(1200px 600px at -10% 100%, rgba(59,130,246,.12), transparent 60%),
+        linear-gradient(#F9FBFF, #F6F9FF);
+    }
     .app{min-height:100%; display:flex; flex-direction:column}
     header{position:sticky; top:0; z-index:20; background:rgba(255,255,255,.9); backdrop-filter:saturate(140%) blur(8px); border-bottom:1px solid var(--line)}
     .topbar{display:flex; align-items:center; gap:var(--sp-2); padding:var(--sp-2) var(--sp-3); max-width:960px; margin:0 auto}
@@ -71,6 +80,7 @@
     .bubble{max-width:85%; padding:10px 12px; border:1px solid var(--line); border-radius:12px}
     .bubble.me{align-self:flex-end; background:#EEF2FF; border-color:#CBD5E1}
     .bubble.bot{align-self:flex-start; background:#F8FAFC}
+    .warn-banner{position:sticky; top:0; z-index:30; background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; padding:8px 12px; border-radius:8px; margin:8px}
   </style>
 </head>
 <body>
@@ -83,6 +93,8 @@
   </header>
 
   <main>
+    <div id="notInTg" class="warn-banner" style="display:none">Откройте приложение из меню Telegram-бота. Иначе сервер не примет запросы.</div>
+
     <section id="screen-today" class="screen">
       <h1>Сегодня</h1>
 
@@ -195,20 +207,50 @@
   </div>
 </div>
 
-<!-- Telegram bootstrap + authFetch -->
+<!-- Лёгкий оверлей для сообщений об ошибках -->
+<div id="debugOverlay" style="position:fixed;left:50%;transform:translateX(-50%);bottom:92px;max-width:94%;z-index:9999;background:#111827;color:#fff;padding:10px 12px;border-radius:10px;display:none"></div>
+
+<script>
+  function showErr(msg){
+    const box=document.getElementById('debugOverlay');
+    box.textContent=String(msg||'Ошибка');
+    box.style.display='block';
+    setTimeout(()=>box.style.display='none', 3500);
+    console.error('[UI]', msg);
+  }
+  function toast(msg){
+    var t=document.createElement('div');
+    t.textContent=msg;
+    t.style.cssText='position:fixed;bottom:140px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 12px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);opacity:.98;z-index:99';
+    document.body.appendChild(t);
+    setTimeout(function(){t.style.transition="opacity .4s"; t.style.opacity='0'; setTimeout(function(){t.remove()},400)},1000);
+  }
+</script>
+
+<!-- Telegram bootstrap + защищённый fetch -->
 <script>
 (function(){
   var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
   if (tg) { try { tg.ready(); tg.expand(); } catch(e){} }
   window.__TG_INIT_DATA__ = tg && tg.initData ? tg.initData : '';
 
-  window.authFetch = function(url, opts){
+  // Предупреждение, если открыто не из Telegram
+  if (!window.__TG_INIT_DATA__) {
+    var w = document.getElementById('notInTg');
+    if (w) w.style.display = 'block';
+  }
+
+  // fetch с автодобавлением подписи и видимым текстом ошибки
+  window.authFetch = async function(url, opts){
     opts = opts || {};
-    opts.headers = opts.headers || {};
-    if (!opts.headers['x-telegram-init']) {
-      opts.headers['x-telegram-init'] = window.__TG_INIT_DATA__;
+    opts.headers = Object.assign({}, opts.headers, { 'x-telegram-init': window.__TG_INIT_DATA__ || '' });
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+      let msg = `${res.status} ${res.statusText}`;
+      try { const j = await res.clone().json(); if (j && j.error) msg = j.error; } catch {}
+      showErr('API: ' + msg);
     }
-    return fetch(url, opts);
+    return res;
   };
 })();
 </script>
@@ -224,13 +266,20 @@
   function todayStr(){ var d=new Date(); return d.toISOString().slice(0,10) }
   function ddmm(dstr){ if(!dstr) return '—'; var p=dstr.split('-'); return p[2]+'.'+p[1] }
   function esc(s){return String(s||'').replace(/[&<>\"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]})}
-  function toast(msg){ var t=document.createElement('div'); t.textContent=msg; t.style.cssText='position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 12px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);opacity:.98;z-index:99'; document.body.appendChild(t); setTimeout(function(){t.style.transition="opacity .4s"; t.style.opacity='0'; setTimeout(function(){t.parentNode&&t.parentNode.removeChild(t)},400)},1000) }
 
-  function lockFocusUI(lock){ var input=q('#focus'); var saveBtn=q('#saveFocusBtn'); var editBtn=q('#editFocusBtn'); if(lock){ input.readOnly=true; input.classList.add('readonly'); saveBtn.style.display='none'; editBtn.style.display='inline-block' } else { input.readOnly=false; input.classList.remove('readonly'); saveBtn.style.display='inline-block'; editBtn.style.display='none'; setTimeout(function(){input.focus()},0) } }
-  function updateFocusChip(){ var chip=q('#focusChip'); if(focusText){ chip.textContent='Фокус: '+(focusText.length>26?focusText.slice(0,25)+'…':focusText); chip.hidden=false } else chip.hidden=true }
+  function lockFocusUI(lock){
+    var input=q('#focus'); var saveBtn=q('#saveFocusBtn'); var editBtn=q('#editFocusBtn');
+    if(lock){ input.readOnly=true; input.classList.add('readonly'); saveBtn.style.display='none'; editBtn.style.display='inline-block' }
+    else    { input.readOnly=false; input.classList.remove('readonly'); saveBtn.style.display='inline-block'; editBtn.style.display='none'; setTimeout(function(){input.focus()},0) }
+  }
+  function updateFocusChip(){
+    var chip=q('#focusChip');
+    if(focusText){ chip.textContent='Фокус: '+(focusText.length>26?focusText.slice(0,25)+'…':focusText); chip.hidden=false }
+    else chip.hidden=true
+  }
 
-  // ---- серверные вызовы ----
-  function apiGET(url){ return authFetch(url).then(r=>r.json()) }
+  // ---- API helpers ----
+  function apiGET(url){ return authFetch(url).then(r=>r.json()).catch(e=>{showErr('Network'); throw e}) }
   function apiPOST(url, body){ return authFetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()) }
   function apiPUT(url, body){ return authFetch(url,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()) }
   function apiPATCH(url, body){ return authFetch(url,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()) }
@@ -260,14 +309,16 @@
   }
 
   async function quickAdd(){
-    var input=q('#add'); var title=(input.value||'').trim(); if(!title){ toast('Введите название'); return }
+    var input=q('#add'); var title=(input.value||'').trim(); if(!title){ showErr('Введите название'); return }
     var d=q('#dueDate').value||null; var t=q('#dueTime').value||null;
-    var created = await apiPOST('/api/tasks', { title, list:picked, due_date:d, due_time:t });
-    if(created && created.id){
-      lists[picked].unshift(created);
-      input.value=''; q('#dueDate').value=''; q('#dueTime').value='';
-      renderToday(); renderPlan(); toast('Добавлено');
-    } else { toast('Ошибка сервера'); }
+    try{
+      var created = await apiPOST('/api/tasks', { title, list:picked, due_date:d, due_time:t });
+      if(created && created.id){
+        lists[picked].unshift(created);
+        input.value=''; q('#dueDate').value=''; q('#dueTime').value='';
+        renderToday(); renderPlan(); toast('Добавлено');
+      } else { showErr(created?.error || 'Ошибка сервера (task)'); }
+    }catch(e){}
   }
 
   async function toggleAll(){ showAll=!showAll; q('#toggleBtn').textContent = showAll? 'Скрыть лишнее' : 'Показать всё'; renderToday() }
@@ -285,26 +336,38 @@
   }
   async function addEvent(){
     var t=q('#evtTitle').value.trim(); var d=q('#calDate').value; var s=q('#evtStart').value||'10:00'; var dur=parseInt(q('#evtDur').value,10)||60;
-    if(!d){ toast('Выберите дату'); return } if(!t){ toast('Название пустое'); return }
-    var created = await apiPOST('/api/events', { title:t, day:d, start:s, dur:dur });
-    if(created && created.id){ events.push(created); q('#evtTitle').value=''; renderAgenda(); toast('Событие добавлено') } else { toast('Ошибка сервера') }
+    if(!d){ showErr('Выберите дату'); return } if(!t){ showErr('Название пустое'); return }
+    try{
+      var created = await apiPOST('/api/events', { title:t, day:d, start:s, dur:dur });
+      if(created && created.id){ events.push(created); q('#evtTitle').value=''; renderAgenda(); toast('Событие добавлено') }
+      else { showErr(created?.error || 'Ошибка сервера (event)') }
+    }catch(e){}
   }
 
   // ---- Focus ----
   async function saveFocus(){
-    var input=q('#focus'); var v=(input.value||'').trim(); if(!v){ toast('Введите фокус дня'); return }
-    var resp = await apiPUT('/api/focus', { day: todayStr(), text: v });
-    if(resp && resp.text){ focusText=v; lockFocusUI(true); updateFocusChip(); toast('Фокус сохранён') } else { toast('Ошибка сервера') }
+    var input=q('#focus'); var v=(input.value||'').trim(); if(!v){ showErr('Введите фокус дня'); return }
+    try{
+      const resp = await apiPUT('/api/focus', { day: todayStr(), text: v });
+      if (resp && resp.text){
+        focusText=v; lockFocusUI(true); updateFocusChip(); toast('Фокус сохранён');
+      } else {
+        showErr(resp?.error || 'Ошибка сервера (focus)');
+      }
+    }catch(e){ showErr('Сеть недоступна'); }
   }
   function editFocus(){ lockFocusUI(false) }
 
-  // ---- Chat (как в П.1) ----
+  // ---- Chat (минимум) ----
   function appendMsg(who, text){ var box=q('#chatBox'); var b=document.createElement('div'); b.className='bubble '+(who==='me'?'me':'bot'); b.textContent=text; box.appendChild(b); box.scrollTop=box.scrollHeight }
   function openChat(){ q('#chatSheet').hidden=false }
   function closeChat(){ q('#chatSheet').hidden=true }
-  function chatSend(){ var inp=q('#chatInput'); var v=(inp.value||'').trim(); if(!v) return; appendMsg('me', v); inp.value='';
+  function chatSend(){
+    var inp=q('#chatInput'); var v=(inp.value||'').trim(); if(!v) return; appendMsg('me', v); inp.value='';
     authFetch('/api/chat', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ message:v }) })
-      .then(r=>r.json()).then(function(d){ appendMsg('bot', d.reply||'...') }).catch(()=>appendMsg('bot','Сервис недоступен')) }
+      .then(r=>r.json()).then(function(d){ appendMsg('bot', d.reply||'...') })
+      .catch(()=>appendMsg('bot','Сеть недоступна'));
+  }
 
   // ---- Delegates ----
   document.addEventListener('click', async function(e){
@@ -330,7 +393,6 @@
     if(el && el.classList.contains('check')){
       var id = el.getAttribute('data-id');
       try { await apiPATCH('/api/tasks/'+encodeURIComponent(id), { done: el.checked }); } catch{}
-      // локально тоже отметим
       ['today','week','backlog'].forEach(function(k){
         lists[k] = (lists[k]||[]).map(function(t){ if(t.id===id){ t.done = el.checked } return t });
       });
