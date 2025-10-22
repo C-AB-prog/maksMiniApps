@@ -1,62 +1,63 @@
 // api/focus.js
-import { sql } from "@vercel/postgres";
-import { ensureSchema, getOrCreateUserByTelegram } from "./_utils/db.js";
-import { verifyTelegramInitNode, parseTelegramUser } from "./_utils/tg_node.js";
+import { sql } from '@vercel/postgres';
+import { ensureSchema } from './_utils/db.js';
+import { verifyTelegramInitNode, parseTelegramUser } from './_utils/tg_node.js';
 
+/** GET /api/focus?day=YYYY-MM-DD
+ *  PUT /api/focus { day: 'YYYY-MM-DD', text: '...' } */
 export default async function handler(req, res) {
   try {
-    if (req.method !== "GET" && req.method !== "PUT") {
-      res.status(405).json({ error: "Use GET or PUT" });
-      return;
-    }
+    // 1) Проверяем подпись Telegram
+    const init = req.headers['x-telegram-init'] || '';
+    const ok = await verifyTelegramInitNode(init, process.env.BOT_TOKEN);
+    if (!ok) return res.status(401).json({ error: 'INVALID_TELEGRAM_SIGNATURE' });
 
-    const initData = req.headers["x-telegram-init"] || req.headers["X-Telegram-Init"];
-    const botToken = process.env.BOT_TOKEN || "";
-    if (!verifyTelegramInitNode(initData || "", botToken)) {
-      res.status(401).json({ error: "INVALID_TELEGRAM_SIGNATURE" });
-      return;
-    }
+    const user = parseTelegramUser(init);
+    if (!user?.id) return res.status(400).json({ error: 'NO_TELEGRAM_USER' });
+
+    const tgId = BigInt(user.id);
+
+    // 2) Таблицы
     await ensureSchema();
 
-    const user = parseTelegramUser(initData || "");
-    const userId = await getOrCreateUserByTelegram(user);
+    // 3) Убедимся, что пользователь есть
+    await sql`
+      INSERT INTO users (tg_id, name)
+      VALUES (${tgId}, ${user.first_name || ''})
+      ON CONFLICT (tg_id) DO UPDATE SET name = EXCLUDED.name
+    `;
 
-    const url = new URL(req.url, "http://localhost");
-    const day = url.searchParams.get("day");
+    if (req.method === 'GET') {
+      const day = req.query?.day;
+      if (!day) return res.status(400).json({ error: 'DAY_REQUIRED' });
 
-    if (req.method === "GET") {
-      if (!day) { res.status(400).json({ error: "DAY_REQUIRED" }); return; }
-      const q = await sql/*sql*/`SELECT text FROM focus WHERE user_id=${userId} AND day=${day};`;
-      res.status(200).json(q.rows[0] || { text: null, day });
-      return;
-    }
-
-    if (req.method === "PUT") {
-      const body = await readBody(req);
-      const putDay = body.day || new Date().toISOString().slice(0, 10);
-      const text = (body.text || "").trim();
-      if (!text) { res.status(400).json({ error: "TEXT_REQUIRED" }); return; }
-
-      await sql/*sql*/`
-        INSERT INTO focus (user_id, day, text)
-        VALUES (${userId}, ${putDay}, ${text})
-        ON CONFLICT (user_id, day) DO UPDATE SET text = EXCLUDED.text;
+      const { rows } = await sql`
+        SELECT text FROM focus WHERE user_id = ${tgId} AND day = ${day}::date
       `;
-      res.status(200).json({ day: putDay, text });
-      return;
+      const text = rows[0]?.text || '';
+      return res.status(200).json({ day, text });
     }
-  } catch (e) {
-    console.error("focus error:", e);
-    res.status(500).json({ error: "INTERNAL_ERROR" });
-  }
-}
 
-function readBody(req) {
-  return new Promise((resolve) => {
-    let data = "";
-    req.on("data", (c) => (data += c));
-    req.on("end", () => {
-      try { resolve(JSON.parse(data || "{}")); } catch { resolve({}); }
-    });
-  });
+    if (req.method === 'PUT') {
+      const { day, text } = (req.body || {});
+      if (!day)  return res.status(400).json({ error: 'DAY_REQUIRED' });
+      if (!text) return res.status(400).json({ error: 'TEXT_REQUIRED' });
+
+      await sql`
+        INSERT INTO focus(user_id, day, text)
+        VALUES (${tgId}, ${day}::date, ${text})
+        ON CONFLICT (user_id, day) DO UPDATE SET text = EXCLUDED.text
+      `;
+
+      return res.status(200).json({ day, text });
+    }
+
+    res.setHeader('Allow', 'GET, PUT');
+    return res.status(405).end('Method Not Allowed');
+
+  } catch (e) {
+    // Покажем реальную причину (на время MVP это удобно)
+    console.error('FOCUS_ERROR', e);
+    return res.status(500).json({ error: e?.code || e?.message || 'INTERNAL_ERROR' });
+  }
 }
