@@ -2,7 +2,9 @@
 export const config = { runtime: 'nodejs' };
 
 import { sql } from '@vercel/postgres';
-import { ensureTables, verifyTelegramInit, upsertUserFromInit, ok, err } from '../_utils/db.js';
+import {
+  ensureTables, requestIsSigned, getOrCreateUser, ok, err
+} from '../_utils/db.js';
 
 export default async function handler(req) {
   try {
@@ -12,28 +14,27 @@ export default async function handler(req) {
 
     const init = req.headers.get('x-telegram-init') || '';
     const botToken = process.env.BOT_TOKEN || '';
-    if (!verifyTelegramInit(init, botToken)) return err(401, 'INVALID_TELEGRAM_SIGNATURE');
+    if (!requestIsSigned(init, botToken)) return err(401,'INVALID_TELEGRAM_SIGNATURE');
 
     await ensureTables();
-    const user = await upsertUserFromInit(init);
+    const user = await getOrCreateUser(init);
     if (!user) return err(400,'NO_TELEGRAM_USER');
 
     if (req.method === 'PATCH') {
       const body = await req.json().catch(()=> ({}));
       const { done, title, list, due_date, due_time, hint } = body;
 
-      // формируем динамический апдейт
-      const fields = [];
-      if (typeof done === 'boolean') fields.push(sql`done=${done}`);
-      if (title !== undefined)       fields.push(sql`title=${title}`);
-      if (list  !== undefined)       fields.push(sql`list=${list}`);
-      if (due_date !== undefined)    fields.push(sql`due_date=${due_date || null}`);
-      if (due_time !== undefined)    fields.push(sql`due_time=${due_time || null}`);
-      if (hint !== undefined)        fields.push(sql`hint=${hint}`);
+      const sets = [];
+      if (typeof done === 'boolean') sets.push(sql`done=${done}`);
+      if (title !== undefined)       sets.push(sql`title=${title}`);
+      if (list  !== undefined)       sets.push(sql`list=${list}`);
+      if (due_date !== undefined)    sets.push(sql`due_date=${due_date || null}`);
+      if (due_time !== undefined)    sets.push(sql`due_time=${due_time || null}`);
+      if (hint !== undefined)        sets.push(sql`hint=${hint}`);
 
-      if (!fields.length) return err(400,'NOTHING_TO_UPDATE');
+      if (!sets.length) return err(400,'NOTHING_TO_UPDATE');
 
-      await sql`UPDATE tasks SET ${sql.join(fields, sql`, `)}, updated_at=NOW()
+      await sql`UPDATE tasks SET ${sql.join(sets, sql`, `)}, updated_at=NOW()
                 WHERE id=${id} AND user_id=${user.id}`;
 
       const one = (await sql`
