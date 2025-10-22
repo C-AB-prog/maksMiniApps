@@ -561,17 +561,30 @@
     lockFocusUI(!!focusText); updateFocusChip();
   }
 
-  /* авто-health перед инициализацией */
+  /* авто-health (усовершенствованный вывод) */
   async function selfHealthCheck(){
     try {
       const res = await authFetch('/api/health');
-      const h = await res.json().catch(()=> ({}));
-      if (!res.ok || !h.ok) {
-        const msg = `HEALTH: tg=${h.telegram_signature_ok} db=${h.db_ok} env.pg=${h?.env?.has_POSTGRES_URL}`;
-        const box=document.getElementById('debugOverlay'); box.textContent = msg; box.style.display='block';
+      let body = {};
+      try { body = await res.clone().json(); } catch {}
+      if (res.status === 404) {
+        const box = document.getElementById('debugOverlay');
+        box.textContent = 'HEALTH: endpoint /api/health НЕ найден (404)'; box.style.display = 'block';
+        return;
+      }
+      if (!res.ok || !body || typeof body !== 'object') {
+        const box = document.getElementById('debugOverlay');
+        box.textContent = `HEALTH: bad response (${res.status})`; box.style.display = 'block';
+        return;
+      }
+      if (!body.ok) {
+        const box = document.getElementById('debugOverlay');
+        box.textContent = `HEALTH: tg=${body.telegram_signature_ok} db=${body.db_ok} env.pg=${body?.env?.has_POSTGRES_URL}`;
+        box.style.display = 'block';
       }
     } catch {
-      const box=document.getElementById('debugOverlay'); box.textContent = 'HEALTH: network error'; box.style.display='block';
+      const box=document.getElementById('debugOverlay'); 
+      box.textContent = 'HEALTH: network error'; box.style.display='block';
     }
   }
 
