@@ -10,41 +10,29 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root{
-      /* палитра + нежные градиенты */
-      --accent:#3B82F6;
-      --accent-2:#60A5FA;
-      --bg:#F8FAFF;
-      --surface:#FFFFFF;
-      --line:#E5E7F0;
-      --text:#0F172A;
-      --muted:#667085;
-
+      --accent:#3B82F6; --accent-2:#60A5FA;
+      --bg:#F8FAFF; --surface:#FFFFFF; --line:#E5E7F0;
+      --text:#0F172A; --muted:#667085;
       --r-lg:16px; --r-md:12px; --r-sm:10px;
       --sh-xs:0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(59,130,246,.06);
-
       --h1:clamp(18px,4vw,22px); --h2:clamp(15px,3.4vw,17px); --body:15px; --cap:12px;
       --sp-1:6px; --sp-2:10px; --sp-3:12px; --sp-4:16px; --sp-5:20px;
     }
-
     *,*::before,*::after{box-sizing:border-box}
     html,body{height:100%}
     body{
-      margin:0; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      font-size:var(--body); color:var(--text);
-      /* мягкий фон: radial + linear */
+      margin:0; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size:var(--body); color:var(--text);
       background:
         radial-gradient(1200px 600px at 80% -10%, rgba(96,165,250,.18), transparent 60%),
         radial-gradient(1200px 600px at -10% 100%, rgba(59,130,246,.12), transparent 60%),
         linear-gradient(#F9FBFF, #F6F9FF);
-      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-      -webkit-tap-highlight-color:transparent;
+      -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;
     }
     img,svg{max-width:100%; display:block}
     button,input,select,textarea{font:inherit}
 
     .app{min-height:100%; display:flex; flex-direction:column}
 
-    /* top */
     header{position:sticky; top:0; z-index:20; background:rgba(255,255,255,.9); backdrop-filter:saturate(140%) blur(8px); border-bottom:1px solid var(--line)}
     .topbar{display:flex; align-items:center; gap:var(--sp-2); padding:var(--sp-2) var(--sp-3); max-width:960px; margin:0 auto}
     .brand{display:flex; align-items:center; gap:var(--sp-2)}
@@ -55,33 +43,21 @@
 
     main{flex:1; padding:0 var(--sp-3) calc(200px + env(safe-area-inset-bottom)); max-width:960px; margin:0 auto}
 
-    /* cards */
-    .card{
-      background:linear-gradient(180deg, #FFF 0%, #FDFEFF 100%);
-      border:1px solid var(--line); border-radius:var(--r-lg); padding:var(--sp-3); box-shadow:var(--sh-xs)
-    }
+    .card{background:linear-gradient(180deg, #FFF 0%, #FDFEFF 100%); border:1px solid var(--line); border-radius:var(--r-lg); padding:var(--sp-3); box-shadow:var(--sh-xs)}
     .card + .card{margin-top:var(--sp-3)}
     h1{font-size:var(--h1); margin:var(--sp-2) 0 var(--sp-2)}
     h2{font-size:var(--h2); margin:0 0 var(--sp-2) 0}
     .sub{color:var(--muted); font-size:var(--cap)}
 
-    /* inputs / buttons */
     .row{display:flex; gap:var(--sp-2); align-items:center; flex-wrap:nowrap}
     .input{height:44px; padding:0 12px; width:100%; border-radius:12px; border:1px solid var(--line); background:#fff}
     .input.readonly{background:#F3F6FB; color:#374151}
-    .btn{
-      height:44px; padding:0 16px; border-radius:12px; border:0;
-      background:linear-gradient(135deg,var(--accent),var(--accent-2));
-      color:#fff; font-weight:700; letter-spacing:.2px;
-      box-shadow:0 12px 32px rgba(59,130,246,.25)
-    }
+    .btn{height:44px; padding:0 16px; border-radius:12px; border:0; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; font-weight:700; letter-spacing:.2px; box-shadow:0 12px 32px rgba(59,130,246,.25)}
     .btn.ghost{background:linear-gradient(180deg,#fff,#FBFDFF); color:#0F172A; border:1px solid var(--line); box-shadow:none; font-weight:600}
 
-    /* chips */
     .chip{height:34px; padding:0 12px; border-radius:999px; border:1px solid var(--line); background:linear-gradient(180deg,#fff,#F8FAFF); font-size:12px; color:#111827; cursor:pointer}
     .chip.active{border-color:transparent; color:#0B4DD9; background:linear-gradient(135deg,#EEF2FF,#E0EAFF)}
 
-    /* list */
     .list{display:flex; flex-direction:column; gap:8px}
     .item{display:flex; align-items:center; gap:8px; padding:10px; background:linear-gradient(180deg,#fff,#FBFDFF); border:1px solid var(--line); border-radius:12px; min-width:0}
     .check{appearance:none; width:20px; height:20px; border-radius:6px; border:1px solid var(--line); background:#fff}
@@ -92,51 +68,31 @@
     .tag{font-size:11px; color:#0F766E; background:linear-gradient(180deg,#ECFDF5,#F6FFFB); border:1px solid #A7F3D0; padding:4px 6px; border-radius:999px; white-space:nowrap}
     .more{border:none; background:transparent; font-size:18px; color:#9CA3AF}
 
-    /* plan tabs */
     .plan-tabs{display:flex; gap:6px; overflow:auto; padding-bottom:6px; margin-bottom:10px}
     .plan-tab{height:34px; padding:0 12px; border-radius:999px; border:1px solid var(--line); background:linear-gradient(180deg,#fff,#F8FAFF); cursor:pointer}
     .plan-tab.active{border-color:transparent; background:linear-gradient(135deg,#EEF2FF,#E0EAFF); color:#0B4DD9}
 
-    /* HADI board */
     .board{display:grid; grid-template-columns:repeat(2, minmax(160px,1fr)); gap:10px}
     .column{background:linear-gradient(180deg,#fff,#F8FAFF); border:1px solid var(--line); border-radius:12px; padding:10px; min-height:180px}
     .hcard{background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px; margin:6px 2px}
 
-    /* calendar */
     .agenda{display:grid; grid-template-columns:60px 1fr; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:linear-gradient(180deg,#fff,#F8FAFF)}
     .hour{height:40px; padding:6px 6px; font-size:12px; color:#6B7280; border-bottom:1px dashed #E5E7EB}
     .slot{height:40px; border-bottom:1px dashed #E5E7EB; position:relative}
     .event{position:absolute; left:6px; right:6px; background:linear-gradient(135deg,#E3F2FD,#F0F7FF); color:#0B4DD9; border:1px solid #BFDBFE; border-radius:10px; padding:6px; font-size:12px}
 
-    /* chat bar — заметная и всегда кликабельная */
-    .chatbar{
-      position:fixed; left:50%; transform:translateX(-50%);
-      bottom:calc(12px + 72px + env(safe-area-inset-bottom)); z-index:55;
-      width:min(560px,94%); pointer-events:none
-    }
-    .chatbar .btn-chat{
-      pointer-events:auto; display:block; width:100%; height:56px;
-      border-radius:16px; border:0; font-weight:800; letter-spacing:.2px;
-      color:#fff; background:linear-gradient(90deg,#2563EB 0%, #60A5FA 100%);
-      box-shadow:0 16px 40px rgba(37, 99, 235, .35);
-    }
+    .chatbar{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(12px + 72px + env(safe-area-inset-bottom)); z-index:55; width:min(560px,94%); pointer-events:none}
+    .chatbar .btn-chat{pointer-events:auto; display:block; width:100%; height:56px; border-radius:16px; border:0; font-weight:800; letter-spacing:.2px; color:#fff; background:linear-gradient(90deg,#2563EB 0%, #60A5FA 100%); box-shadow:0 16px 40px rgba(37, 99, 235, .35)}
     .chatbar .btn-chat:active{transform:scale(.99)}
 
-    /* dock */
     .dock{position:fixed; left:50%; bottom:12px; transform:translateX(-50%); z-index:50; width:min(560px,94%); padding-bottom:env(safe-area-inset-bottom); pointer-events:none}
-    .dock-inner{
-      display:grid; grid-template-columns:repeat(4,1fr); gap:6px;
-      background:rgba(255,255,255,.9); backdrop-filter:saturate(140%) blur(12px);
-      border:1px solid var(--line); border-radius:18px; padding:10px;
-      box-shadow:0 10px 28px rgba(15,23,42,.14); pointer-events:auto
-    }
+    .dock-inner{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; background:rgba(255,255,255,.9); backdrop-filter:saturate(140%) blur(12px); border:1px solid var(--line); border-radius:18px; padding:10px; box-shadow:0 10px 28px rgba(15,23,42,.14); pointer-events:auto}
     .dock-item{height:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; border-radius:10px; color:#667085; font-size:12px; border:none; background:transparent; cursor:pointer; transition:transform .12s ease}
     .dock-item:active{transform:scale(.98)}
     .dock-item.active{background:linear-gradient(180deg,#F6F7FA,#EFF3FF); color:#0F172A; font-weight:600}
     .dock svg{width:20px; height:20px}
     @media (max-width: 430px){ .dock-item span{display:none} }
 
-    /* chat sheet */
     .sheet{position:fixed; inset:0; z-index:60}
     .sheet[hidden]{display:none}
     .sheet-backdrop{position:absolute; inset:0; background:rgba(15,23,42,.35); backdrop-filter:blur(3px)}
@@ -159,18 +115,12 @@
 <div class="app">
   <header>
     <div class="topbar">
-      <div class="brand">
-        <div class="dot" aria-hidden="true"></div>
-        <div class="title">Growth Assistant</div>
-      </div>
-      <div class="actions">
-        <span id="focusChip" class="mini-chip" hidden>Фокус: —</span>
-      </div>
+      <div class="brand"><div class="dot"></div><div class="title">Growth Assistant</div></div>
+      <div class="actions"><span id="focusChip" class="mini-chip" hidden>Фокус: —</span></div>
     </div>
   </header>
 
   <main>
-    <!-- TODAY -->
     <section id="screen-today" class="screen" aria-labelledby="todayTitle">
       <h1 id="todayTitle">Сегодня</h1>
 
@@ -179,14 +129,14 @@
         <div class="row">
           <input id="focus" class="input" placeholder="Самое главное сегодня…">
           <button class="btn" data-action="saveFocus" id="saveFocusBtn">Сохранить</button>
-          <button class="btn ghost" data-action="editFocus" id="editFocusBtn" title="Редактировать" style="display:none">✎</button>
+          <button class="btn ghost" data-action="editFocus" id="editFocusBtn" style="display:none">✎</button>
         </div>
       </div>
 
-      <div class="card" aria-label="Быстрое добавление задачи">
+      <div class="card">
         <h2>Быстрое добавление</h2>
         <div class="row" style="flex-wrap:wrap">
-          <input id="add" class="input" placeholder="Название задачи" aria-label="Название задачи" style="flex:1 1 100%">
+          <input id="add" class="input" placeholder="Название задачи" style="flex:1 1 100%">
           <button class="btn" data-action="quickAdd">Добавить</button>
         </div>
         <div class="row" style="flex-wrap:wrap; margin-top:8px">
@@ -209,7 +159,6 @@
       </div>
     </section>
 
-    <!-- PLAN -->
     <section id="screen-plan" class="screen" hidden>
       <h1>План</h1>
       <div class="plan-tabs" role="tablist">
@@ -239,7 +188,6 @@
       </div>
     </section>
 
-    <!-- CALENDAR -->
     <section id="screen-calendar" class="screen" hidden>
       <h1>Календарь</h1>
       <div class="card" style="margin-bottom:10px">
@@ -256,19 +204,16 @@
       <div class="agenda"><div class="hours" id="hours"></div><div class="slots" id="slots"></div></div>
     </section>
 
-    <!-- SETTINGS -->
     <section id="screen-settings" class="screen" hidden>
       <h1>Профиль</h1>
       <div class="card"><div class="sub">Таймзона: Europe/Helsinki · Уведомления: вкл</div></div>
     </section>
   </main>
 
-  <!-- Широкая заметная кнопка чата -->
   <div class="chatbar">
     <button class="btn-chat" data-action="openChat" aria-label="Открыть чат">💬 Чат с ассистентом</button>
   </div>
 
-  <!-- нижняя навигация -->
   <nav class="dock" role="navigation" aria-label="Нижняя навигация">
     <div class="dock-inner">
       <button class="dock-item active" data-target="today" title="Сегодня">
@@ -290,13 +235,12 @@
     </div>
   </nav>
 
-  <!-- CHAT SHEET -->
   <div class="sheet" id="chatSheet" hidden>
     <div class="sheet-backdrop" data-action="closeChat"></div>
     <div class="sheet-panel">
       <div class="sheet-head">
         <strong>Чат с ассистентом</strong>
-        <button class="btn ghost" data-action="closeChat" title="Закрыть">Закрыть</button>
+        <button class="btn ghost" data-action="closeChat">Закрыть</button>
       </div>
       <div class="sheet-body" id="chatBox"></div>
       <div class="sheet-input">
@@ -307,12 +251,32 @@
   </div>
 </div>
 
+<!-- Telegram bootstrap + authFetch -->
 <script>
-/* ===== фронтовая логика ===== */
 (function(){
-  var CHAT_API = '/api/chat'; // Vercel serverless
+  var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+  if (tg) { try { tg.ready(); tg.expand(); } catch(e){} }
+  window.__TG_INIT_DATA__ = tg && tg.initData ? tg.initData : '';
 
-  // --- state + storage ---
+  // ⚠️ Для локальной отладки в браузере можно временно раскомментировать→
+  // if (!window.__TG_INIT_DATA__) {
+  //   console.warn('Demo initData (only for local dev)!');
+  //   window.__TG_INIT_DATA__ = 'user={"id":123456,"first_name":"Demo"}&auth_date=0&hash=invalid';
+  // }
+
+  window.authFetch = function(url, opts){
+    opts = opts || {};
+    opts.headers = opts.headers || {};
+    if (!opts.headers['x-telegram-init']) {
+      opts.headers['x-telegram-init'] = window.__TG_INIT_DATA__;
+    }
+    return fetch(url, opts);
+  };
+})();
+</script>
+
+<script>
+(function(){
   var lists = { today:[], week:[], backlog:[] };
   var events = [];
   var focusText = '';
@@ -330,13 +294,11 @@
   function ddmm(dstr){ if(!dstr) return '—'; var p=dstr.split('-'); return p[2]+'.'+p[1] }
   function truncate(s, n){ if(!s) return ''; return s.length>n? s.slice(0,n-1)+'…': s }
 
-  // Focus
   function updateFocusChip(){ var chip=q('#focusChip'); if(!chip) return; if(focusText){ chip.textContent='Фокус: '+truncate(focusText,26); chip.hidden=false } else { chip.hidden=true } }
   function lockFocusUI(lock){ var input=q('#focus'); var saveBtn=q('#saveFocusBtn'); var editBtn=q('#editFocusBtn'); if(!input) return; if(lock){ input.readOnly=true; input.classList.add('readonly'); if(saveBtn) saveBtn.style.display='none'; if(editBtn) editBtn.style.display='inline-block' } else { input.readOnly=false; input.classList.remove('readonly'); if(saveBtn) saveBtn.style.display='inline-block'; if(editBtn) editBtn.style.display='none'; setTimeout(function(){input.focus()},0) } }
   function saveFocus(){ var input=q('#focus'); var v=(input&&input.value||'').trim(); if(!v){ toast('Введите фокус дня'); return } focusText=v; updateFocusChip(); lockFocusUI(true); save(); toast('Фокус сохранён') }
   function editFocus(){ lockFocusUI(false) }
 
-  // Tasks
   function pickList(btn){ var chips=qa('.card .chip'); for(var i=0;i<chips.length;i++){ chips[i].classList.remove('active') } btn.classList.add('active'); picked=btn.getAttribute('data-list')||'today' }
   function taskRow(t){ var el=document.createElement('div'); el.className='item'; el.innerHTML='<input type="checkbox" class="check" '+(t.done?'checked':'')+' data-id="'+t.id+'">\
     <div class="body"><div class="title">'+esc(t.title)+'</div><div class="hint">'+esc(t.hint||'')+'</div></div>\
@@ -347,11 +309,9 @@
   function quickAdd(){ var input=q('#add'); if(!input) return; var title=(input.value||'').trim(); if(!title){ toast('Введите название'); return } var d=q('#dueDate')?q('#dueDate').value:''; var t=q('#dueTime')?q('#dueTime').value:''; var due=d? (ddmm(d)+(t?(' '+t):'')) : '—'; lists[picked].unshift({id:Date.now(), title:title, hint:'', due:due, done:false}); input.value=''; if(q('#dueDate')) q('#dueDate').value=''; if(q('#dueTime')) q('#dueTime').value=''; save(); renderToday(); renderPlan(); toast('Добавлено') }
   function toggleAll(){ showAll=!showAll; var b=q('#toggleBtn'); if(b) b.textContent= showAll? 'Скрыть лишнее':'Показать всё'; renderToday() }
 
-  // Calendar
   function renderAgenda(){ var hours=q('#hours'), slots=q('#slots'); if(!hours||!slots) return; hours.innerHTML=''; slots.innerHTML=''; var h; for(h=9;h<=18;h++){ var hr=document.createElement('div'); hr.className='hour'; hr.textContent=(h<10?'0':'')+h+':00'; hours.appendChild(hr); var sl=document.createElement('div'); sl.className='slot'; slots.appendChild(sl) } for(var i=0;i<events.length;i++){ var ev=events[i]; if(ev.date!==currentDate) continue; var top=((parseInt(ev.start.split(':')[0],10)-9)*40) + (parseInt(ev.start.split(':')[1],10)/60)*40 + 6; var height=(ev.dur/60)*40 - 12; var e=document.createElement('div'); e.className='event'; e.style.top=top+'px'; e.style.height=Math.max(28,height)+'px'; e.textContent=ev.title+' · '+ev.start; slots.appendChild(e) } }
   function addEvent(){ var t=q('#evtTitle').value.trim(); var d=q('#calDate').value; var s=q('#evtStart').value||'10:00'; var dur=parseInt(q('#evtDur').value,10)||60; if(!d){ toast('Выберите дату'); return } if(!t){ toast('Название пустое'); return } events.push({id:Date.now(), date:d, start:s, dur:dur, title:t}); q('#evtTitle').value=''; save(); renderAgenda(); toast('Событие добавлено') }
 
-  // Chat
   function appendMsg(who, text){ var box=q('#chatBox'); if(!box) return; var b=document.createElement('div'); b.className='bubble '+(who==='me'?'me':'bot'); b.textContent=text; box.appendChild(b); box.scrollTop=box.scrollHeight }
   function openChat(){ q('#chatSheet').hidden=false }
   function closeChat(){ q('#chatSheet').hidden=true }
@@ -377,22 +337,14 @@
   function chatSend(){
     var inp=q('#chatInput'); var v=(inp.value||'').trim(); if(!v) return;
     appendMsg('me', v); inp.value='';
-    fetch('/api/chat', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ message:v }) })
+    authFetch('/api/chat', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ message:v }) })
       .then(function(r){ return r.json() })
-      .then(function(d){
-        if(Array.isArray(d.actions)) applyActions(d.actions);
-        appendMsg('bot', d.reply || '...');
-      })
+      .then(function(d){ if(Array.isArray(d.actions)) applyActions(d.actions); appendMsg('bot', d.reply || '...') })
       .catch(function(){ appendMsg('bot', 'Сервис недоступен, попробуйте позже.') });
   }
 
-  // Events
   document.addEventListener('click', function(e){
-    var el=e.target;
-    while(el&&el!==document){
-      if(el.getAttribute&&(el.getAttribute('data-action')||el.getAttribute('data-target')||el.getAttribute('data-list')||el.className.indexOf('plan-tab')>-1)){ break }
-      el=el.parentNode
-    }
+    var el=e.target; while(el&&el!==document){ if(el.getAttribute&&(el.getAttribute('data-action')||el.getAttribute('data-target')||el.getAttribute('data-list')||el.className.indexOf('plan-tab')>-1)){ break } el=el.parentNode }
     if(!el||el===document) return;
 
     var act=el.getAttribute('data-action');
@@ -406,19 +358,13 @@
     if(act==='closeChat'){ closeChat(); e.preventDefault(); return }
     if(el.getAttribute('data-list')){ pickList(el); e.preventDefault(); return }
 
-    if(el.className.indexOf('plan-tab')>-1){ var v=el.getAttribute('data-view'); var tabs=qa('.plan-tab'); for(var i=0;i<tabs.length;i++){ tabs[i].classList.remove('active') } el.classList.add('active'); ['lists','hadi','metrics'].forEach(function(k){ q('#plan-view-'+k).hidden=(k!==v) }); e.preventDefault(); return }
+    if(el.className.indexOf('plan-tab')>-1){ var v=el.getAttribute('data-view'); var tabs=Array.prototype.slice.call(document.querySelectorAll('.plan-tab')); for(var i=0;i<tabs.length;i++){ tabs[i].classList.remove('active') } el.classList.add('active'); ['lists','hadi','metrics'].forEach(function(k){ var node=document.getElementById('plan-view-'+k); if(node) node.hidden=(k!==v) }); e.preventDefault(); return }
 
-    var target=el.getAttribute('data-target');
-    if(target){
-      var buttons=qa('.dock-item'); for(var i=0;i<buttons.length;i++){ buttons[i].classList.remove('active') } el.classList.add('active');
-      var screens=qa('.screen'); for(var s=0;s<screens.length;s++){ screens[s].hidden=true } var scr=q('#screen-'+target); if(scr) scr.hidden=false;
-      window.scrollTo(0,0); e.preventDefault(); return
-    }
+    var target=el.getAttribute('data-target'); if(target){ var buttons=document.querySelectorAll('.dock-item'); for(var i=0;i<buttons.length;i++){ buttons[i].classList.remove('active') } el.classList.add('active'); var screens=document.querySelectorAll('.screen'); for(var s=0;s<screens.length;s++){ screens[s].hidden=true } var scr=document.getElementById('screen-'+target); if(scr) scr.hidden=false; window.scrollTo(0,0); e.preventDefault(); return }
   });
   document.addEventListener('change', function(e){ if(e.target && e.target.id==='calDate'){ currentDate=e.target.value; renderAgenda() } });
-  var addEl=q('#chatInput'); if(addEl){ addEl.addEventListener('keydown', function(ev){ if(ev.key==='Enter'||ev.keyCode===13){ chatSend() } }) }
+  var chatEl=q('#chatInput'); if(chatEl){ chatEl.addEventListener('keydown', function(ev){ if(ev.key==='Enter'||ev.keyCode===13){ chatSend() } }) }
 
-  // init
   function init(){
     load();
     if(!lists.today.length&&!lists.week.length&&!lists.backlog.length){
@@ -428,8 +374,8 @@
         {id:3,title:'Запуск канала трафика №1',hint:'вкл. реклама ≥3 000 ₽',due:'24.10',done:false}
       ];
     }
-    q('#calDate').value=todayStr(); renderAgenda();
-    if(q('#focus')){ q('#focus').value=focusText||''; lockFocusUI(!!focusText) } updateFocusChip();
+    var cd=document.getElementById('calDate'); if(cd){ cd.value=todayStr() } renderAgenda();
+    var f=document.getElementById('focus'); if(f){ f.value=focusText||''; lockFocusUI(!!focusText) } updateFocusChip();
     renderToday(); renderPlan();
   }
   init();
