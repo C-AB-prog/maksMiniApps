@@ -1,57 +1,66 @@
 // api/tasks/[id].js
+export const config = { runtime: 'nodejs' };
+
 import { sql } from '@vercel/postgres';
-import { ensureSchema } from '../_utils/db.js';
-import { verifyTelegramInitNode, parseTelegramUser } from '../_utils/tg_node.js';
+import { ensureTables, verifyTelegramInit, upsertUserFromInit, ok, err } from '../_utils/db.js';
 
-export default async function handler(req, res) {
+export default async function handler(req) {
   try {
-    const init = req.headers['x-telegram-init'] || '';
-    const ok   = await verifyTelegramInitNode(init, process.env.BOT_TOKEN);
-    if (!ok) return res.status(401).json({ error: 'INVALID_TELEGRAM_SIGNATURE' });
+    const { pathname } = new URL(req.url);
+    const id = decodeURIComponent(pathname.split('/').pop() || '');
+    if (!id) return err(400,'ID_REQUIRED');
 
-    const user = parseTelegramUser(init);
-    if (!user?.id) return res.status(400).json({ error: 'NO_TELEGRAM_USER' });
-    const tgId = BigInt(user.id);
+    const init = req.headers.get('x-telegram-init') || '';
+    const botToken = process.env.BOT_TOKEN || '';
+    if (!verifyTelegramInit(init, botToken)) return err(401, 'INVALID_TELEGRAM_SIGNATURE');
 
-    await ensureSchema();
-
-    const idStr = String(req.query?.id || '');
-    if (!/^\d+$/.test(idStr)) return res.status(400).json({ error: 'ID_REQUIRED' });
-    const id = BigInt(idStr);
+    await ensureTables();
+    const user = await upsertUserFromInit(init);
+    if (!user) return err(400,'NO_TELEGRAM_USER');
 
     if (req.method === 'PATCH') {
-      const { title, list, due_date, due_time, done } = (req.body || {});
-      const allow = new Set(['today','week','backlog']);
-      const safeList = (list && allow.has(list)) ? list : null;
+      const body = await req.json().catch(()=> ({}));
+      const { done, title, list, due_date, due_time, hint } = body;
 
-      const { rows } = await sql`
-        UPDATE tasks
-        SET
-          title    = COALESCE(${title}, title),
-          list     = COALESCE(${safeList}, list),
-          due_date = COALESCE(${due_date}::date, due_date),
-          due_time = COALESCE(${due_time}::time, due_time),
-          done     = COALESCE(${done}, done)
-        WHERE id = ${id} AND user_id = ${tgId}
-        RETURNING id, title, list, due_date, due_time, done
-      `;
-      if (rows.length === 0) return res.status(404).json({ error: 'NOT_FOUND' });
-      return res.status(200).json(rows[0]);
+      // формируем динамический апдейт
+      const fields = [];
+      if (typeof done === 'boolean') fields.push(sql`done=${done}`);
+      if (title !== undefined)       fields.push(sql`title=${title}`);
+      if (list  !== undefined)       fields.push(sql`list=${list}`);
+      if (due_date !== undefined)    fields.push(sql`due_date=${due_date || null}`);
+      if (due_time !== undefined)    fields.push(sql`due_time=${due_time || null}`);
+      if (hint !== undefined)        fields.push(sql`hint=${hint}`);
+
+      if (!fields.length) return err(400,'NOTHING_TO_UPDATE');
+
+      await sql`UPDATE tasks SET ${sql.join(fields, sql`, `)}, updated_at=NOW()
+                WHERE id=${id} AND user_id=${user.id}`;
+
+      const one = (await sql`
+        SELECT id, title, list, done, due_date, due_time, hint
+        FROM tasks WHERE id=${id} AND user_id=${user.id}
+      `).rows[0];
+
+      if (!one) return err(404, 'NOT_FOUND');
+
+      return ok({
+        id: one.id,
+        title: one.title,
+        list: one.list,
+        done: one.done,
+        due_date: one.due_date ? one.due_date.toISOString().slice(0,10) : null,
+        due_time: one.due_time ? one.due_time.toString().slice(0,5) : null,
+        hint: one.hint || null
+      });
     }
 
     if (req.method === 'DELETE') {
-      const { rowCount } = await sql`
-        DELETE FROM tasks WHERE id = ${id} AND user_id = ${tgId}
-      `;
-      if (rowCount === 0) return res.status(404).json({ error: 'NOT_FOUND' });
-      return res.status(200).json({ ok: true });
+      await sql`DELETE FROM tasks WHERE id=${id} AND user_id=${user.id}`;
+      return ok({ deleted: true });
     }
 
-    res.setHeader('Allow','PATCH, DELETE');
-    return res.status(405).end('Method Not Allowed');
-
+    return err(405, 'Method Not Allowed');
   } catch (e) {
-    console.error('TASKS_ID_ERROR', e);
-    return res.status(500).json({ error: e?.code || e?.message || 'INTERNAL_ERROR' });
+    return err(500, e.message || 'INTERNAL_ERROR');
   }
 }
