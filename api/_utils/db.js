@@ -2,7 +2,7 @@
 import { sql } from '@vercel/postgres';
 import crypto from 'crypto';
 
-/** ---------- TG init parsing ---------- */
+/** ---------- Парсинг initData из Telegram ---------- */
 export function parseTelegramUser(initData) {
   try {
     const p = new URLSearchParams(initData || '');
@@ -13,6 +13,7 @@ export function parseTelegramUser(initData) {
   }
 }
 
+/** ---------- Проверка подписи Telegram WebApp ---------- */
 export function verifyTelegramInit(initData, botToken) {
   if (!initData || !botToken) return false;
   const params = new URLSearchParams(initData);
@@ -29,10 +30,10 @@ export function verifyTelegramInit(initData, botToken) {
   return calc === hash;
 }
 
-/** ---------- DEV mode switches ---------- */
+/** ---------- DEV-режим (для тестов без подписи) ---------- */
 const allowUnsigned = () => process.env.ALLOW_UNSIGNED === '1';
 
-/** ---------- DB bootstrap ---------- */
+/** ---------- Инициализация БД ---------- */
 export async function ensureTables() {
   await sql`
     CREATE TABLE IF NOT EXISTS users (
@@ -68,12 +69,13 @@ export async function ensureTables() {
   `;
 }
 
-/** ---------- Request guard ---------- */
+/** ---------- Гард запроса ---------- */
 export function requestIsSigned(initData, botToken) {
-  if (allowUnsigned()) return true; // DEV override
+  if (allowUnsigned()) return true; // в DEV пропускаем подпись
   return verifyTelegramInit(initData, botToken);
 }
 
+/** ---------- Юзер из initData (и upsert в БД) ---------- */
 export async function getOrCreateUser(initData) {
   const u = parseTelegramUser(initData);
   if (u && u.id) {
@@ -87,7 +89,7 @@ export async function getOrCreateUser(initData) {
     `;
     return { id: String(u.id), username: u.username || null };
   }
-  // DEV fallback user
+  // DEV-пользователь, если включён allowUnsigned
   if (allowUnsigned()) {
     const id = String(process.env.DEV_USER_ID || 'dev-user');
     await sql`INSERT INTO users (id, username) VALUES (${id}, 'dev') ON CONFLICT (id) DO NOTHING`;
@@ -96,10 +98,14 @@ export async function getOrCreateUser(initData) {
   return null;
 }
 
-/** ---------- helpers ---------- */
+/** ---------- Утилиты ответа ---------- */
 export function ok(data = {}) {
-  return new Response(JSON.stringify(data), { status: 200, headers: { 'content-type': 'application/json' } });
+  return new Response(JSON.stringify(data), {
+    status: 200, headers: { 'content-type': 'application/json' }
+  });
 }
 export function err(status, message) {
-  return new Response(JSON.stringify({ error: message }), { status, headers: { 'content-type': 'application/json' } });
+  return new Response(JSON.stringify({ error: message }), {
+    status, headers: { 'content-type': 'application/json' }
+  });
 }
