@@ -6,10 +6,8 @@
   <meta name="theme-color" content="#ffffff" />
   <title>Growth Assistant · Mini App</title>
 
-  <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  <!-- Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -36,69 +34,38 @@
     }
 
     .app{min-height:100%; display:flex; flex-direction:column}
-    header{
-      position:sticky; top:0; z-index:20;
-      background:rgba(255,255,255,.9); backdrop-filter:saturate(140%) blur(10px);
-      border-bottom:1px solid var(--line)
-    }
+    header{position:sticky; top:0; z-index:20; background:rgba(255,255,255,.9); backdrop-filter:saturate(140%) blur(10px); border-bottom:1px solid var(--line)}
     .topbar{display:flex; align-items:center; gap:12px; padding:10px 12px; max-width:960px; margin:0 auto}
     .brand{display:flex; align-items:center; gap:10px}
     .logo{width:26px;height:26px;border-radius:10px; display:grid; place-items:center;
       background:conic-gradient(from 210deg, #2563EB, #60A5FA, #A78BFA, #2563EB);
-      box-shadow:0 6px 16px rgba(37,99,235,.25);
-    }
+      box-shadow:0 6px 16px rgba(37,99,235,.25);}
     .logo svg{width:16px;height:16px;color:white}
     .title{font-weight:800; letter-spacing:.2px}
     .actions{margin-left:auto; display:flex; align-items:center; gap:8px}
-    .mini-chip{font-size:12px; padding:6px 10px; border-radius:999px;
-      background:linear-gradient(180deg,#F4F7FF,#FFFFFF);
-      color:#1D4ED8; border:1px solid var(--line)
-    }
+    .mini-chip{font-size:12px; padding:6px 10px; border-radius:999px; background:linear-gradient(180deg,#F4F7FF,#FFFFFF); color:#1D4ED8; border:1px solid var(--line)}
 
     main{flex:1; padding:0 12px calc(210px + env(safe-area-inset-bottom)); max-width:960px; margin:0 auto}
 
-    .card{
-      background:linear-gradient(180deg, #FFF 0%, #FDFEFF 100%);
-      border:1px solid var(--line); border-radius:var(--r-xl); padding:14px; box-shadow:var(--sh-card)
-    }
+    .card{background:linear-gradient(180deg, #FFF 0%, #FDFEFF 100%); border:1px solid var(--line); border-radius:var(--r-xl); padding:14px; box-shadow:var(--sh-card)}
     .card + .card{margin-top:12px}
     h1{font-size:var(--h1); margin:12px 2px 10px}
     h2{font-size:var(--h2); margin:0 0 10px 0; display:flex; align-items:center; gap:8px}
     .sub{color:var(--muted); font-size:var(--cap)}
 
     .row{display:flex; gap:10px; align-items:center}
-    .input{
-      height:44px; padding:0 14px; width:100%; border-radius:12px;
-      border:1px solid var(--line); background:#fff; outline:none
-    }
+    .input{height:44px; padding:0 14px; width:100%; border-radius:12px; border:1px solid var(--line); background:#fff; outline:none}
     .input:focus{border-color:#C7D2FE; box-shadow:0 0 0 4px rgba(99,102,241,.12)}
     .input.readonly{background:#F3F6FB; color:#374151}
-    .btn{
-      height:44px; padding:0 16px; border-radius:14px; border:0;
-      background:linear-gradient(135deg,var(--accent),var(--accent-2));
-      color:#fff; font-weight:800; letter-spacing:.2px; box-shadow:0 12px 28px rgba(59,130,246,.28);
-      cursor:pointer
-    }
+    .btn{height:44px; padding:0 16px; border-radius:14px; border:0; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; font-weight:800; letter-spacing:.2px; box-shadow:0 12px 28px rgba(59,130,246,.28); cursor:pointer}
     .btn[disabled]{opacity:.6; cursor:not-allowed}
-    .btn.ghost{
-      background:linear-gradient(180deg,#fff,#FBFDFF); color:#0F172A; border:1px solid var(--line); font-weight:700
-    }
-    .chip{
-      height:34px; padding:0 12px; border-radius:999px; border:1px solid var(--line);
-      background:linear-gradient(180deg,#fff,#F8FAFF); font-size:12px; color:#111827; cursor:pointer
-    }
+    .btn.ghost{background:linear-gradient(180deg,#fff,#FBFDFF); color:#0F172A; border:1px solid var(--line); font-weight:700}
+    .chip{height:34px; padding:0 12px; border-radius:999px; border:1px solid var(--line); background:linear-gradient(180deg,#fff,#F8FAFF); font-size:12px; color:#111827; cursor:pointer}
     .chip.active{border-color:transparent; color:#0B4DD9; background:linear-gradient(135deg,#EEF2FF,#E0EAFF)}
 
     .list{display:flex; flex-direction:column; gap:8px}
-    .item{
-      display:grid; grid-template-columns:auto 1fr auto auto; align-items:center; gap:10px;
-      padding:12px; background:linear-gradient(180deg,#fff,#FBFDFF);
-      border:1px solid var(--line); border-radius:14px; min-width:0
-    }
-    .emblem{
-      width:28px;height:28px;border-radius:10px; display:grid; place-items:center; color:white;
-      background:linear-gradient(135deg,#2563EB,#60A5FA); box-shadow:0 6px 14px rgba(37,99,235,.25)
-    }
+    .item{display:grid; grid-template-columns:auto 1fr auto auto; align-items:center; gap:10px; padding:12px; background:linear-gradient(180deg,#fff,#FBFDFF); border:1px solid var(--line); border-radius:14px; min-width:0}
+    .emblem{width:28px;height:28px;border-radius:10px; display:grid; place-items:center; color:white; background:linear-gradient(135deg,#2563EB,#60A5FA); box-shadow:0 6px 14px rgba(37,99,235,.25)}
     .emblem.week{background:linear-gradient(135deg,#7C3AED,#A78BFA)}
     .emblem.backlog{background:linear-gradient(135deg,#0EA5E9,#67E8F9)}
     .emblem svg{width:16px;height:16px}
@@ -108,13 +75,10 @@
     .title{font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
     .hint{color:#667085; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
     .tag{font-size:11px; color:#0F766E; background:linear-gradient(180deg,#ECFDF5,#F6FFFB); border:1px solid #A7F3D0; padding:4px 8px; border-radius:999px; white-space:nowrap}
-    .more{border:none; background:transparent; font-size:18px; color:#9CA3AF; cursor:pointer}
 
     .plan-tabs{display:flex; gap:6px; overflow:auto; padding-bottom:6px; margin-bottom:10px}
     .plan-tab{height:34px; padding:0 12px; border-radius:999px; border:1px solid var(--line); background:linear-gradient(180deg,#fff,#F8FAFF); cursor:pointer}
     .plan-tab.active{border-color:transparent; background:linear-gradient(135deg,#EEF2FF,#E0EAFF); color:#0B4DD9}
-    .board{display:grid; grid-template-columns:repeat(2, minmax(160px,1fr)); gap:10px}
-    .column{background:linear-gradient(180deg,#fff,#F8FAFF); border:1px solid var(--line); border-radius:14px; padding:10px; min-height:180px}
 
     .agenda{display:grid; grid-template-columns:60px 1fr; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:linear-gradient(180deg,#fff,#F8FAFF)}
     .hour{height:40px; padding:6px 6px; font-size:12px; color:#6B7280; border-bottom:1px dashed #E5E7EB}
@@ -124,29 +88,17 @@
     .allDay .pill{font-size:12px; border:1px solid var(--line); border-radius:999px; padding:6px 10px; background:linear-gradient(180deg,#fff,#F8FAFF)}
 
     .chatbar{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(12px + 72px + env(safe-area-inset-bottom)); z-index:55; width:min(560px,94%); pointer-events:none}
-    .btn-chat{
-      pointer-events:auto; display:block; width:100%; height:56px; border-radius:16px; border:0; font-weight:900; letter-spacing:.2px;
-      color:#fff; background:linear-gradient(90deg,#2563EB 0%, #60A5FA 60%, #A78BFA 100%);
-      box-shadow:0 16px 40px rgba(37,99,235,.35), inset 0 -2px 0 rgba(255,255,255,.25);
-      cursor:pointer
-    }
+    .btn-chat{pointer-events:auto; display:block; width:100%; height:56px; border-radius:16px; border:0; font-weight:900; letter-spacing:.2px; color:#fff; background:linear-gradient(90deg,#2563EB 0%, #60A5FA 60%, #A78BFA 100%); box-shadow:0 16px 40px rgba(37,99,235,.35), inset 0 -2px 0 rgba(255,255,255,.25); cursor:pointer}
 
     .dock{position:fixed; left:50%; bottom:12px; transform:translateX(-50%); z-index:50; width:min(560px,94%); padding-bottom:env(safe-area-inset-bottom); pointer-events:none}
-    .dock-inner{
-      display:grid; grid-template-columns:repeat(4,1fr); gap:6px;
-      background:rgba(255,255,255,.9); backdrop-filter:saturate(140%) blur(12px);
-      border:1px solid var(--line); border-radius:18px; padding:10px; box-shadow:0 10px 28px rgba(15,23,42,.14); pointer-events:auto
-    }
+    .dock-inner{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; background:rgba(255,255,255,.9); backdrop-filter:saturate(140%) blur(12px); border:1px solid var(--line); border-radius:18px; padding:10px; box-shadow:0 10px 28px rgba(15,23,42,.14); pointer-events:auto}
     .dock-item{height:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; border-radius:12px; color:#667085; font-size:12px; border:none; background:transparent; cursor:pointer}
     .dock-item svg{width:22px;height:22px}
     .dock-item.active{background:linear-gradient(180deg,#F6F7FA,#EFF3FF); color:#0F172A; font-weight:700}
 
     .sheet{position:fixed; inset:0; z-index:60} .sheet[hidden]{display:none}
     .sheet-backdrop{position:absolute; inset:0; background:rgba(15,23,42,.35); backdrop-filter:blur(3px)}
-    .sheet-panel{
-      position:absolute; left:0; right:0; bottom:0; background:#fff; border-top-left-radius:18px; border-top-right-radius:18px;
-      box-shadow:0 -18px 44px rgba(0,0,0,.22); border:1px solid var(--line)
-    }
+    .sheet-panel{position:absolute; left:0; right:0; bottom:0; background:#fff; border-top-left-radius:18px; border-top-right-radius:18px; box-shadow:0 -18px 44px rgba(0,0,0,.22); border:1px solid var(--line)}
     .sheet-head{display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--line)}
     .sheet-body{max-height:50vh; overflow:auto; padding:12px; display:flex; flex-direction:column; gap:10px}
     .sheet-input{display:flex; gap:10px; padding:12px; border-top:1px solid var(--line)}
@@ -158,7 +110,6 @@
   </style>
 </head>
 <body>
-<!-- SVG-спрайт эмблем -->
 <svg width="0" height="0" style="position:absolute;visibility:hidden">
   <symbol id="i-bolt" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24" fill="currentColor"><path d="M11 5h2v14h-2z"/><path d="M5 11h14v2H5z"/></symbol>
@@ -188,7 +139,6 @@
   <main>
     <div id="notInTg" class="warn-banner" style="display:none">Откройте приложение из меню Telegram-бота. Иначе сервер не примет запросы.</div>
 
-    <!-- СЕГОДНЯ -->
     <section id="screen-today" class="screen">
       <h1>Сегодня</h1>
 
@@ -228,7 +178,6 @@
       </div>
     </section>
 
-    <!-- ПЛАН -->
     <section id="screen-plan" class="screen" hidden>
       <h1>План</h1>
       <div class="plan-tabs" role="tablist">
@@ -241,20 +190,10 @@
         <div class="card"><h2><span class="emblem week"><svg><use href="#i-week"/></svg></span>На неделе</h2><div id="list-week" class="list"></div></div>
         <div class="card"><h2><span class="emblem backlog"><svg><use href="#i-backlog"/></svg></span>Бэклог</h2><div id="list-backlog" class="list"></div></div>
       </div>
-      <div id="plan-view-hadi" hidden>
-        <div class="board">
-          <div class="column"><strong>Planned</strong></div>
-          <div class="column"><strong>Running</strong></div>
-          <div class="column"><strong>Review</strong></div>
-          <div class="column"><strong>Done</strong></div>
-        </div>
-      </div>
-      <div id="plan-view-metrics" hidden>
-        <div class="card"><div class="sub">KPI скоро будут здесь…</div></div>
-      </div>
+      <div id="plan-view-hadi" hidden><div class="card"><div class="sub">Скоро…</div></div></div>
+      <div id="plan-view-metrics" hidden><div class="card"><div class="sub">Скоро…</div></div></div>
     </section>
 
-    <!-- КАЛЕНДАРЬ (read-only из задач) -->
     <section id="screen-calendar" class="screen" hidden>
       <h1>Календарь</h1>
       <div class="card" style="margin-bottom:10px">
@@ -275,17 +214,14 @@
       </div>
     </section>
 
-    <!-- ПРОФИЛЬ -->
     <section id="screen-settings" class="screen" hidden>
       <h1>Профиль</h1>
       <div class="card"><div class="sub">Таймзона: Europe/Helsinki · Уведомления: вкл</div></div>
     </section>
   </main>
 
-  <!-- Большая кнопка чата -->
   <div class="chatbar"><button class="btn-chat" data-action="openChat">💬 Чат с ассистентом</button></div>
 
-  <!-- Нижняя навигация -->
   <nav class="dock" role="navigation" aria-label="Нижняя навигация">
     <div class="dock-inner">
       <button class="dock-item active" data-target="today"><svg><use href="#i-home"/></svg><span>Сегодня</span></button>
@@ -295,14 +231,10 @@
     </div>
   </nav>
 
-  <!-- Шторка чата -->
   <div class="sheet" id="chatSheet" hidden>
     <div class="sheet-backdrop" data-action="closeChat"></div>
     <div class="sheet-panel">
-      <div class="sheet-head">
-        <strong>Чат с ассистентом</strong>
-        <button class="btn ghost" data-action="closeChat">Закрыть</button>
-      </div>
+      <div class="sheet-head"><strong>Чат с ассистентом</strong><button class="btn ghost" data-action="closeChat">Закрыть</button></div>
       <div class="sheet-body" id="chatBox"></div>
       <div class="sheet-input">
         <input id="chatInput" class="input" placeholder="Спросите про план, HADI или задачи…">
@@ -312,15 +244,15 @@
   </div>
 </div>
 
-<!-- Оверлей ошибок/диагностики -->
-<div id="debugOverlay" style="position:fixed;left:50%;transform:translateX(-50%);bottom:92px;max-width:94%;z-index:9999;background:#111827;color:#fff;padding:10px 12px;border-radius:10px;display:none"></div>
+<!-- Липкая диагностика -->
+<div id="debugOverlay" onclick="this.style.display='none'"
+     style="position:fixed;left:50%;transform:translateX(-50%);bottom:92px;max-width:94%;z-index:9999;background:#111827;color:#fff;padding:10px 12px;border-radius:10px;display:none"></div>
 
 <script>
-  function showErr(msg){
+  function showSticky(msg){
     const box=document.getElementById('debugOverlay');
     box.textContent=String(msg||'Ошибка');
     box.style.display='block';
-    setTimeout(()=>box.style.display='none', 3500);
     console.error('[UI]', msg);
   }
   function toast(msg){
@@ -332,69 +264,63 @@
   }
 </script>
 
-<!-- Telegram bootstrap + authFetch -->
 <script>
 (function(){
-  var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+  const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
   if (tg) { try { tg.ready(); tg.expand(); } catch(e){} }
   window.__TG_INIT_DATA__ = tg && tg.initData ? tg.initData : '';
+  if (!window.__TG_INIT_DATA__) { const w = document.getElementById('notInTg'); if (w) w.style.display = 'block'; }
 
-  if (!window.__TG_INIT_DATA__) {
-    var w = document.getElementById('notInTg');
-    if (w) w.style.display = 'block';
-  }
-
-  window.authFetch = async function(url, opts){
-    opts = opts || {};
-    opts.headers = Object.assign({}, opts.headers, { 'x-telegram-init': window.__TG_INIT_DATA__ || '' });
-    const res = await fetch(url, opts);
-    if (!res.ok) {
-      let msg = `${res.status} ${res.statusText}`;
-      try { const j = await res.clone().json(); if (j && j.error) msg = j.error; } catch {}
-      const show = String(msg || 'Ошибка');
-      const box=document.getElementById('debugOverlay'); box.textContent = 'API: ' + show; box.style.display='block';
-      setTimeout(()=>box.style.display='none', 3500);
-      console.error('[API]', show);
+  // fetch с таймаутом + детальные ошибки
+  window.authFetch = async function(url, opts, timeoutMs = 8000){
+    const controller = new AbortController();
+    const timer = setTimeout(()=>controller.abort('timeout'), timeoutMs);
+    try{
+      const res = await fetch(url, {
+        ...(opts||{}),
+        headers: { ...(opts?.headers||{}), 'x-telegram-init': window.__TG_INIT_DATA__ || '' },
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      if(!res.ok){
+        let detail = `${res.status} ${res.statusText}`;
+        try{ const j = await res.clone().json(); if (j?.error) detail = j.error; }catch{ try{ detail = await res.text(); }catch{} }
+        showSticky('API: ' + detail);
+      }
+      return res;
+    }catch(e){
+      clearTimeout(timer);
+      showSticky('API: ' + (e?.name==='AbortError' ? 'timeout' : (e?.message || 'network error')));
+      throw e;
     }
-    return res;
   };
 })();
 </script>
 
-<!-- Приложение + авто-health -->
 <script>
 (async function(){
-  /* helpers */
-  const q = sel => document.querySelector(sel);
-  const qa = sel => document.querySelectorAll(sel);
+  const q = s=>document.querySelector(s), qa=s=>document.querySelectorAll(s);
   const todayStr = () => new Date().toISOString().slice(0,10);
   const ddmm = d => d ? (d.split('-')[2]+'.'+d.split('-')[1]) : '—';
   const esc = s => String(s||'').replace(/[&<>\"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
 
-  /* state */
-  let lists = { today:[], week:[], backlog:[] };
-  let calItems = [];
-  let focusText = '';
-  let showAll=false, picked='today', currentDate=todayStr();
+  let lists={today:[],week:[],backlog:[]}, calItems=[], focusText='', showAll=false, picked='today', currentDate=todayStr();
 
-  /* focus UI */
   function lockFocusUI(lock){
     const input=q('#focus'), save=q('#saveFocusBtn'), edit=q('#editFocusBtn');
-    if(lock){ input.readOnly=true; input.classList.add('readonly'); save.disabled=false; save.style.display='none'; edit.style.display='inline-block' }
-    else    { input.readOnly=false; input.classList.remove('readonly'); save.disabled=false; save.style.display='inline-block'; edit.style.display='none'; setTimeout(()=>input.focus(),0) }
+    if(lock){ input.readOnly=true; input.classList.add('readonly'); save.style.display='none'; edit.style.display='inline-block' }
+    else    { input.readOnly=false; input.classList.remove('readonly'); save.style.display='inline-block'; edit.style.display='none'; setTimeout(()=>input.focus(),0) }
   }
   function updateFocusChip(){
     const chip=q('#focusChip');
     if(focusText){ chip.textContent='Фокус: '+(focusText.length>28?focusText.slice(0,27)+'…':focusText); chip.hidden=false } else chip.hidden=true;
   }
 
-  /* API helpers */
-  const apiGET   = url => authFetch(url).then(r=>r.json()).catch(e=>{showErr('Сеть недоступна'); throw e});
-  const apiPOST  = (url,b) => authFetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json());
-  const apiPUT   = (url,b) => authFetch(url,{method:'PUT', headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json());
-  const apiPATCH = (url,b) => authFetch(url,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json());
+  const apiGET   = url    => authFetch(url).then(r=>r.json()).catch(()=>({}));
+  const apiPOST  = (u,b)  => authFetch(u,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json()).catch(()=>({}));
+  const apiPUT   = (u,b)  => authFetch(u,{method:'PUT', headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json()).catch(()=>({}));
+  const apiPATCH = (u,b)  => authFetch(u,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json()).catch(()=>({}));
 
-  /* tasks UI */
   function iconForList(list){
     if(list==='week') return '<span class="emblem week"><svg><use href="#i-week"/></svg></span>';
     if(list==='backlog') return '<span class="emblem backlog"><svg><use href="#i-backlog"/></svg></span>';
@@ -423,19 +349,15 @@
     });
   }
 
-  /* calendar (read-only) */
   function renderAgenda(){
     const hours=q('#hours'), slots=q('#slots'), allDayWrap=q('#allDay'), allDayBox=q('#allDayBox');
     hours.innerHTML=''; slots.innerHTML=''; allDayWrap.innerHTML='';
-
     for(let h=8;h<=20;h++){
       const hr=document.createElement('div'); hr.className='hour'; hr.textContent=(h<10?'0':'')+h+':00'; hours.appendChild(hr);
       const sl=document.createElement('div'); sl.className='slot'; slots.appendChild(sl);
     }
-
     const timed=(calItems||[]).filter(x=>x.due_time);
     const alld =(calItems||[]).filter(x=>!x.due_time);
-
     timed.forEach(ev=>{
       const [hh,mm]=(ev.due_time||'00:00').split(':');
       const top=((parseInt(hh,10)-8)*40) + (parseInt(mm,10)/60)*40 + 6;
@@ -443,35 +365,27 @@
       e.textContent=ev.title+' · '+ev.due_time.slice(0,5);
       slots.appendChild(e);
     });
-
-    if(alld.length){
-      allDayBox.style.display='block';
-      alld.forEach(t=>{ const p=document.createElement('span'); p.className='pill'; p.textContent=t.title; allDayWrap.appendChild(p) });
-    }else{
-      allDayBox.style.display='none';
-    }
+    if(alld.length){ allDayBox.style.display='block'; alld.forEach(t=>{ const p=document.createElement('span'); p.className='pill'; p.textContent=t.title; allDayWrap.appendChild(p) }) }
+    else { allDayBox.style.display='none'; }
   }
   async function loadCalendar(day){
-    const r = await apiGET('/api/calendar?day='+encodeURIComponent(day)).catch(()=>({items:[]}));
+    const r = await apiGET('/api/calendar?day='+encodeURIComponent(day));
     calItems = r.items || []; renderAgenda();
   }
 
-  /* focus */
   async function saveFocus(){
-    const btn=q('#saveFocusBtn'); const input=q('#focus'); const v=(input.value||'').trim(); if(!v){ showErr('Введите фокус дня'); return }
+    const btn=q('#saveFocusBtn'); const input=q('#focus'); const v=(input.value||'').trim(); if(!v){ showSticky('Введите фокус дня'); return }
     btn.disabled=true; const old=btn.textContent; btn.textContent='Сохраняю…';
     try{
       const resp = await apiPUT('/api/focus', { day: todayStr(), text: v });
       if (resp && resp.text){ focusText=v; lockFocusUI(true); updateFocusChip(); toast('Фокус сохранён'); }
-      else { showErr(resp?.error || 'Ошибка сервера (focus)'); }
-    }catch(e){ showErr(e?.message || 'Сеть недоступна'); }
-    finally{ btn.disabled=false; btn.textContent=old; }
+      else { showSticky(resp?.error || 'Ошибка сервера (focus)'); }
+    } finally { btn.disabled=false; btn.textContent=old; }
   }
   function editFocus(){ lockFocusUI(false) }
 
-  /* quick add */
   async function quickAdd(){
-    const btn=q('#quickBtn'); const input=q('#add'); const title=(input.value||'').trim(); if(!title){ showErr('Введите название'); return }
+    const btn=q('#quickBtn'); const input=q('#add'); const title=(input.value||'').trim(); if(!title){ showSticky('Введите название'); return }
     const d=q('#dueDate').value||null; const t=q('#dueTime').value||null;
     btn.disabled=true; const old=btn.textContent; btn.textContent='Добавляю…';
     try{
@@ -481,13 +395,11 @@
         input.value=''; q('#dueDate').value=''; q('#dueTime').value='';
         renderToday(); renderPlan(); toast('Добавлено');
         if(created.due_date===currentDate){ calItems.unshift(created); renderAgenda(); }
-      } else { showErr(created?.error || 'Ошибка сервера (task)'); }
-    }catch(e){ showErr(e?.message || 'Сеть недоступна'); }
-    finally{ btn.disabled=false; btn.textContent=old; }
+      } else { showSticky(created?.error || 'Ошибка сервера (task)'); }
+    } finally { btn.disabled=false; btn.textContent=old; }
   }
   async function toggleAll(){ showAll=!showAll; q('#toggleBtn').textContent = showAll? 'Скрыть лишнее' : 'Показать всё'; renderToday() }
 
-  /* chat */
   function appendMsg(who, text){
     const box=document.getElementById('chatBox');
     const b=document.createElement('div'); b.className='bubble '+(who==='me'?'me':'bot'); b.textContent=text; box.appendChild(b); box.scrollTop=box.scrollHeight;
@@ -505,7 +417,6 @@
     } catch { appendMsg('bot','Сеть недоступна'); }
   }
 
-  /* events */
   document.addEventListener('click', async function(e){
     let el=e.target; while(el&&el!==document){ if(el.dataset.action || el.dataset.target || el.dataset.list || (el.classList && [...el.classList].includes('plan-tab'))) break; el=el.parentNode }
     if(!el||el===document) return;
@@ -517,10 +428,7 @@
     if(act==='chatSend'){ e.preventDefault(); chatSend(); return }
     if(act==='openChat'){ e.preventDefault(); openChat(); return }
     if(act==='closeChat'){ e.preventDefault(); closeChat(); return }
-
-    if(el.dataset.list){
-      qa('.card .chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); picked=el.dataset.list; e.preventDefault(); return
-    }
+    if(el.dataset.list){ qa('.card .chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); picked=el.dataset.list; e.preventDefault(); return }
     if(el.classList && el.classList.contains('plan-tab')){
       const v=el.dataset.view; qa('.plan-tab').forEach(t=>t.classList.remove('active')); el.classList.add('active');
       ['lists','hadi','metrics'].forEach(k=>{ const n=q('#plan-view-'+k); if(n) n.hidden=(k!==v) }); e.preventDefault(); return
@@ -536,56 +444,37 @@
     const el=e.target;
     if(el && el.classList.contains('check')){
       const id = el.getAttribute('data-id');
-      try { const r = await apiPATCH('/api/tasks/'+encodeURIComponent(id), { done: el.checked }); if (r && r.error) showErr(r.error); }
-      catch { showErr('Не удалось обновить задачу'); }
-      ['today','week','backlog'].forEach(k=>{
-        lists[k] = (lists[k]||[]).map(t=>{ if(String(t.id)===String(id)) t.done=el.checked; return t });
-      });
+      const r = await apiPATCH('/api/tasks/'+encodeURIComponent(id), { done: el.checked });
+      if (r && r.error) showSticky(r.error);
+      ['today','week','backlog'].forEach(k=>{ lists[k] = (lists[k]||[]).map(t=>{ if(String(t.id)===String(id)) t.done=el.checked; return t }); });
     }
     if(el && el.id==='calDate'){ currentDate=el.value; await loadCalendar(currentDate); }
   });
 
-  /* загрузка */
   async function loadTasks(){
     const [t,w,b] = await Promise.all([
-      apiGET('/api/tasks?list=today').catch(()=>({items:[]})),
-      apiGET('/api/tasks?list=week').catch(()=>({items:[]})),
-      apiGET('/api/tasks?list=backlog').catch(()=>({items:[]}))
+      apiGET('/api/tasks?list=today'),
+      apiGET('/api/tasks?list=week'),
+      apiGET('/api/tasks?list=backlog'),
     ]);
     lists.today=t.items||[]; lists.week=w.items||[]; lists.backlog=b.items||[];
   }
   async function loadFocus(day){
-    const f = await apiGET('/api/focus?day='+encodeURIComponent(day)).catch(()=>null);
+    const f = await apiGET('/api/focus?day='+encodeURIComponent(day));
     focusText = f && f.text ? f.text : '';
     const input=q('#focus'); if(input) input.value=focusText||'';
     lockFocusUI(!!focusText); updateFocusChip();
   }
 
-  /* авто-health (усовершенствованный вывод) */
   async function selfHealthCheck(){
     try {
       const res = await authFetch('/api/health');
       let body = {};
       try { body = await res.clone().json(); } catch {}
-      if (res.status === 404) {
-        const box = document.getElementById('debugOverlay');
-        box.textContent = 'HEALTH: endpoint /api/health НЕ найден (404)'; box.style.display = 'block';
-        return;
-      }
-      if (!res.ok || !body || typeof body !== 'object') {
-        const box = document.getElementById('debugOverlay');
-        box.textContent = `HEALTH: bad response (${res.status})`; box.style.display = 'block';
-        return;
-      }
-      if (!body.ok) {
-        const box = document.getElementById('debugOverlay');
-        box.textContent = `HEALTH: tg=${body.telegram_signature_ok} db=${body.db_ok} env.pg=${body?.env?.has_POSTGRES_URL}`;
-        box.style.display = 'block';
-      }
-    } catch {
-      const box=document.getElementById('debugOverlay'); 
-      box.textContent = 'HEALTH: network error'; box.style.display='block';
-    }
+      if (res.status === 404) return showSticky('HEALTH: /api/health 404');
+      if (!res.ok || !body || typeof body !== 'object') return showSticky(`HEALTH: bad response (${res.status})`);
+      if (!body.ok) showSticky(`HEALTH: tg=${body.telegram_signature_ok} db=${body.db_ok} env.pg=${body?.env?.has_POSTGRES_URL}`);
+    } catch { showSticky('HEALTH: network error'); }
   }
 
   async function init(){
