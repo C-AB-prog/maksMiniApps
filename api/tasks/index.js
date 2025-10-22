@@ -1,90 +1,67 @@
 // api/tasks/index.js
-import { sql } from "@vercel/postgres";
-import { ensureSchema, getOrCreateUserByTelegram } from "../_utils/db.js";
-import { verifyTelegramInitNode, parseTelegramUser } from "../_utils/tg_node.js";
-import crypto from "crypto";
+import { sql } from '@vercel/postgres';
+import { ensureSchema } from '../_utils/db.js';
+import { verifyTelegramInitNode, parseTelegramUser } from '../_utils/tg_node.js';
 
 export default async function handler(req, res) {
   try {
-    if (req.method !== "GET" && req.method !== "POST") {
-      res.status(405).json({ error: "Use GET or POST" });
-      return;
-    }
+    // --- auth Telegram
+    const init = req.headers['x-telegram-init'] || '';
+    const ok   = await verifyTelegramInitNode(init, process.env.BOT_TOKEN);
+    if (!ok) return res.status(401).json({ error: 'INVALID_TELEGRAM_SIGNATURE' });
 
-    // Telegram auth
-    const initData = req.headers["x-telegram-init"] || req.headers["X-Telegram-Init"];
-    const botToken = process.env.BOT_TOKEN || "";
-    if (!verifyTelegramInitNode(initData || "", botToken)) {
-      res.status(401).json({ error: "INVALID_TELEGRAM_SIGNATURE" });
-      return;
-    }
+    const user = parseTelegramUser(init);
+    if (!user?.id) return res.status(400).json({ error: 'NO_TELEGRAM_USER' });
+    const tgId = BigInt(user.id);
+
+    // --- schema + user upsert
     await ensureSchema();
+    await sql`
+      INSERT INTO users (tg_id, name)
+      VALUES (${tgId}, ${user.first_name || ''})
+      ON CONFLICT (tg_id) DO UPDATE SET name = EXCLUDED.name
+    `;
 
-    const user = parseTelegramUser(initData || "");
-    const userId = await getOrCreateUserByTelegram(user);
+    if (req.method === 'GET') {
+      const list = String(req.query?.list || 'today');
+      const allow = new Set(['today','week','backlog']);
+      if (!allow.has(list)) return res.status(400).json({ error: 'LIST_INVALID' });
 
-    // Parse query
-    const url = new URL(req.url, "http://localhost");
-    const listParam = url.searchParams.get("list"); // today|week|backlog|null
-
-    if (req.method === "GET") {
-      let q;
-      if (listParam) {
-        q = await sql/*sql*/`
-          SELECT id, title, list, due_date, due_time, done
-          FROM tasks
-          WHERE user_id = ${userId} AND list = ${listParam}
-          ORDER BY created_at DESC;
-        `;
-      } else {
-        q = await sql/*sql*/`
-          SELECT id, title, list, due_date, due_time, done
-          FROM tasks
-          WHERE user_id = ${userId}
-          ORDER BY created_at DESC;
-        `;
-      }
-      res.status(200).json({ items: q.rows });
-      return;
-    }
-
-    if (req.method === "POST") {
-      const body = await readBody(req);
-      const title = (body.title || "").trim();
-      const list = body.list || "today";
-      const due_date = body.due_date || null; // YYYY-MM-DD
-      const due_time = body.due_time || null; // HH:MM
-
-      if (!title) {
-        res.status(400).json({ error: "TITLE_REQUIRED" });
-        return;
-      }
-      if (!["today", "week", "backlog"].includes(list)) {
-        res.status(400).json({ error: "BAD_LIST" });
-        return;
-      }
-
-      const id = crypto.randomUUID();
-      await sql/*sql*/`
-        INSERT INTO tasks (id, user_id, title, list, due_date, due_time)
-        VALUES (${id}, ${userId}, ${title}, ${list}, ${due_date}, ${due_time});
+      const { rows } = await sql`
+        SELECT id, title, list, due_date, due_time, done
+        FROM tasks
+        WHERE user_id = ${tgId} AND list = ${list}
+        ORDER BY created_at DESC
+        LIMIT 200
       `;
-
-      res.status(201).json({ id, title, list, due_date, due_time, done: false });
-      return;
+      return res.status(200).json({ items: rows });
     }
-  } catch (e) {
-    console.error("tasks/index error:", e);
-    res.status(500).json({ error: "INTERNAL_ERROR" });
-  }
-}
 
-function readBody(req) {
-  return new Promise((resolve) => {
-    let data = "";
-    req.on("data", (c) => (data += c));
-    req.on("end", () => {
-      try { resolve(JSON.parse(data || "{}")); } catch { resolve({}); }
-    });
-  });
+    if (req.method === 'POST') {
+      const body = req.body || {};
+      const title = (body.title || '').trim();
+      if (!title) return res.status(400).json({ error: 'TITLE_REQUIRED' });
+
+      const allow = new Set(['today','week','backlog']);
+      const list  = allow.has(body.list) ? body.list : 'today';
+
+      // пустые строки -> NULL
+      const due_date = body.due_date || null;   // 'YYYY-MM-DD' | null
+      const due_time = body.due_time || null;   // 'HH:mm'     | null
+
+      const { rows } = await sql`
+        INSERT INTO tasks (user_id, title, list, due_date, due_time)
+        VALUES (${tgId}, ${title}, ${list}, ${due_date}::date, ${due_time}::time)
+        RETURNING id, title, list, due_date, due_time, done
+      `;
+      return res.status(201).json(rows[0]);
+    }
+
+    res.setHeader('Allow','GET, POST');
+    return res.status(405).end('Method Not Allowed');
+
+  } catch (e) {
+    console.error('TASKS_INDEX_ERROR', e);
+    return res.status(500).json({ error: e?.code || e?.message || 'INTERNAL_ERROR' });
+  }
 }
