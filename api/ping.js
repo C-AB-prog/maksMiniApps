@@ -1,7 +1,9 @@
 // api/ping.js
-export const config = { runtime: 'edge' };
+export const config = { runtime: 'nodejs' };
+
 export default async function handler() {
-  return new Response(JSON.stringify({ ok:true, edge:true, time:new Date().toISOString() }), {
-    headers:{ 'content-type':'application/json', 'access-control-allow-origin':'*' }
+  return new Response(JSON.stringify({ ok: true, ts: Date.now() }), {
+    status: 200,
+    headers: { 'content-type': 'application/json' }
   });
 }
