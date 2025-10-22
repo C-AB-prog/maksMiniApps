@@ -6,10 +6,8 @@
   <meta name="theme-color" content="#ffffff" />
   <title>Growth Assistant · Mini App</title>
 
-  <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  <!-- Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -35,7 +33,6 @@
         linear-gradient(#FAFCFF,#F6F9FF);
     }
 
-    /* layout */
     .app{min-height:100%; display:flex; flex-direction:column}
     header{
       position:sticky; top:0; z-index:20;
@@ -58,7 +55,6 @@
 
     main{flex:1; padding:0 12px calc(210px + env(safe-area-inset-bottom)); max-width:960px; margin:0 auto}
 
-    /* cards */
     .card{
       background:linear-gradient(180deg, #FFF 0%, #FDFEFF 100%);
       border:1px solid var(--line); border-radius:var(--r-xl); padding:14px; box-shadow:var(--sh-card)
@@ -68,7 +64,6 @@
     h2{font-size:var(--h2); margin:0 0 10px 0; display:flex; align-items:center; gap:8px}
     .sub{color:var(--muted); font-size:var(--cap)}
 
-    /* inputs/buttons */
     .row{display:flex; gap:10px; align-items:center}
     .input{
       height:44px; padding:0 14px; width:100%; border-radius:12px;
@@ -82,6 +77,7 @@
       color:#fff; font-weight:800; letter-spacing:.2px; box-shadow:0 12px 28px rgba(59,130,246,.28);
       cursor:pointer
     }
+    .btn[disabled]{opacity:.6; cursor:not-allowed}
     .btn.ghost{
       background:linear-gradient(180deg,#fff,#FBFDFF); color:#0F172A; border:1px solid var(--line); font-weight:700
     }
@@ -91,7 +87,6 @@
     }
     .chip.active{border-color:transparent; color:#0B4DD9; background:linear-gradient(135deg,#EEF2FF,#E0EAFF)}
 
-    /* list items */
     .list{display:flex; flex-direction:column; gap:8px}
     .item{
       display:grid; grid-template-columns:auto 1fr auto auto; align-items:center; gap:10px;
@@ -113,14 +108,12 @@
     .tag{font-size:11px; color:#0F766E; background:linear-gradient(180deg,#ECFDF5,#F6FFFB); border:1px solid #A7F3D0; padding:4px 8px; border-radius:999px; white-space:nowrap}
     .more{border:none; background:transparent; font-size:18px; color:#9CA3AF; cursor:pointer}
 
-    /* plan */
     .plan-tabs{display:flex; gap:6px; overflow:auto; padding-bottom:6px; margin-bottom:10px}
     .plan-tab{height:34px; padding:0 12px; border-radius:999px; border:1px solid var(--line); background:linear-gradient(180deg,#fff,#F8FAFF); cursor:pointer}
     .plan-tab.active{border-color:transparent; background:linear-gradient(135deg,#EEF2FF,#E0EAFF); color:#0B4DD9}
     .board{display:grid; grid-template-columns:repeat(2, minmax(160px,1fr)); gap:10px}
     .column{background:linear-gradient(180deg,#fff,#F8FAFF); border:1px solid var(--line); border-radius:14px; padding:10px; min-height:180px}
 
-    /* calendar */
     .agenda{display:grid; grid-template-columns:60px 1fr; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:linear-gradient(180deg,#fff,#F8FAFF)}
     .hour{height:40px; padding:6px 6px; font-size:12px; color:#6B7280; border-bottom:1px dashed #E5E7EB}
     .slot{height:40px; border-bottom:1px dashed #E5E7EB; position:relative}
@@ -128,7 +121,6 @@
     .allDay{margin-top:10px; display:flex; flex-wrap:wrap; gap:8px}
     .allDay .pill{font-size:12px; border:1px solid var(--line); border-radius:999px; padding:6px 10px; background:linear-gradient(180deg,#fff,#F8FAFF)}
 
-    /* chat big CTA */
     .chatbar{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(12px + 72px + env(safe-area-inset-bottom)); z-index:55; width:min(560px,94%); pointer-events:none}
     .btn-chat{
       pointer-events:auto; display:block; width:100%; height:56px; border-radius:16px; border:0; font-weight:900; letter-spacing:.2px;
@@ -137,7 +129,6 @@
       cursor:pointer
     }
 
-    /* bottom dock */
     .dock{position:fixed; left:50%; bottom:12px; transform:translateX(-50%); z-index:50; width:min(560px,94%); padding-bottom:env(safe-area-inset-bottom); pointer-events:none}
     .dock-inner{
       display:grid; grid-template-columns:repeat(4,1fr); gap:6px;
@@ -148,7 +139,6 @@
     .dock-item svg{width:22px;height:22px}
     .dock-item.active{background:linear-gradient(180deg,#F6F7FA,#EFF3FF); color:#0F172A; font-weight:700}
 
-    /* sheet (chat) */
     .sheet{position:fixed; inset:0; z-index:60} .sheet[hidden]{display:none}
     .sheet-backdrop{position:absolute; inset:0; background:rgba(15,23,42,.35); backdrop-filter:blur(3px)}
     .sheet-panel{
@@ -166,7 +156,6 @@
   </style>
 </head>
 <body>
-<!-- SVG-спрайт эмблем -->
 <svg width="0" height="0" style="position:absolute;visibility:hidden">
   <symbol id="i-bolt" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24" fill="currentColor"><path d="M11 5h2v14h-2z"/><path d="M5 11h14v2H5z"/></symbol>
@@ -196,7 +185,6 @@
   <main>
     <div id="notInTg" class="warn-banner" style="display:none">Откройте приложение из меню Telegram-бота. Иначе сервер не примет запросы.</div>
 
-    <!-- СЕГОДНЯ -->
     <section id="screen-today" class="screen">
       <h1>Сегодня</h1>
 
@@ -213,7 +201,7 @@
         <h2><span class="emblem" style="background:linear-gradient(135deg,#22C55E,#86EFAC)"><svg><use href="#i-plus"/></svg></span>Быстрое добавление</h2>
         <div class="row" style="flex-wrap:wrap">
           <input id="add" class="input" placeholder="Название задачи" style="flex:1 1 100%">
-          <button class="btn" data-action="quickAdd">Добавить</button>
+          <button class="btn" data-action="quickAdd" id="quickBtn">Добавить</button>
         </div>
         <div class="row" style="flex-wrap:wrap; margin-top:8px">
           <span class="sub">Список:</span>
@@ -236,7 +224,6 @@
       </div>
     </section>
 
-    <!-- ПЛАН -->
     <section id="screen-plan" class="screen" hidden>
       <h1>План</h1>
       <div class="plan-tabs" role="tablist">
@@ -262,7 +249,6 @@
       </div>
     </section>
 
-    <!-- КАЛЕНДАРЬ (read-only из задач) -->
     <section id="screen-calendar" class="screen" hidden>
       <h1>Календарь</h1>
       <div class="card" style="margin-bottom:10px">
@@ -283,17 +269,14 @@
       </div>
     </section>
 
-    <!-- ПРОФИЛЬ -->
     <section id="screen-settings" class="screen" hidden>
       <h1>Профиль</h1>
       <div class="card"><div class="sub">Таймзона: Europe/Helsinki · Уведомления: вкл</div></div>
     </section>
   </main>
 
-  <!-- Большая кнопка чата -->
   <div class="chatbar"><button class="btn-chat" data-action="openChat">💬 Чат с ассистентом</button></div>
 
-  <!-- Нижняя навигация -->
   <nav class="dock" role="navigation" aria-label="Нижняя навигация">
     <div class="dock-inner">
       <button class="dock-item active" data-target="today"><svg><use href="#i-home"/></svg><span>Сегодня</span></button>
@@ -303,7 +286,6 @@
     </div>
   </nav>
 
-  <!-- Шторка чата -->
   <div class="sheet" id="chatSheet" hidden>
     <div class="sheet-backdrop" data-action="closeChat"></div>
     <div class="sheet-panel">
@@ -320,7 +302,6 @@
   </div>
 </div>
 
-<!-- Оверлей ошибок -->
 <div id="debugOverlay" style="position:fixed;left:50%;transform:translateX(-50%);bottom:92px;max-width:94%;z-index:9999;background:#111827;color:#fff;padding:10px 12px;border-radius:10px;display:none"></div>
 
 <script>
@@ -340,7 +321,6 @@
   }
 </script>
 
-<!-- Telegram bootstrap + authFetch -->
 <script>
 (function(){
   var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
@@ -369,40 +349,34 @@
 })();
 </script>
 
-<!-- Приложение -->
 <script>
 (function(){
-  /* helpers */
   const q = sel => document.querySelector(sel);
   const qa = sel => document.querySelectorAll(sel);
   const todayStr = () => new Date().toISOString().slice(0,10);
   const ddmm = d => d ? (d.split('-')[2]+'.'+d.split('-')[1]) : '—';
   const esc = s => String(s||'').replace(/[&<>\"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
 
-  /* state */
   let lists = { today:[], week:[], backlog:[] };
   let calItems = [];
   let focusText = '';
   let showAll=false, picked='today', currentDate=todayStr();
 
-  /* focus UI */
   function lockFocusUI(lock){
     const input=q('#focus'), save=q('#saveFocusBtn'), edit=q('#editFocusBtn');
-    if(lock){ input.readOnly=true; input.classList.add('readonly'); save.style.display='none'; edit.style.display='inline-block' }
-    else    { input.readOnly=false; input.classList.remove('readonly'); save.style.display='inline-block'; edit.style.display='none'; setTimeout(()=>input.focus(),0) }
+    if(lock){ input.readOnly=true; input.classList.add('readonly'); save.disabled=false; save.style.display='none'; edit.style.display='inline-block' }
+    else    { input.readOnly=false; input.classList.remove('readonly'); save.disabled=false; save.style.display='inline-block'; edit.style.display='none'; setTimeout(()=>input.focus(),0) }
   }
   function updateFocusChip(){
     const chip=q('#focusChip');
     if(focusText){ chip.textContent='Фокус: '+(focusText.length>28?focusText.slice(0,27)+'…':focusText); chip.hidden=false } else chip.hidden=true;
   }
 
-  /* API helpers */
-  const apiGET   = url => authFetch(url).then(r=>r.json()).catch(e=>{showErr('Network'); throw e});
+  const apiGET   = url => authFetch(url).then(r=>r.json()).catch(e=>{showErr('Сеть недоступна'); throw e});
   const apiPOST  = (url,b) => authFetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json());
   const apiPUT   = (url,b) => authFetch(url,{method:'PUT', headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json());
   const apiPATCH = (url,b) => authFetch(url,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json());
 
-  /* tasks UI */
   function iconForList(list){
     if(list==='week') return '<span class="emblem week"><svg><use href="#i-week"/></svg></span>';
     if(list==='backlog') return '<span class="emblem backlog"><svg><use href="#i-backlog"/></svg></span>';
@@ -431,19 +405,15 @@
     });
   }
 
-  /* calendar (read-only) */
   function renderAgenda(){
     const hours=q('#hours'), slots=q('#slots'), allDayWrap=q('#allDay'), allDayBox=q('#allDayBox');
     hours.innerHTML=''; slots.innerHTML=''; allDayWrap.innerHTML='';
-
     for(let h=8;h<=20;h++){
       const hr=document.createElement('div'); hr.className='hour'; hr.textContent=(h<10?'0':'')+h+':00'; hours.appendChild(hr);
       const sl=document.createElement('div'); sl.className='slot'; slots.appendChild(sl);
     }
-
     const timed=(calItems||[]).filter(x=>x.due_time);
     const alld =(calItems||[]).filter(x=>!x.due_time);
-
     timed.forEach(ev=>{
       const [hh,mm]=(ev.due_time||'00:00').split(':');
       const top=((parseInt(hh,10)-8)*40) + (parseInt(mm,10)/60)*40 + 6;
@@ -451,34 +421,34 @@
       e.textContent=ev.title+' · '+ev.due_time.slice(0,5);
       slots.appendChild(e);
     });
-
     if(alld.length){
       allDayBox.style.display='block';
       alld.forEach(t=>{ const p=document.createElement('span'); p.className='pill'; p.textContent=t.title; allDayWrap.appendChild(p) });
-    }else{
-      allDayBox.style.display='none';
-    }
+    }else{ allDayBox.style.display='none'; }
   }
   async function loadCalendar(day){
     const r = await apiGET('/api/calendar?day='+encodeURIComponent(day)).catch(()=>({items:[]}));
     calItems = r.items || []; renderAgenda();
   }
 
-  /* focus */
   async function saveFocus(){
-    const input=q('#focus'); const v=(input.value||'').trim(); if(!v){ showErr('Введите фокус дня'); return }
+    const btn=q('#saveFocusBtn'); const input=q('#focus'); const v=(input.value||'').trim();
+    if(!v){ showErr('Введите фокус дня'); return }
+    btn.disabled=true; const old=btn.textContent; btn.textContent='Сохраняю…';
     try{
       const resp = await apiPUT('/api/focus', { day: todayStr(), text: v });
       if (resp && resp.text){ focusText=v; lockFocusUI(true); updateFocusChip(); toast('Фокус сохранён'); }
       else { showErr(resp?.error || 'Ошибка сервера (focus)'); }
-    }catch(e){ showErr('Сеть недоступна'); }
+    }catch(e){ showErr(e?.message || 'Сеть недоступна'); }
+    finally{ btn.disabled=false; btn.textContent=old; }
   }
   function editFocus(){ lockFocusUI(false) }
 
-  /* quick add */
   async function quickAdd(){
-    const input=q('#add'); const title=(input.value||'').trim(); if(!title){ showErr('Введите название'); return }
+    const btn=q('#quickBtn'); const input=q('#add'); const title=(input.value||'').trim();
+    if(!title){ showErr('Введите название'); return }
     const d=q('#dueDate').value||null; const t=q('#dueTime').value||null;
+    btn.disabled=true; const old=btn.textContent; btn.textContent='Добавляю…';
     try{
       const created = await apiPOST('/api/tasks', { title, list:picked, due_date:d, due_time:t });
       if(created && created.id){
@@ -486,12 +456,17 @@
         input.value=''; q('#dueDate').value=''; q('#dueTime').value='';
         renderToday(); renderPlan(); toast('Добавлено');
         if(created.due_date===currentDate){ calItems.unshift(created); renderAgenda(); }
-      } else { showErr(created?.error || 'Ошибка сервера (task)'); }
-    }catch(e){}
+      } else {
+        showErr(created?.error || 'Ошибка сервера (task)');
+      }
+    }catch(e){
+      showErr(e?.message || 'Сеть недоступна');
+    }finally{
+      btn.disabled=false; btn.textContent=old;
+    }
   }
   async function toggleAll(){ showAll=!showAll; q('#toggleBtn').textContent = showAll? 'Скрыть лишнее' : 'Показать всё'; renderToday() }
 
-  /* chat */
   function appendMsg(who, text){
     const box=document.getElementById('chatBox');
     const b=document.createElement('div'); b.className='bubble '+(who==='me'?'me':'bot'); b.textContent=text; box.appendChild(b); box.scrollTop=box.scrollHeight;
@@ -506,10 +481,9 @@
       const data = await res.json().catch(()=>({}));
       if (res.ok && data.reply) appendMsg('bot', data.reply);
       else appendMsg('bot', 'Ошибка: ' + (data.error || res.status + ' ' + res.statusText));
-    } catch { appendMsg('bot','Сеть недоступна'); }
+    } catch (e) { appendMsg('bot','Сеть недоступна'); }
   }
 
-  /* events */
   document.addEventListener('click', async function(e){
     let el=e.target; while(el&&el!==document){ if(el.dataset.action || el.dataset.target || el.dataset.list || (el.classList && [...el.classList].includes('plan-tab'))) break; el=el.parentNode }
     if(!el||el===document) return;
@@ -540,7 +514,10 @@
     const el=e.target;
     if(el && el.classList.contains('check')){
       const id = el.getAttribute('data-id');
-      try { await apiPATCH('/api/tasks/'+encodeURIComponent(id), { done: el.checked }); } catch{}
+      try {
+        const r = await apiPATCH('/api/tasks/'+encodeURIComponent(id), { done: el.checked });
+        if (r && r.error) showErr(r.error);
+      } catch (e) { showErr('Не удалось обновить задачу'); }
       ['today','week','backlog'].forEach(k=>{
         lists[k] = (lists[k]||[]).map(t=>{ if(String(t.id)===String(id)) t.done=el.checked; return t });
       });
@@ -548,7 +525,6 @@
     if(el && el.id==='calDate'){ currentDate=el.value; await loadCalendar(currentDate); }
   });
 
-  /* boot */
   async function loadTasks(){
     const [t,w,b] = await Promise.all([
       apiGET('/api/tasks?list=today').catch(()=>({items:[]})),
