@@ -39,9 +39,11 @@ async function verifyTelegramInitEdge(initData, botToken) {
 
 /* ---------- OpenAI call ---------- */
 async function callOpenAI(message, system) {
-  const key   = process.env.OPENAI_API_KEY;
-  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
-  const base  = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
+  const key      = process.env.OPENAI_API_KEY;
+  const model    = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+  const baseURL  = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
+  const orgId    = process.env.OPENAI_ORG || '';
+  const project  = process.env.OPENAI_PROJECT || '';
 
   if (!key) {
     return { error: 'NO_OPENAI_KEY: задайте OPENAI_API_KEY в Vercel → Settings → Environment Variables.' };
@@ -57,21 +59,24 @@ async function callOpenAI(message, system) {
     ]
   };
 
-  const r = await fetch(`${base}/chat/completions`, {
+  // Собираем заголовки аккуратно, без undefined
+  const headers = {
+    'content-type': 'application/json',
+    'authorization': `Bearer ${key}`
+  };
+  if (orgId)   headers['OpenAI-Organization'] = orgId;   // для мульти-орг сценариев (опционально)
+  if (project) headers['OpenAI-Project']      = project; // для sk-proj ключей (если требуется)
+
+  const r = await fetch(`${baseURL}/chat/completions`, {
     method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'authorization': `Bearer ${key}`
-      // При необходимости можно добавить:
-      // 'OpenAI-Organization': process.env.OPENAI_ORG || '',
-      // 'OpenAI-Project':      process.env.OPENAI_PROJECT || '',
-    },
+    headers,
     body: JSON.stringify(payload)
   });
 
   if (!r.ok) {
     const txt = await r.text();
-    return { error: `OPENAI_ERROR: ${r.status} ${r.statusText} · ${txt.slice(0,300)}` };
+    // Вернём коротко и по делу — чтобы видеть корень проблемы (401/429/…)
+    return { error: `OPENAI_ERROR: ${r.status} ${r.statusText} · ${txt.slice(0, 300)}` };
   }
 
   const j = await r.json();
