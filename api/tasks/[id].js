@@ -1,85 +1,57 @@
 // api/tasks/[id].js
-import { sql } from "@vercel/postgres";
-import { ensureSchema, getOrCreateUserByTelegram } from "../_utils/db.js";
-import { verifyTelegramInitNode, parseTelegramUser } from "../_utils/tg_node.js";
+import { sql } from '@vercel/postgres';
+import { ensureSchema } from '../_utils/db.js';
+import { verifyTelegramInitNode, parseTelegramUser } from '../_utils/tg_node.js';
 
 export default async function handler(req, res) {
   try {
-    if (req.method !== "PATCH" && req.method !== "DELETE") {
-      res.status(405).json({ error: "Use PATCH or DELETE" });
-      return;
-    }
+    const init = req.headers['x-telegram-init'] || '';
+    const ok   = await verifyTelegramInitNode(init, process.env.BOT_TOKEN);
+    if (!ok) return res.status(401).json({ error: 'INVALID_TELEGRAM_SIGNATURE' });
 
-    const initData = req.headers["x-telegram-init"] || req.headers["X-Telegram-Init"];
-    const botToken = process.env.BOT_TOKEN || "";
-    if (!verifyTelegramInitNode(initData || "", botToken)) {
-      res.status(401).json({ error: "INVALID_TELEGRAM_SIGNATURE" });
-      return;
-    }
+    const user = parseTelegramUser(init);
+    if (!user?.id) return res.status(400).json({ error: 'NO_TELEGRAM_USER' });
+    const tgId = BigInt(user.id);
+
     await ensureSchema();
 
-    const user = parseTelegramUser(initData || "");
-    const userId = await getOrCreateUserByTelegram(user);
+    const idStr = String(req.query?.id || '');
+    if (!/^\d+$/.test(idStr)) return res.status(400).json({ error: 'ID_REQUIRED' });
+    const id = BigInt(idStr);
 
-    const id = extractId(req.url);
-    if (!id) {
-      res.status(400).json({ error: "BAD_ID" });
-      return;
+    if (req.method === 'PATCH') {
+      const { title, list, due_date, due_time, done } = (req.body || {});
+      const allow = new Set(['today','week','backlog']);
+      const safeList = (list && allow.has(list)) ? list : null;
+
+      const { rows } = await sql`
+        UPDATE tasks
+        SET
+          title    = COALESCE(${title}, title),
+          list     = COALESCE(${safeList}, list),
+          due_date = COALESCE(${due_date}::date, due_date),
+          due_time = COALESCE(${due_time}::time, due_time),
+          done     = COALESCE(${done}, done)
+        WHERE id = ${id} AND user_id = ${tgId}
+        RETURNING id, title, list, due_date, due_time, done
+      `;
+      if (rows.length === 0) return res.status(404).json({ error: 'NOT_FOUND' });
+      return res.status(200).json(rows[0]);
     }
 
-    if (req.method === "DELETE") {
-      await sql/*sql*/`DELETE FROM tasks WHERE id = ${id} AND user_id = ${userId};`;
-      res.status(200).json({ ok: true });
-      return;
+    if (req.method === 'DELETE') {
+      const { rowCount } = await sql`
+        DELETE FROM tasks WHERE id = ${id} AND user_id = ${tgId}
+      `;
+      if (rowCount === 0) return res.status(404).json({ error: 'NOT_FOUND' });
+      return res.status(200).json({ ok: true });
     }
 
-    if (req.method === "PATCH") {
-      const body = await readBody(req);
+    res.setHeader('Allow','PATCH, DELETE');
+    return res.status(405).end('Method Not Allowed');
 
-      // Патчим по полям — простыми запросами (MVP)
-      if ("title" in body) {
-        await sql/*sql*/`UPDATE tasks SET title = ${body.title} WHERE id = ${id} AND user_id = ${userId};`;
-      }
-      if ("list" in body) {
-        const lst = body.list;
-        if (["today", "week", "backlog"].includes(lst)) {
-          await sql/*sql*/`UPDATE tasks SET list = ${lst} WHERE id = ${id} AND user_id = ${userId};`;
-        }
-      }
-      if ("due_date" in body) {
-        await sql/*sql*/`UPDATE tasks SET due_date = ${body.due_date || null} WHERE id = ${id} AND user_id = ${userId};`;
-      }
-      if ("due_time" in body) {
-        await sql/*sql*/`UPDATE tasks SET due_time = ${body.due_time || null} WHERE id = ${id} AND user_id = ${userId};`;
-      }
-      if ("done" in body) {
-        await sql/*sql*/`UPDATE tasks SET done = ${!!body.done} WHERE id = ${id} AND user_id = ${userId};`;
-      }
-
-      const q = await sql/*sql*/`SELECT id, title, list, due_date, due_time, done FROM tasks WHERE id = ${id} AND user_id = ${userId};`;
-      res.status(200).json(q.rows[0] || null);
-      return;
-    }
   } catch (e) {
-    console.error("tasks/[id] error:", e);
-    res.status(500).json({ error: "INTERNAL_ERROR" });
+    console.error('TASKS_ID_ERROR', e);
+    return res.status(500).json({ error: e?.code || e?.message || 'INTERNAL_ERROR' });
   }
-}
-
-function extractId(url) {
-  try {
-    const u = new URL(url, "http://localhost");
-    const parts = u.pathname.split("/"); // /api/tasks/<id>
-    return parts[parts.length - 1] || null;
-  } catch { return null; }
-}
-
-function readBody(req) {
-  return new Promise((resolve) => {
-    let data = "";
-    req.on("data", (c) => (data += c));
-    req.on("end", () => {
-      try { resolve(JSON.parse(data || "{}")); } catch { resolve({}); }
-    });
-  });
 }
