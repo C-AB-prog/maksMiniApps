@@ -1,93 +1,113 @@
 // api/chat.js
 export const config = { runtime: 'edge' };
 
-import { verifyTelegramInit, parseTelegramUser } from './_utils/tg.js';
+/* ---------- Telegram helpers (Edge) ---------- */
+function parseTelegramUser(initData) {
+  try {
+    const p = new URLSearchParams(initData || '');
+    const raw = p.get('user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
 
-const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
-const MODEL = 'gpt-4o-mini';
+async function hmac(keyBytes, msgBytes) {
+  const key = await crypto.subtle.importKey(
+    'raw', keyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  return new Uint8Array(await crypto.subtle.sign('HMAC', key, msgBytes));
+}
+function hex(u8) { return [...u8].map(b => b.toString(16).padStart(2,'0')).join(''); }
 
-const systemPrompt = `
-Ты — Growth Assistant. Отвечай кратко, дружелюбно и по делу.
-Если запрос про задачи/фокус/календарь — используй функцию (tools) и верни действия.
-Функции: add_task(title, list?, due_date?, due_time?), set_focus(text), add_event(title, date, start, dur?).
-Язык ответа: русский.
-`;
+async function verifyTelegramInitEdge(initData, botToken) {
+  if (!initData || !botToken) return false;
+  const params = new URLSearchParams(initData);
+  const hash = params.get('hash') || '';
+  params.delete('hash');
 
-const tools = [
-  { type:'function', function:{
-    name:'add_task', description:'Добавить задачу',
-    parameters:{ type:'object', properties:{
-      title:{type:'string'},
-      list:{type:'string', enum:['today','week','backlog']},
-      due_date:{type:'string', description:'YYYY-MM-DD'},
-      due_time:{type:'string', description:'HH:MM'}
-    }, required:['title'] }
-  }},
-  { type:'function', function:{
-    name:'set_focus', description:'Сохранить фокус дня',
-    parameters:{ type:'object', properties:{ text:{type:'string'} }, required:['text'] }
-  }},
-  { type:'function', function:{
-    name:'add_event', description:'Добавить событие',
-    parameters:{ type:'object', properties:{
-      title:{type:'string'}, date:{type:'string'}, start:{type:'string'}, dur:{type:'number', default:60}
-    }, required:['title','date','start'] }
-  }},
-];
+  const dataCheckString = [...params.entries()]
+    .sort((a,b)=>a[0].localeCompare(b[0]))
+    .map(([k,v]) => `${k}=${v}`)
+    .join('\n');
 
-export default async function handler(req) {
-  if (req.method && req.method !== 'POST') return json({ error:'Use POST' }, 405);
+  const enc = new TextEncoder();
+  const secret = await hmac(enc.encode('WebAppData'), enc.encode(botToken)); // HMAC(WebAppData, botToken)
+  const calc   = await hmac(secret, enc.encode(dataCheckString));            // HMAC(secret, data)
+  return hex(calc) === hash;
+}
 
-  // 1) Проверка Telegram initData
-  const initData = req.headers.get('x-telegram-init') || '';
-  const botToken = process.env.BOT_TOKEN || '';
-  const ok = await verifyTelegramInit(initData, botToken);
-  if (!ok) return json({ error:'INVALID_TELEGRAM_SIGNATURE' }, 401);
+/* ---------- OpenAI call ---------- */
+async function callOpenAI(message, system) {
+  const key   = process.env.OPENAI_API_KEY;
+  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+  const base  = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
 
-  // 2) Пользователь из Telegram
-  const user = parseTelegramUser(initData);
-  const tgId = user && user.id ? String(user.id) : 'anon';
+  if (!key) {
+    return { error: 'NO_OPENAI_KEY: задайте OPENAI_API_KEY в Vercel → Settings → Environment Variables.' };
+  }
 
-  // 3) Тело запроса
-  const { message = '', history = [] } = await req.json().catch(() => ({ message:'' }));
+  const payload = {
+    model,
+    temperature: 0.3,
+    max_tokens: 400,
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user',   content: message }
+    ]
+  };
 
-  // 4) Запрос к OpenAI (Chat Completions + tools)
-  const r = await fetch(OPENAI_URL, {
-    method:'POST',
-    headers:{
-      'authorization': `Bearer ${process.env.OPENAI_API_KEY || ''}`,
-      'content-type': 'application/json'
+  const r = await fetch(`${base}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'authorization': `Bearer ${key}`
+      // При необходимости можно добавить:
+      // 'OpenAI-Organization': process.env.OPENAI_ORG || '',
+      // 'OpenAI-Project':      process.env.OPENAI_PROJECT || '',
     },
-    body: JSON.stringify({
-      model: MODEL,
-      temperature: 0.3,
-      messages: [
-        { role:'system', content:systemPrompt },
-        ...history,
-        { role:'user', content:`[tg:${tgId}] ${String(message)}` }
-      ],
-      tools
-    })
+    body: JSON.stringify(payload)
   });
 
-  if (!r.ok) return json({ error:'OPENAI_ERROR', detail: await safe(r) }, 502);
+  if (!r.ok) {
+    const txt = await r.text();
+    return { error: `OPENAI_ERROR: ${r.status} ${r.statusText} · ${txt.slice(0,300)}` };
+  }
 
-  const data = await r.json();
-  const msg = data?.choices?.[0]?.message || {};
-  const reply = msg.content || 'Готово.';
-  const calls = msg.tool_calls || [];
-  const actions = calls.map(tc => {
-    let args={}; try{ args = JSON.parse(tc.function?.arguments || '{}') }catch{}
-    return { type: tc.function?.name, args };
-  });
-
-  return json({ reply, actions });
+  const j = await r.json();
+  const reply = j?.choices?.[0]?.message?.content?.trim();
+  return { reply: reply || 'Не уверен, уточните вопрос.' };
 }
 
-function json(obj, status=200){
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers:{ 'content-type':'application/json; charset=utf-8', 'access-control-allow-origin':'*' }
-  });
+/* ---------- Handler ---------- */
+export default async function handler(req) {
+  try {
+    if (req.method !== 'POST') {
+      return new Response('Method Not Allowed', { status: 405, headers: { 'Allow': 'POST' } });
+    }
+
+    const init = req.headers.get('x-telegram-init') || '';
+    const ok   = await verifyTelegramInitEdge(init, process.env.BOT_TOKEN || '');
+    if (!ok)  return Response.json({ error: 'INVALID_TELEGRAM_SIGNATURE' }, { status: 401 });
+
+    const user = parseTelegramUser(init);
+    if (!user?.id) return Response.json({ error: 'NO_TELEGRAM_USER' }, { status: 400 });
+
+    const { message } = await req.json().catch(()=>({}));
+    const text = String(message || '').trim().slice(0, 1000);
+    if (!text) return Response.json({ error: 'MESSAGE_REQUIRED' }, { status: 400 });
+
+    const system = [
+      'Ты дружелюбный и лаконичный ассистент по планированию.',
+      'Отвечай коротко и по делу; предлагай чек-листы и следующие шаги.',
+      'Если нужен контекст задач — попроси уточнить.'
+    ].join(' ');
+
+    const out = await callOpenAI(text, system);
+    if (out.error) return Response.json({ error: out.error }, { status: 500 });
+    return Response.json({ reply: out.reply });
+
+  } catch (e) {
+    return Response.json({ error: e?.message || 'INTERNAL_ERROR' }, { status: 500 });
+  }
 }
-async function safe(res){ try{ return await res.json() }catch{ return { status:res.status, text:await res.text().catch(()=> '') } } }
