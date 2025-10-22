@@ -9,30 +9,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root{
-      --accent:#3B82F6; --accent-2:#60A5FA;
-      --bg:#F8FAFF; --surface:#FFFFFF; --line:#E5E7F0;
-      --text:#0F172A; --muted:#667085;
-      --r-lg:16px; --r-md:12px; --r-sm:10px;
-      --sh-xs:0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(59,130,246,.06);
-      --h1:clamp(18px,4vw,22px); --h2:clamp(15px,3.4vw,17px); --body:15px; --cap:12px;
-      --sp-1:6px; --sp-2:10px; --sp-3:12px; --sp-4:16px; --sp-5:20px;
-    }
+    :root{ --accent:#3B82F6; --accent-2:#60A5FA; --bg:#F8FAFF; --surface:#FFFFFF; --line:#E5E7F0; --text:#0F172A; --muted:#667085;
+      --r-lg:16px; --sh-xs:0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(59,130,246,.06);
+      --h1:clamp(18px,4vw,22px); --h2:clamp(15px,3.4vw,17px); --body:15px; --cap:12px; --sp-2:10px; --sp-3:12px; --sp-4:16px; }
     *,*::before,*::after{box-sizing:border-box}
     html,body{height:100%}
-    body{
-      margin:0; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size:var(--body); color:var(--text);
-      background:
-        radial-gradient(1200px 600px at 80% -10%, rgba(96,165,250,.18), transparent 60%),
-        radial-gradient(1200px 600px at -10% 100%, rgba(59,130,246,.12), transparent 60%),
-        linear-gradient(#F9FBFF, #F6F9FF);
-      -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;
-    }
-    img,svg{max-width:100%; display:block}
-    button,input,select,textarea{font:inherit}
-
+    body{margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; font-size:var(--body); color:var(--text);
+      background: radial-gradient(1200px 600px at 80% -10%, rgba(96,165,250,.18), transparent 60%),
+                  radial-gradient(1200px 600px at -10% 100%, rgba(59,130,246,.12), transparent 60%),
+                  linear-gradient(#F9FBFF, #F6F9FF);}
     .app{min-height:100%; display:flex; flex-direction:column}
-
     header{position:sticky; top:0; z-index:20; background:rgba(255,255,255,.9); backdrop-filter:saturate(140%) blur(8px); border-bottom:1px solid var(--line)}
     .topbar{display:flex; align-items:center; gap:var(--sp-2); padding:var(--sp-2) var(--sp-3); max-width:960px; margin:0 auto}
     .brand{display:flex; align-items:center; gap:var(--sp-2)}
@@ -40,61 +26,43 @@
     .title{font-weight:700}
     .actions{margin-left:auto; display:flex; align-items:center; gap:10px}
     .mini-chip{font-size:12px; padding:4px 8px; border-radius:999px; background:#EEF2FF; color:#1D4ED8; border:1px solid #CBD5E1}
-
     main{flex:1; padding:0 var(--sp-3) calc(200px + env(safe-area-inset-bottom)); max-width:960px; margin:0 auto}
-
     .card{background:linear-gradient(180deg, #FFF 0%, #FDFEFF 100%); border:1px solid var(--line); border-radius:var(--r-lg); padding:var(--sp-3); box-shadow:var(--sh-xs)}
     .card + .card{margin-top:var(--sp-3)}
-    h1{font-size:var(--h1); margin:var(--sp-2) 0 var(--sp-2)}
-    h2{font-size:var(--h2); margin:0 0 var(--sp-2) 0}
+    h1{font-size:var(--h1); margin:var(--sp-2) 0 var(--sp-2)} h2{font-size:var(--h2); margin:0 0 var(--sp-2) 0}
     .sub{color:var(--muted); font-size:var(--cap)}
-
-    .row{display:flex; gap:var(--sp-2); align-items:center; flex-wrap:nowrap}
+    .row{display:flex; gap:var(--sp-2); align-items:center}
     .input{height:44px; padding:0 12px; width:100%; border-radius:12px; border:1px solid var(--line); background:#fff}
     .input.readonly{background:#F3F6FB; color:#374151}
     .btn{height:44px; padding:0 16px; border-radius:12px; border:0; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; font-weight:700; letter-spacing:.2px; box-shadow:0 12px 32px rgba(59,130,246,.25)}
-    .btn.ghost{background:linear-gradient(180deg,#fff,#FBFDFF); color:#0F172A; border:1px solid var(--line); box-shadow:none; font-weight:600}
-
+    .btn.ghost{background:linear-gradient(180deg,#fff,#FBFDFF); color:#0F172A; border:1px solid var(--line); font-weight:600}
     .chip{height:34px; padding:0 12px; border-radius:999px; border:1px solid var(--line); background:linear-gradient(180deg,#fff,#F8FAFF); font-size:12px; color:#111827; cursor:pointer}
     .chip.active{border-color:transparent; color:#0B4DD9; background:linear-gradient(135deg,#EEF2FF,#E0EAFF)}
-
     .list{display:flex; flex-direction:column; gap:8px}
     .item{display:flex; align-items:center; gap:8px; padding:10px; background:linear-gradient(180deg,#fff,#FBFDFF); border:1px solid var(--line); border-radius:12px; min-width:0}
     .check{appearance:none; width:20px; height:20px; border-radius:6px; border:1px solid var(--line); background:#fff}
     .check:checked{background:var(--accent); border-color:var(--accent)}
     .body{flex:1; min-width:0}
     .title{font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-    .hint{color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+    .hint{color:#667085; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
     .tag{font-size:11px; color:#0F766E; background:linear-gradient(180deg,#ECFDF5,#F6FFFB); border:1px solid #A7F3D0; padding:4px 6px; border-radius:999px; white-space:nowrap}
     .more{border:none; background:transparent; font-size:18px; color:#9CA3AF}
-
     .plan-tabs{display:flex; gap:6px; overflow:auto; padding-bottom:6px; margin-bottom:10px}
     .plan-tab{height:34px; padding:0 12px; border-radius:999px; border:1px solid var(--line); background:linear-gradient(180deg,#fff,#F8FAFF); cursor:pointer}
     .plan-tab.active{border-color:transparent; background:linear-gradient(135deg,#EEF2FF,#E0EAFF); color:#0B4DD9}
-
     .board{display:grid; grid-template-columns:repeat(2, minmax(160px,1fr)); gap:10px}
     .column{background:linear-gradient(180deg,#fff,#F8FAFF); border:1px solid var(--line); border-radius:12px; padding:10px; min-height:180px}
-    .hcard{background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px; margin:6px 2px}
-
     .agenda{display:grid; grid-template-columns:60px 1fr; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:linear-gradient(180deg,#fff,#F8FAFF)}
     .hour{height:40px; padding:6px 6px; font-size:12px; color:#6B7280; border-bottom:1px dashed #E5E7EB}
     .slot{height:40px; border-bottom:1px dashed #E5E7EB; position:relative}
     .event{position:absolute; left:6px; right:6px; background:linear-gradient(135deg,#E3F2FD,#F0F7FF); color:#0B4DD9; border:1px solid #BFDBFE; border-radius:10px; padding:6px; font-size:12px}
-
     .chatbar{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(12px + 72px + env(safe-area-inset-bottom)); z-index:55; width:min(560px,94%); pointer-events:none}
-    .chatbar .btn-chat{pointer-events:auto; display:block; width:100%; height:56px; border-radius:16px; border:0; font-weight:800; letter-spacing:.2px; color:#fff; background:linear-gradient(90deg,#2563EB 0%, #60A5FA 100%); box-shadow:0 16px 40px rgba(37, 99, 235, .35)}
-    .chatbar .btn-chat:active{transform:scale(.99)}
-
+    .chatbar .btn-chat{pointer-events:auto; display:block; width:100%; height:56px; border-radius:16px; border:0; font-weight:800; color:#fff; background:linear-gradient(90deg,#2563EB 0%, #60A5FA 100%); box-shadow:0 16px 40px rgba(37,99,235,.35)}
     .dock{position:fixed; left:50%; bottom:12px; transform:translateX(-50%); z-index:50; width:min(560px,94%); padding-bottom:env(safe-area-inset-bottom); pointer-events:none}
     .dock-inner{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; background:rgba(255,255,255,.9); backdrop-filter:saturate(140%) blur(12px); border:1px solid var(--line); border-radius:18px; padding:10px; box-shadow:0 10px 28px rgba(15,23,42,.14); pointer-events:auto}
-    .dock-item{height:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; border-radius:10px; color:#667085; font-size:12px; border:none; background:transparent; cursor:pointer; transition:transform .12s ease}
-    .dock-item:active{transform:scale(.98)}
+    .dock-item{height:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; border-radius:10px; color:#667085; font-size:12px; border:none; background:transparent; cursor:pointer}
     .dock-item.active{background:linear-gradient(180deg,#F6F7FA,#EFF3FF); color:#0F172A; font-weight:600}
-    .dock svg{width:20px; height:20px}
-    @media (max-width: 430px){ .dock-item span{display:none} }
-
-    .sheet{position:fixed; inset:0; z-index:60}
-    .sheet[hidden]{display:none}
+    .sheet{position:fixed; inset:0; z-index:60} .sheet[hidden]{display:none}
     .sheet-backdrop{position:absolute; inset:0; background:rgba(15,23,42,.35); backdrop-filter:blur(3px)}
     .sheet-panel{position:absolute; left:0; right:0; bottom:0; background:#fff; border-top-left-radius:18px; border-top-right-radius:18px; box-shadow:0 -18px 44px rgba(0,0,0,.22); border:1px solid var(--line)}
     .sheet-head{display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--line)}
@@ -103,12 +71,6 @@
     .bubble{max-width:85%; padding:10px 12px; border:1px solid var(--line); border-radius:12px}
     .bubble.me{align-self:flex-end; background:#EEF2FF; border-color:#CBD5E1}
     .bubble.bot{align-self:flex-start; background:#F8FAFC}
-
-    @media (min-width:720px){
-      .board{grid-template-columns:repeat(4, minmax(220px,1fr))}
-      .agenda{grid-template-columns:80px 1fr}
-      .hour,.slot{height:48px}
-    }
   </style>
 </head>
 <body>
@@ -121,8 +83,8 @@
   </header>
 
   <main>
-    <section id="screen-today" class="screen" aria-labelledby="todayTitle">
-      <h1 id="todayTitle">Сегодня</h1>
+    <section id="screen-today" class="screen">
+      <h1>Сегодня</h1>
 
       <div class="card">
         <h2>Фокус дня</h2>
@@ -150,9 +112,9 @@
         </div>
       </div>
 
-      <div class="card" role="region" aria-labelledby="tTitle">
+      <div class="card">
         <div class="row" style="justify-content:space-between; align-items:center">
-          <h2 id="tTitle">Задачи на сегодня</h2>
+          <h2>Задачи на сегодня</h2>
           <button class="btn ghost" data-action="toggleAll" id="toggleBtn">Показать всё</button>
         </div>
         <div id="todayList" class="list"></div>
@@ -173,18 +135,14 @@
       </div>
       <div id="plan-view-hadi" hidden>
         <div class="board">
-          <div class="column" data-col="Planned"><strong>Planned</strong></div>
-          <div class="column" data-col="Running"><strong>Running</strong></div>
-          <div class="column" data-col="Review"><strong>Review</strong></div>
-          <div class="column" data-col="Done"><strong>Done</strong></div>
+          <div class="column"><strong>Planned</strong></div>
+          <div class="column"><strong>Running</strong></div>
+          <div class="column"><strong>Review</strong></div>
+          <div class="column"><strong>Done</strong></div>
         </div>
       </div>
       <div id="plan-view-metrics" hidden>
-        <div class="kpi-grid">
-          <div class="kpi"><div class="sub">Лиды / неделя</div><div class="value">—</div></div>
-          <div class="kpi"><div class="sub">Конверсия</div><div class="value">—</div></div>
-          <div class="kpi"><div class="sub">Выручка / нед.</div><div class="value">—</div></div>
-        </div>
+        <div class="card"><div class="sub">KPI скоро будут здесь…</div></div>
       </div>
     </section>
 
@@ -210,28 +168,14 @@
     </section>
   </main>
 
-  <div class="chatbar">
-    <button class="btn-chat" data-action="openChat" aria-label="Открыть чат">💬 Чат с ассистентом</button>
-  </div>
+  <div class="chatbar"><button class="btn-chat" data-action="openChat">💬 Чат с ассистентом</button></div>
 
   <nav class="dock" role="navigation" aria-label="Нижняя навигация">
     <div class="dock-inner">
-      <button class="dock-item active" data-target="today" title="Сегодня">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7"/><path d="M9 22V12h6v10"/></svg>
-        <span>Сегодня</span>
-      </button>
-      <button class="dock-item" data-target="plan" title="План">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l7-2 7 2 4-1v13l-4 1-7-2-7 2-3-1V5z"/></svg>
-        <span>План</span>
-      </button>
-      <button class="dock-item" data-target="calendar" title="Календарь">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-        <span>Календарь</span>
-      </button>
-      <button class="dock-item" data-target="settings" title="Профиль">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20c0-3.314 2.686-6 6-6s6 2.686 6 6"/></svg>
-        <span>Профиль</span>
-      </button>
+      <button class="dock-item active" data-target="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10l9-7 9 7"/><path d="M9 22V12h6v10"/></svg><span>Сегодня</span></button>
+      <button class="dock-item" data-target="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6l7-2 7 2 4-1v13l-4 1-7-2-7 2-3-1V5z"/></svg><span>План</span></button>
+      <button class="dock-item" data-target="calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Календарь</span></button>
+      <button class="dock-item" data-target="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20c0-3.314 2.686-6 6-6s6 2.686 6 6"/></svg><span>Профиль</span></button>
     </div>
   </nav>
 
@@ -258,12 +202,6 @@
   if (tg) { try { tg.ready(); tg.expand(); } catch(e){} }
   window.__TG_INIT_DATA__ = tg && tg.initData ? tg.initData : '';
 
-  // ⚠️ Для локальной отладки в браузере можно временно раскомментировать→
-  // if (!window.__TG_INIT_DATA__) {
-  //   console.warn('Demo initData (only for local dev)!');
-  //   window.__TG_INIT_DATA__ = 'user={"id":123456,"first_name":"Demo"}&auth_date=0&hash=invalid';
-  // }
-
   window.authFetch = function(url, opts){
     opts = opts || {};
     opts.headers = opts.headers || {};
@@ -282,101 +220,148 @@
   var focusText = '';
   var showAll=false, picked='today', currentDate=todayStr();
 
-  function load(){ try{ var L=localStorage.getItem('ga_lists'); if(L) lists=JSON.parse(L) }catch(e){}
-    try{ var E=localStorage.getItem('ga_events'); if(E) events=JSON.parse(E) }catch(e){}
-    try{ var F=localStorage.getItem('ga_focus'); if(F) focusText=F }catch(e){} }
-  function save(){ try{ localStorage.setItem('ga_lists', JSON.stringify(lists)); localStorage.setItem('ga_events', JSON.stringify(events)); localStorage.setItem('ga_focus', focusText||'') }catch(e){} }
-
   function q(s){return document.querySelector(s)}; function qa(s){return document.querySelectorAll(s)}
-  function esc(s){return String(s).replace(/[&<>\"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]})}
-  function toast(msg){ var t=document.createElement('div'); t.textContent=msg; t.style.cssText='position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 12px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);opacity:.98;z-index:99'; document.body.appendChild(t); setTimeout(function(){t.style.transition="opacity .4s"; t.style.opacity='0'; setTimeout(function(){t.parentNode&&t.parentNode.removeChild(t)},400)},1000) }
   function todayStr(){ var d=new Date(); return d.toISOString().slice(0,10) }
   function ddmm(dstr){ if(!dstr) return '—'; var p=dstr.split('-'); return p[2]+'.'+p[1] }
-  function truncate(s, n){ if(!s) return ''; return s.length>n? s.slice(0,n-1)+'…': s }
+  function esc(s){return String(s||'').replace(/[&<>\"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]})}
+  function toast(msg){ var t=document.createElement('div'); t.textContent=msg; t.style.cssText='position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 12px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);opacity:.98;z-index:99'; document.body.appendChild(t); setTimeout(function(){t.style.transition="opacity .4s"; t.style.opacity='0'; setTimeout(function(){t.parentNode&&t.parentNode.removeChild(t)},400)},1000) }
 
-  function updateFocusChip(){ var chip=q('#focusChip'); if(!chip) return; if(focusText){ chip.textContent='Фокус: '+truncate(focusText,26); chip.hidden=false } else { chip.hidden=true } }
-  function lockFocusUI(lock){ var input=q('#focus'); var saveBtn=q('#saveFocusBtn'); var editBtn=q('#editFocusBtn'); if(!input) return; if(lock){ input.readOnly=true; input.classList.add('readonly'); if(saveBtn) saveBtn.style.display='none'; if(editBtn) editBtn.style.display='inline-block' } else { input.readOnly=false; input.classList.remove('readonly'); if(saveBtn) saveBtn.style.display='inline-block'; if(editBtn) editBtn.style.display='none'; setTimeout(function(){input.focus()},0) } }
-  function saveFocus(){ var input=q('#focus'); var v=(input&&input.value||'').trim(); if(!v){ toast('Введите фокус дня'); return } focusText=v; updateFocusChip(); lockFocusUI(true); save(); toast('Фокус сохранён') }
+  function lockFocusUI(lock){ var input=q('#focus'); var saveBtn=q('#saveFocusBtn'); var editBtn=q('#editFocusBtn'); if(lock){ input.readOnly=true; input.classList.add('readonly'); saveBtn.style.display='none'; editBtn.style.display='inline-block' } else { input.readOnly=false; input.classList.remove('readonly'); saveBtn.style.display='inline-block'; editBtn.style.display='none'; setTimeout(function(){input.focus()},0) } }
+  function updateFocusChip(){ var chip=q('#focusChip'); if(focusText){ chip.textContent='Фокус: '+(focusText.length>26?focusText.slice(0,25)+'…':focusText); chip.hidden=false } else chip.hidden=true }
+
+  // ---- серверные вызовы ----
+  function apiGET(url){ return authFetch(url).then(r=>r.json()) }
+  function apiPOST(url, body){ return authFetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()) }
+  function apiPUT(url, body){ return authFetch(url,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()) }
+  function apiPATCH(url, body){ return authFetch(url,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()) }
+  function apiDELETE(url){ return authFetch(url,{method:'DELETE'}).then(r=>r.json()) }
+
+  // ---- Tasks UI ----
+  function taskRow(t){
+    var el=document.createElement('div'); el.className='item';
+    el.innerHTML='<input type="checkbox" class="check" '+(t.done?'checked':'')+' data-id="'+t.id+'">\
+      <div class="body"><div class="title">'+esc(t.title)+'</div><div class="hint">'+esc(t.hint||'')+'</div></div>\
+      <span class="tag">'+esc(t.due_date ? ddmm(t.due_date)+(t.due_time?(' '+t.due_time.slice(0,5)):'') : '—')+'</span>\
+      <button class="more" data-action="menu" data-id="'+t.id+'">⋯</button>';
+    return el;
+  }
+  function renderToday(){
+    var box=q('#todayList'); box.innerHTML='';
+    var items = lists.today || [];
+    var shows = showAll ? items : items.slice(0,3);
+    if(!shows.length){ box.innerHTML='<div class="sub">Пока пусто</div>'; return }
+    shows.forEach(function(t){ box.appendChild(taskRow(t)) });
+  }
+  function renderPlan(){
+    ['today','week','backlog'].forEach(function(k){
+      var box=q('#list-'+k); if(!box) return; box.innerHTML='';
+      (lists[k]||[]).forEach(function(t){ box.appendChild(taskRow(t)) });
+    });
+  }
+
+  async function quickAdd(){
+    var input=q('#add'); var title=(input.value||'').trim(); if(!title){ toast('Введите название'); return }
+    var d=q('#dueDate').value||null; var t=q('#dueTime').value||null;
+    var created = await apiPOST('/api/tasks', { title, list:picked, due_date:d, due_time:t });
+    if(created && created.id){
+      lists[picked].unshift(created);
+      input.value=''; q('#dueDate').value=''; q('#dueTime').value='';
+      renderToday(); renderPlan(); toast('Добавлено');
+    } else { toast('Ошибка сервера'); }
+  }
+
+  async function toggleAll(){ showAll=!showAll; q('#toggleBtn').textContent = showAll? 'Скрыть лишнее' : 'Показать всё'; renderToday() }
+
+  // ---- Calendar ----
+  function renderAgenda(){
+    var hours=q('#hours'), slots=q('#slots'); hours.innerHTML=''; slots.innerHTML='';
+    for(var h=9;h<=18;h++){ var hr=document.createElement('div'); hr.className='hour'; hr.textContent=(h<10?'0':'')+h+':00'; hours.appendChild(hr); var sl=document.createElement('div'); sl.className='slot'; slots.appendChild(sl) }
+    (events||[]).forEach(function(ev){
+      if(ev.day!==currentDate) return;
+      var top=((parseInt(ev.start.split(':')[0],10)-9)*40) + (parseInt(ev.start.split(':')[1],10)/60)*40 + 6;
+      var height=(ev.dur/60)*40 - 12;
+      var e=document.createElement('div'); e.className='event'; e.style.top=top+'px'; e.style.height=Math.max(28,height)+'px'; e.textContent=ev.title+' · '+ev.start.slice(0,5); slots.appendChild(e);
+    });
+  }
+  async function addEvent(){
+    var t=q('#evtTitle').value.trim(); var d=q('#calDate').value; var s=q('#evtStart').value||'10:00'; var dur=parseInt(q('#evtDur').value,10)||60;
+    if(!d){ toast('Выберите дату'); return } if(!t){ toast('Название пустое'); return }
+    var created = await apiPOST('/api/events', { title:t, day:d, start:s, dur:dur });
+    if(created && created.id){ events.push(created); q('#evtTitle').value=''; renderAgenda(); toast('Событие добавлено') } else { toast('Ошибка сервера') }
+  }
+
+  // ---- Focus ----
+  async function saveFocus(){
+    var input=q('#focus'); var v=(input.value||'').trim(); if(!v){ toast('Введите фокус дня'); return }
+    var resp = await apiPUT('/api/focus', { day: todayStr(), text: v });
+    if(resp && resp.text){ focusText=v; lockFocusUI(true); updateFocusChip(); toast('Фокус сохранён') } else { toast('Ошибка сервера') }
+  }
   function editFocus(){ lockFocusUI(false) }
 
-  function pickList(btn){ var chips=qa('.card .chip'); for(var i=0;i<chips.length;i++){ chips[i].classList.remove('active') } btn.classList.add('active'); picked=btn.getAttribute('data-list')||'today' }
-  function taskRow(t){ var el=document.createElement('div'); el.className='item'; el.innerHTML='<input type="checkbox" class="check" '+(t.done?'checked':'')+' data-id="'+t.id+'">\
-    <div class="body"><div class="title">'+esc(t.title)+'</div><div class="hint">'+esc(t.hint||'')+'</div></div>\
-    <span class="tag">'+esc(t.due||'—')+'</span>\
-    <button class="more" data-action="menu" data-id="'+t.id+'">⋯</button>'; return el }
-  function renderToday(){ var box=q('#todayList'); if(!box) return; box.innerHTML=''; var merged=[].concat(lists.today); var items=showAll? merged : merged.slice(0,3); if(!items.length){ box.innerHTML='<div class="sub">Пока пусто</div>'; return } for(var i=0;i<items.length;i++){ box.appendChild(taskRow(items[i])) } }
-  function renderPlan(){ var keys=['today','week','backlog']; for(var a=0;a<keys.length;a++){ var k=keys[a], box=q('#list-'+k); if(!box) continue; box.innerHTML=''; for(var i=0;i<lists[k].length;i++){ box.appendChild(taskRow(lists[k][i])) } } }
-  function quickAdd(){ var input=q('#add'); if(!input) return; var title=(input.value||'').trim(); if(!title){ toast('Введите название'); return } var d=q('#dueDate')?q('#dueDate').value:''; var t=q('#dueTime')?q('#dueTime').value:''; var due=d? (ddmm(d)+(t?(' '+t):'')) : '—'; lists[picked].unshift({id:Date.now(), title:title, hint:'', due:due, done:false}); input.value=''; if(q('#dueDate')) q('#dueDate').value=''; if(q('#dueTime')) q('#dueTime').value=''; save(); renderToday(); renderPlan(); toast('Добавлено') }
-  function toggleAll(){ showAll=!showAll; var b=q('#toggleBtn'); if(b) b.textContent= showAll? 'Скрыть лишнее':'Показать всё'; renderToday() }
-
-  function renderAgenda(){ var hours=q('#hours'), slots=q('#slots'); if(!hours||!slots) return; hours.innerHTML=''; slots.innerHTML=''; var h; for(h=9;h<=18;h++){ var hr=document.createElement('div'); hr.className='hour'; hr.textContent=(h<10?'0':'')+h+':00'; hours.appendChild(hr); var sl=document.createElement('div'); sl.className='slot'; slots.appendChild(sl) } for(var i=0;i<events.length;i++){ var ev=events[i]; if(ev.date!==currentDate) continue; var top=((parseInt(ev.start.split(':')[0],10)-9)*40) + (parseInt(ev.start.split(':')[1],10)/60)*40 + 6; var height=(ev.dur/60)*40 - 12; var e=document.createElement('div'); e.className='event'; e.style.top=top+'px'; e.style.height=Math.max(28,height)+'px'; e.textContent=ev.title+' · '+ev.start; slots.appendChild(e) } }
-  function addEvent(){ var t=q('#evtTitle').value.trim(); var d=q('#calDate').value; var s=q('#evtStart').value||'10:00'; var dur=parseInt(q('#evtDur').value,10)||60; if(!d){ toast('Выберите дату'); return } if(!t){ toast('Название пустое'); return } events.push({id:Date.now(), date:d, start:s, dur:dur, title:t}); q('#evtTitle').value=''; save(); renderAgenda(); toast('Событие добавлено') }
-
-  function appendMsg(who, text){ var box=q('#chatBox'); if(!box) return; var b=document.createElement('div'); b.className='bubble '+(who==='me'?'me':'bot'); b.textContent=text; box.appendChild(b); box.scrollTop=box.scrollHeight }
+  // ---- Chat (как в П.1) ----
+  function appendMsg(who, text){ var box=q('#chatBox'); var b=document.createElement('div'); b.className='bubble '+(who==='me'?'me':'bot'); b.textContent=text; box.appendChild(b); box.scrollTop=box.scrollHeight }
   function openChat(){ q('#chatSheet').hidden=false }
   function closeChat(){ q('#chatSheet').hidden=true }
-
-  function applyActions(actions){
-    if(!actions||!actions.length) return;
-    actions.forEach(function(a){
-      var x=a.args||{};
-      if(a.type==='add_task'){
-        lists[(x.list||'today')].unshift({ id:Date.now(), title:x.title||'Без названия', hint:'', due: x.due_date ? (x.due_date.slice(8,10)+'.'+x.due_date.slice(5,7)+(x.due_time?(' '+x.due_time):'')) : '—', done:false });
-      }
-      if(a.type==='set_focus'){
-        focusText=x.text||''; var input=q('#focus'); if(input) input.value=focusText; lockFocusUI(true); updateFocusChip();
-      }
-      if(a.type==='add_event'){
-        events.push({ id:Date.now(), date:x.date, start:x.start, dur:x.dur||60, title:x.title||'Событие' });
-        renderAgenda();
-      }
-    });
-    save(); renderToday(); renderPlan();
-  }
-
-  function chatSend(){
-    var inp=q('#chatInput'); var v=(inp.value||'').trim(); if(!v) return;
-    appendMsg('me', v); inp.value='';
+  function chatSend(){ var inp=q('#chatInput'); var v=(inp.value||'').trim(); if(!v) return; appendMsg('me', v); inp.value='';
     authFetch('/api/chat', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ message:v }) })
-      .then(function(r){ return r.json() })
-      .then(function(d){ if(Array.isArray(d.actions)) applyActions(d.actions); appendMsg('bot', d.reply || '...') })
-      .catch(function(){ appendMsg('bot', 'Сервис недоступен, попробуйте позже.') });
-  }
+      .then(r=>r.json()).then(function(d){ appendMsg('bot', d.reply||'...') }).catch(()=>appendMsg('bot','Сервис недоступен')) }
 
-  document.addEventListener('click', function(e){
+  // ---- Delegates ----
+  document.addEventListener('click', async function(e){
     var el=e.target; while(el&&el!==document){ if(el.getAttribute&&(el.getAttribute('data-action')||el.getAttribute('data-target')||el.getAttribute('data-list')||el.className.indexOf('plan-tab')>-1)){ break } el=el.parentNode }
     if(!el||el===document) return;
-
     var act=el.getAttribute('data-action');
-    if(act==='saveFocus'){ saveFocus(); e.preventDefault(); return }
-    if(act==='editFocus'){ editFocus(); e.preventDefault(); return }
-    if(act==='quickAdd'){ quickAdd(); e.preventDefault(); return }
-    if(act==='toggleAll'){ toggleAll(); e.preventDefault(); return }
-    if(act==='addEvent'){ addEvent(); e.preventDefault(); return }
-    if(act==='chatSend'){ chatSend(); e.preventDefault(); return }
-    if(act==='openChat'){ openChat(); e.preventDefault(); return }
-    if(act==='closeChat'){ closeChat(); e.preventDefault(); return }
-    if(el.getAttribute('data-list')){ pickList(el); e.preventDefault(); return }
-
-    if(el.className.indexOf('plan-tab')>-1){ var v=el.getAttribute('data-view'); var tabs=Array.prototype.slice.call(document.querySelectorAll('.plan-tab')); for(var i=0;i<tabs.length;i++){ tabs[i].classList.remove('active') } el.classList.add('active'); ['lists','hadi','metrics'].forEach(function(k){ var node=document.getElementById('plan-view-'+k); if(node) node.hidden=(k!==v) }); e.preventDefault(); return }
-
-    var target=el.getAttribute('data-target'); if(target){ var buttons=document.querySelectorAll('.dock-item'); for(var i=0;i<buttons.length;i++){ buttons[i].classList.remove('active') } el.classList.add('active'); var screens=document.querySelectorAll('.screen'); for(var s=0;s<screens.length;s++){ screens[s].hidden=true } var scr=document.getElementById('screen-'+target); if(scr) scr.hidden=false; window.scrollTo(0,0); e.preventDefault(); return }
+    if(act==='saveFocus'){ e.preventDefault(); await saveFocus(); return }
+    if(act==='editFocus'){ e.preventDefault(); editFocus(); return }
+    if(act==='quickAdd'){ e.preventDefault(); await quickAdd(); return }
+    if(act==='toggleAll'){ e.preventDefault(); await toggleAll(); return }
+    if(act==='addEvent'){ e.preventDefault(); await addEvent(); return }
+    if(act==='chatSend'){ e.preventDefault(); chatSend(); return }
+    if(act==='openChat'){ e.preventDefault(); openChat(); return }
+    if(act==='closeChat'){ e.preventDefault(); closeChat(); return }
+    if(el.getAttribute('data-list')){ var chips=qa('.card .chip'); for(var i=0;i<chips.length;i++){ chips[i].classList.remove('active') } el.classList.add('active'); picked=el.getAttribute('data-list'); e.preventDefault(); return }
+    if(el.className.indexOf('plan-tab')>-1){ var v=el.getAttribute('data-view'); var tabs=qa('.plan-tab'); for(var i=0;i<tabs.length;i++){ tabs[i].classList.remove('active') } el.classList.add('active'); ['lists','hadi','metrics'].forEach(function(k){ var node=q('#plan-view-'+k); if(node) node.hidden=(k!==v) }); e.preventDefault(); return }
+    var target=el.getAttribute('data-target'); if(target){ var buttons=qa('.dock-item'); for(var i=0;i<buttons.length;i++){ buttons[i].classList.remove('active') } el.classList.add('active'); var screens=qa('.screen'); for(var s=0;s<screens.length;s++){ screens[s].hidden=true } var scr=q('#screen-'+target); if(scr) scr.hidden=false; window.scrollTo(0,0); e.preventDefault(); return }
   });
-  document.addEventListener('change', function(e){ if(e.target && e.target.id==='calDate'){ currentDate=e.target.value; renderAgenda() } });
-  var chatEl=q('#chatInput'); if(chatEl){ chatEl.addEventListener('keydown', function(ev){ if(ev.key==='Enter'||ev.keyCode===13){ chatSend() } }) }
 
-  function init(){
-    load();
-    if(!lists.today.length&&!lists.week.length&&!lists.backlog.length){
-      lists.today=[
-        {id:1,title:'Провести 5 интервью по JTBD',hint:'готово, когда есть записи/инсайты',due:'26.10',done:false},
-        {id:2,title:'Лендинг оффера v1',hint:'опубликован URL',due:'23.10',done:false},
-        {id:3,title:'Запуск канала трафика №1',hint:'вкл. реклама ≥3 000 ₽',due:'24.10',done:false}
-      ];
+  // чекбоксы done → PATCH
+  document.addEventListener('change', async function(e){
+    var el=e.target;
+    if(el && el.classList.contains('check')){
+      var id = el.getAttribute('data-id');
+      try { await apiPATCH('/api/tasks/'+encodeURIComponent(id), { done: el.checked }); } catch{}
+      // локально тоже отметим
+      ['today','week','backlog'].forEach(function(k){
+        lists[k] = (lists[k]||[]).map(function(t){ if(t.id===id){ t.done = el.checked } return t });
+      });
     }
-    var cd=document.getElementById('calDate'); if(cd){ cd.value=todayStr() } renderAgenda();
-    var f=document.getElementById('focus'); if(f){ f.value=focusText||''; lockFocusUI(!!focusText) } updateFocusChip();
-    renderToday(); renderPlan();
+    if(el && el.id==='calDate'){ currentDate=el.value; await loadEvents(currentDate); }
+  });
+
+  // ---- загрузка с сервера ----
+  async function loadTasks(){
+    const [t,w,b] = await Promise.all([
+      apiGET('/api/tasks?list=today').catch(()=>({items:[]})),
+      apiGET('/api/tasks?list=week').catch(()=>({items:[]})),
+      apiGET('/api/tasks?list=backlog').catch(()=>({items:[]}))
+    ]);
+    lists.today=t.items||[]; lists.week=w.items||[]; lists.backlog=b.items||[];
+  }
+  async function loadFocus(day){
+    const f = await apiGET('/api/focus?day='+encodeURIComponent(day)).catch(()=>null);
+    focusText = f && f.text ? f.text : '';
+    var input=q('#focus'); if(input) input.value=focusText||'';
+    lockFocusUI(!!focusText); updateFocusChip();
+  }
+  async function loadEvents(day){
+    const r = await apiGET('/api/events?day='+encodeURIComponent(day)).catch(()=>({items:[]}));
+    events = r.items || []; renderAgenda();
+  }
+
+  async function init(){
+    q('#calDate').value = todayStr();
+    await Promise.all([ loadTasks(), loadFocus(todayStr()), loadEvents(todayStr()) ]);
+    renderToday(); renderPlan(); renderAgenda();
   }
   init();
 })();
