@@ -1,41 +1,39 @@
 // api/calendar.js
-// Возвращает задачи пользователя на выбранный день (для календаря)
+export const config = { runtime: 'nodejs' };
+
 import { sql } from '@vercel/postgres';
-import { ensureSchema } from './_utils/db.js';
-import { verifyTelegramInitNode, parseTelegramUser } from './_utils/tg_node.js';
+import { ensureTables, verifyTelegramInit, upsertUserFromInit, ok, err } from './_utils/db.js';
 
-export default async function handler(req, res) {
+export default async function handler(req) {
   try {
-    if (req.method !== 'GET') {
-      res.setHeader('Allow','GET');
-      return res.status(405).end('Method Not Allowed');
-    }
+    const init = req.headers.get('x-telegram-init') || '';
+    const botToken = process.env.BOT_TOKEN || '';
+    if (!verifyTelegramInit(init, botToken)) return err(401, 'INVALID_TELEGRAM_SIGNATURE');
 
-    const init = req.headers['x-telegram-init'] || '';
-    const ok   = await verifyTelegramInitNode(init, process.env.BOT_TOKEN);
-    if (!ok) return res.status(401).json({ error: 'INVALID_TELEGRAM_SIGNATURE' });
+    await ensureTables();
+    const user = await upsertUserFromInit(init);
+    if (!user) return err(400,'NO_TELEGRAM_USER');
 
-    const user = parseTelegramUser(init);
-    if (!user?.id) return res.status(400).json({ error: 'NO_TELEGRAM_USER' });
-    const tgId = BigInt(user.id);
+    const url = new URL(req.url);
+    const day = url.searchParams.get('day');
+    if (!day) return err(400, 'DAY_REQUIRED');
 
-    const day = String(req.query?.day || '');
-    if (!day) return res.status(400).json({ error: 'DAY_REQUIRED' });
-
-    await ensureSchema();
-
-    const { rows } = await sql`
-      SELECT id, title, list, due_date, due_time, done
+    const rows = (await sql`
+      SELECT id, title, due_date, due_time, list
       FROM tasks
-      WHERE user_id = ${tgId} AND due_date = ${day}::date
-      ORDER BY (due_time IS NULL), due_time ASC, created_at DESC
-      LIMIT 400
-    `;
+      WHERE user_id=${user.id} AND due_date=${day}
+      ORDER BY (due_time IS NULL), due_time ASC NULLS LAST, created_at DESC
+    `).rows;
 
-    return res.status(200).json({ items: rows });
-
+    const items = rows.map(r => ({
+      id: r.id,
+      title: r.title,
+      due_date: r.due_date ? r.due_date.toISOString().slice(0,10) : null,
+      due_time: r.due_time ? r.due_time.toString().slice(0,5) : null,
+      list: r.list
+    }));
+    return ok({ items });
   } catch (e) {
-    console.error('CALENDAR_ERROR', e);
-    return res.status(500).json({ error: e?.code || e?.message || 'INTERNAL_ERROR' });
+    return err(500, e.message || 'INTERNAL_ERROR');
   }
 }
