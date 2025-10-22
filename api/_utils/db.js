@@ -1,17 +1,13 @@
 // api/_utils/db.js
 import { sql } from '@vercel/postgres';
 
-/** Создаём таблицы, если их нет. Вызывается перед любыми запросами. */
 export async function ensureSchema() {
-  // Пользователи
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       tg_id BIGINT PRIMARY KEY,
       name  TEXT
     );
   `;
-
-  // Фокус дня
   await sql`
     CREATE TABLE IF NOT EXISTS focus (
       user_id BIGINT NOT NULL REFERENCES users(tg_id) ON DELETE CASCADE,
@@ -20,8 +16,6 @@ export async function ensureSchema() {
       PRIMARY KEY (user_id, day)
     );
   `;
-
-  // Задачи (на будущее — чтобы не падали другие ручки)
   await sql`
     CREATE TABLE IF NOT EXISTS tasks (
       id        BIGSERIAL PRIMARY KEY,
@@ -34,8 +28,6 @@ export async function ensureSchema() {
       created_at TIMESTAMP NOT NULL DEFAULT NOW()
     );
   `;
-
-  // События календаря
   await sql`
     CREATE TABLE IF NOT EXISTS events (
       id      BIGSERIAL PRIMARY KEY,
