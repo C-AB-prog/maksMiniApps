@@ -6,12 +6,13 @@
   <meta name="theme-color" content="#ffffff" />
   <title>Growth Assistant · Mini App</title>
 
-  <!-- ВАЖНО: SDK Telegram WebApp -->
+  <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
     :root{
       --accent:#3B82F6; --accent-2:#60A5FA;
@@ -69,6 +70,8 @@
     .hour{height:40px; padding:6px 6px; font-size:12px; color:#6B7280; border-bottom:1px dashed #E5E7EB}
     .slot{height:40px; border-bottom:1px dashed #E5E7EB; position:relative}
     .event{position:absolute; left:6px; right:6px; background:linear-gradient(135deg,#E3F2FD,#F0F7FF); color:#0B4DD9; border:1px solid #BFDBFE; border-radius:10px; padding:6px; font-size:12px}
+    .allDay{margin-top:10px; display:flex; flex-wrap:wrap; gap:8px}
+    .allDay .pill{font-size:12px; border:1px solid var(--line); border-radius:999px; padding:6px 10px; background:linear-gradient(180deg,#fff,#F8FAFF)}
     .chatbar{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(12px + 72px + env(safe-area-inset-bottom)); z-index:55; width:min(560px,94%); pointer-events:none}
     .chatbar .btn-chat{pointer-events:auto; display:block; width:100%; height:56px; border-radius:16px; border:0; font-weight:800; color:#fff; background:linear-gradient(90deg,#2563EB 0%, #60A5FA 100%); box-shadow:0 16px 40px rgba(37,99,235,.35)}
     .dock{position:fixed; left:50%; bottom:12px; transform:translateX(-50%); z-index:50; width:min(560px,94%); padding-bottom:env(safe-area-inset-bottom); pointer-events:none}
@@ -99,6 +102,7 @@
   <main>
     <div id="notInTg" class="warn-banner" style="display:none">Откройте приложение из меню Telegram-бота. Иначе сервер не примет запросы.</div>
 
+    <!-- СЕГОДНЯ -->
     <section id="screen-today" class="screen">
       <h1>Сегодня</h1>
 
@@ -137,6 +141,7 @@
       </div>
     </section>
 
+    <!-- ПЛАН -->
     <section id="screen-plan" class="screen" hidden>
       <h1>План</h1>
       <div class="plan-tabs" role="tablist">
@@ -162,20 +167,25 @@
       </div>
     </section>
 
+    <!-- КАЛЕНДАРЬ (только отображение задач с датой/временем) -->
     <section id="screen-calendar" class="screen" hidden>
       <h1>Календарь</h1>
       <div class="card" style="margin-bottom:10px">
         <div class="row" style="flex-wrap:wrap">
           <span class="sub">День:</span>
           <input id="calDate" type="date" class="input" style="max-width:170px">
-          <span class="sub" style="margin-left:auto">Новое событие</span>
-          <input id="evtTitle" class="input" placeholder="Название" style="min-width:140px">
-          <input id="evtStart" class="input" type="time" value="10:00" style="max-width:120px">
-          <input id="evtDur" class="input" type="number" min="15" step="15" value="60" style="max-width:120px" placeholder="Длительность, мин">
-          <button class="btn" data-action="addEvent">Добавить</button>
+          <span class="sub" style="margin-left:auto">Показываются задачи с дедлайном</span>
         </div>
       </div>
-      <div class="agenda"><div class="hours" id="hours"></div><div class="slots" id="slots"></div></div>
+
+      <div class="agenda">
+        <div class="hours" id="hours"></div>
+        <div class="slots" id="slots"></div>
+      </div>
+      <div class="card" id="allDayBox" style="margin-top:10px; display:none">
+        <div class="sub" style="margin-bottom:6px">Без времени</div>
+        <div class="allDay" id="allDay"></div>
+      </div>
     </section>
 
     <section id="screen-settings" class="screen" hidden>
@@ -211,7 +221,7 @@
   </div>
 </div>
 
-<!-- Лёгкий оверлей для сообщений об ошибках -->
+<!-- Оверлей ошибок -->
 <div id="debugOverlay" style="position:fixed;left:50%;transform:translateX(-50%);bottom:92px;max-width:94%;z-index:9999;background:#111827;color:#fff;padding:10px 12px;border-radius:10px;display:none"></div>
 
 <script>
@@ -231,20 +241,18 @@
   }
 </script>
 
-<!-- Telegram bootstrap + защищённый fetch -->
+<!-- Telegram bootstrap + authFetch -->
 <script>
 (function(){
   var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
   if (tg) { try { tg.ready(); tg.expand(); } catch(e){} }
   window.__TG_INIT_DATA__ = tg && tg.initData ? tg.initData : '';
 
-  // Предупреждение, если открыто не из Telegram
   if (!window.__TG_INIT_DATA__) {
     var w = document.getElementById('notInTg');
     if (w) w.style.display = 'block';
   }
 
-  // fetch с автодобавлением подписи и видимым текстом ошибки
   window.authFetch = async function(url, opts){
     opts = opts || {};
     opts.headers = Object.assign({}, opts.headers, { 'x-telegram-init': window.__TG_INIT_DATA__ || '' });
@@ -262,19 +270,19 @@
 <script>
 (function(){
   var lists = { today:[], week:[], backlog:[] };
-  var events = [];
+  var calItems = []; // задачи на выбранный день
   var focusText = '';
   var showAll=false, picked='today', currentDate=todayStr();
 
   function q(s){return document.querySelector(s)}; function qa(s){return document.querySelectorAll(s)}
   function todayStr(){ var d=new Date(); return d.toISOString().slice(0,10) }
   function ddmm(dstr){ if(!dstr) return '—'; var p=dstr.split('-'); return p[2]+'.'+p[1] }
-  function esc(s){return String(s||'').replace(/[&<>\"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]})}
+  function esc(s){return String(s||'').replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
 
   function lockFocusUI(lock){
     var input=q('#focus'); var saveBtn=q('#saveFocusBtn'); var editBtn=q('#editFocusBtn');
     if(lock){ input.readOnly=true; input.classList.add('readonly'); saveBtn.style.display='none'; editBtn.style.display='inline-block' }
-    else    { input.readOnly=false; input.classList.remove('readonly'); saveBtn.style.display='inline-block'; editBtn.style.display='none'; setTimeout(function(){input.focus()},0) }
+    else    { input.readOnly=false; input.classList.remove('readonly'); saveBtn.style.display='inline-block'; editBtn.style.display='none'; setTimeout(()=>input.focus(),0) }
   }
   function updateFocusChip(){
     var chip=q('#focusChip');
@@ -282,14 +290,13 @@
     else chip.hidden=true
   }
 
-  // ---- API helpers ----
+  // API helpers
   function apiGET(url){ return authFetch(url).then(r=>r.json()).catch(e=>{showErr('Network'); throw e}) }
   function apiPOST(url, body){ return authFetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()) }
   function apiPUT(url, body){ return authFetch(url,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()) }
   function apiPATCH(url, body){ return authFetch(url,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()) }
-  function apiDELETE(url){ return authFetch(url,{method:'DELETE'}).then(r=>r.json()) }
 
-  // ---- Tasks UI ----
+  // Tasks UI
   function taskRow(t){
     var el=document.createElement('div'); el.className='item';
     el.innerHTML='<input type="checkbox" class="check" '+(t.done?'checked':'')+' data-id="'+t.id+'">\
@@ -303,12 +310,12 @@
     var items = lists.today || [];
     var shows = showAll ? items : items.slice(0,3);
     if(!shows.length){ box.innerHTML='<div class="sub">Пока пусто</div>'; return }
-    shows.forEach(function(t){ box.appendChild(taskRow(t)) });
+    shows.forEach(t=>box.appendChild(taskRow(t)));
   }
   function renderPlan(){
-    ['today','week','backlog'].forEach(function(k){
+    ['today','week','backlog'].forEach(k=>{
       var box=q('#list-'+k); if(!box) return; box.innerHTML='';
-      (lists[k]||[]).forEach(function(t){ box.appendChild(taskRow(t)) });
+      (lists[k]||[]).forEach(t=>box.appendChild(taskRow(t)));
     });
   }
 
@@ -321,59 +328,71 @@
         lists[picked].unshift(created);
         input.value=''; q('#dueDate').value=''; q('#dueTime').value='';
         renderToday(); renderPlan(); toast('Добавлено');
+        if(created.due_date===currentDate){ calItems.unshift(created); renderAgenda(); }
       } else { showErr(created?.error || 'Ошибка сервера (task)'); }
     }catch(e){}
   }
-
   async function toggleAll(){ showAll=!showAll; q('#toggleBtn').textContent = showAll? 'Скрыть лишнее' : 'Показать всё'; renderToday() }
 
-  // ---- Calendar ----
+  // Calendar from tasks
   function renderAgenda(){
-    var hours=q('#hours'), slots=q('#slots'); hours.innerHTML=''; slots.innerHTML='';
-    for(var h=9;h<=18;h++){ var hr=document.createElement('div'); hr.className='hour'; hr.textContent=(h<10?'0':'')+h+':00'; hours.appendChild(hr); var sl=document.createElement('div'); sl.className='slot'; slots.appendChild(sl) }
-    (events||[]).forEach(function(ev){
-      if(ev.day!==currentDate) return;
-      var top=((parseInt(ev.start.split(':')[0],10)-9)*40) + (parseInt(ev.start.split(':')[1],10)/60)*40 + 6;
-      var height=(ev.dur/60)*40 - 12;
-      var e=document.createElement('div'); e.className='event'; e.style.top=top+'px'; e.style.height=Math.max(28,height)+'px'; e.textContent=ev.title+' · '+ev.start.slice(0,5); slots.appendChild(e);
+    var hours=q('#hours'), slots=q('#slots'), allDayWrap=q('#allDay'), allDayBox=q('#allDayBox');
+    hours.innerHTML=''; slots.innerHTML=''; allDayWrap.innerHTML='';
+
+    // шкала 09–18
+    for(var h=9;h<=18;h++){
+      var hr=document.createElement('div'); hr.className='hour'; hr.textContent=(h<10?'0':'')+h+':00'; hours.appendChild(hr);
+      var sl=document.createElement('div'); sl.className='slot'; slots.appendChild(sl);
+    }
+
+    const timed=(calItems||[]).filter(x=>x.due_time);
+    const alld =(calItems||[]).filter(x=>!x.due_time);
+
+    timed.forEach(ev=>{
+      var [hh,mm]=ev.due_time.split(':'); var top=((parseInt(hh,10)-9)*40) + (parseInt(mm,10)/60)*40 + 6;
+      var e=document.createElement('div'); e.className='event'; e.style.top=Math.max(6,top)+'px'; e.style.height='28px';
+      e.textContent=ev.title+' · '+ev.due_time.slice(0,5);
+      slots.appendChild(e);
     });
-  }
-  async function addEvent(){
-    var t=q('#evtTitle').value.trim(); var d=q('#calDate').value; var s=q('#evtStart').value||'10:00'; var dur=parseInt(q('#evtDur').value,10)||60;
-    if(!d){ showErr('Выберите дату'); return } if(!t){ showErr('Название пустое'); return }
-    try{
-      var created = await apiPOST('/api/events', { title:t, day:d, start:s, dur:dur });
-      if(created && created.id){ events.push(created); q('#evtTitle').value=''; renderAgenda(); toast('Событие добавлено') }
-      else { showErr(created?.error || 'Ошибка сервера (event)') }
-    }catch(e){}
+
+    if(alld.length){
+      allDayBox.style.display='block';
+      alld.forEach(t=>{ var p=document.createElement('span'); p.className='pill'; p.textContent=t.title; allDayWrap.appendChild(p) });
+    }else{
+      allDayBox.style.display='none';
+    }
   }
 
-  // ---- Focus ----
+  async function loadCalendar(day){
+    const r = await apiGET('/api/calendar?day='+encodeURIComponent(day)).catch(()=>({items:[]}));
+    calItems = r.items || [];
+    renderAgenda();
+  }
+
+  // Focus
   async function saveFocus(){
     var input=q('#focus'); var v=(input.value||'').trim(); if(!v){ showErr('Введите фокус дня'); return }
     try{
       const resp = await apiPUT('/api/focus', { day: todayStr(), text: v });
       if (resp && resp.text){
         focusText=v; lockFocusUI(true); updateFocusChip(); toast('Фокус сохранён');
-      } else {
-        showErr(resp?.error || 'Ошибка сервера (focus)');
-      }
+      } else { showErr(resp?.error || 'Ошибка сервера (focus)'); }
     }catch(e){ showErr('Сеть недоступна'); }
   }
   function editFocus(){ lockFocusUI(false) }
 
-  // ---- Chat (минимум) ----
+  // Chat (минимум)
   function appendMsg(who, text){ var box=q('#chatBox'); var b=document.createElement('div'); b.className='bubble '+(who==='me'?'me':'bot'); b.textContent=text; box.appendChild(b); box.scrollTop=box.scrollHeight }
   function openChat(){ q('#chatSheet').hidden=false }
   function closeChat(){ q('#chatSheet').hidden=true }
   function chatSend(){
     var inp=q('#chatInput'); var v=(inp.value||'').trim(); if(!v) return; appendMsg('me', v); inp.value='';
     authFetch('/api/chat', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ message:v }) })
-      .then(r=>r.json()).then(function(d){ appendMsg('bot', d.reply||'...') })
+      .then(r=>r.json()).then(d=>appendMsg('bot', d.reply||'...'))
       .catch(()=>appendMsg('bot','Сеть недоступна'));
   }
 
-  // ---- Delegates ----
+  // Delegates
   document.addEventListener('click', async function(e){
     var el=e.target; while(el&&el!==document){ if(el.getAttribute&&(el.getAttribute('data-action')||el.getAttribute('data-target')||el.getAttribute('data-list')||el.className.indexOf('plan-tab')>-1)){ break } el=el.parentNode }
     if(!el||el===document) return;
@@ -382,29 +401,28 @@
     if(act==='editFocus'){ e.preventDefault(); editFocus(); return }
     if(act==='quickAdd'){ e.preventDefault(); await quickAdd(); return }
     if(act==='toggleAll'){ e.preventDefault(); await toggleAll(); return }
-    if(act==='addEvent'){ e.preventDefault(); await addEvent(); return }
     if(act==='chatSend'){ e.preventDefault(); chatSend(); return }
     if(act==='openChat'){ e.preventDefault(); openChat(); return }
     if(act==='closeChat'){ e.preventDefault(); closeChat(); return }
-    if(el.getAttribute('data-list')){ var chips=qa('.card .chip'); for(var i=0;i<chips.length;i++){ chips[i].classList.remove('active') } el.classList.add('active'); picked=el.getAttribute('data-list'); e.preventDefault(); return }
-    if(el.className.indexOf('plan-tab')>-1){ var v=el.getAttribute('data-view'); var tabs=qa('.plan-tab'); for(var i=0;i<tabs.length;i++){ tabs[i].classList.remove('active') } el.classList.add('active'); ['lists','hadi','metrics'].forEach(function(k){ var node=q('#plan-view-'+k); if(node) node.hidden=(k!==v) }); e.preventDefault(); return }
-    var target=el.getAttribute('data-target'); if(target){ var buttons=qa('.dock-item'); for(var i=0;i<buttons.length;i++){ buttons[i].classList.remove('active') } el.classList.add('active'); var screens=qa('.screen'); for(var s=0;s<screens.length;s++){ screens[s].hidden=true } var scr=q('#screen-'+target); if(scr) scr.hidden=false; window.scrollTo(0,0); e.preventDefault(); return }
+    if(el.getAttribute('data-list')){ var chips=qa('.card .chip'); chips.forEach(c=>c.classList.remove('active')); el.classList.add('active'); picked=el.getAttribute('data-list'); e.preventDefault(); return }
+    if(el.className.indexOf('plan-tab')>-1){ var v=el.getAttribute('data-view'); qa('.plan-tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); ['lists','hadi','metrics'].forEach(k=>{ var n=q('#plan-view-'+k); if(n) n.hidden=(k!==v) }); e.preventDefault(); return }
+    var target=el.getAttribute('data-target'); if(target){ qa('.dock-item').forEach(b=>b.classList.remove('active')); el.classList.add('active'); qa('.screen').forEach(s=>s.hidden=true); var scr=q('#screen-'+target); if(scr) scr.hidden=false; window.scrollTo(0,0); e.preventDefault(); return }
   });
 
-  // чекбоксы done → PATCH
+  // checkbox -> done
   document.addEventListener('change', async function(e){
     var el=e.target;
     if(el && el.classList.contains('check')){
       var id = el.getAttribute('data-id');
       try { await apiPATCH('/api/tasks/'+encodeURIComponent(id), { done: el.checked }); } catch{}
-      ['today','week','backlog'].forEach(function(k){
-        lists[k] = (lists[k]||[]).map(function(t){ if(t.id===id){ t.done = el.checked } return t });
+      ['today','week','backlog'].forEach(k=>{
+        lists[k] = (lists[k]||[]).map(t=>{ if(String(t.id)===String(id)) t.done=el.checked; return t });
       });
     }
-    if(el && el.id==='calDate'){ currentDate=el.value; await loadEvents(currentDate); }
+    if(el && el.id==='calDate'){ currentDate=el.value; await loadCalendar(currentDate); }
   });
 
-  // ---- загрузка с сервера ----
+  // загрузка
   async function loadTasks(){
     const [t,w,b] = await Promise.all([
       apiGET('/api/tasks?list=today').catch(()=>({items:[]})),
@@ -419,14 +437,10 @@
     var input=q('#focus'); if(input) input.value=focusText||'';
     lockFocusUI(!!focusText); updateFocusChip();
   }
-  async function loadEvents(day){
-    const r = await apiGET('/api/events?day='+encodeURIComponent(day)).catch(()=>({items:[]}));
-    events = r.items || []; renderAgenda();
-  }
 
   async function init(){
     q('#calDate').value = todayStr();
-    await Promise.all([ loadTasks(), loadFocus(todayStr()), loadEvents(todayStr()) ]);
+    await Promise.all([ loadTasks(), loadFocus(todayStr()), loadCalendar(todayStr()) ]);
     renderToday(); renderPlan(); renderAgenda();
   }
   init();
