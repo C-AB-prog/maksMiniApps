@@ -2,40 +2,29 @@
 export const config = { runtime: 'nodejs' };
 
 import { sql } from '@vercel/postgres';
-import {
-  ensureTables, requestIsSigned, getOrCreateUser, ok, err
-} from './_utils/db.js';
+import { ensureTables, requestIsSigned, getOrCreateUser, ok, err } from './_utils/db.js';
 
 export default async function handler(req) {
   try {
+    await ensureTables();
     const init = req.headers.get('x-telegram-init') || '';
     const botToken = process.env.BOT_TOKEN || '';
-    if (!requestIsSigned(init, botToken)) return err(401, 'INVALID_TELEGRAM_SIGNATURE');
 
-    await ensureTables();
+    if (!requestIsSigned(init, botToken)) return err(401, 'UNAUTHORIZED');
     const user = await getOrCreateUser(init);
-    if (!user) return err(400,'NO_TELEGRAM_USER');
+    if (!user) return err(401, 'NO_USER');
 
     const url = new URL(req.url);
     const day = url.searchParams.get('day');
-    if (!day) return err(400, 'DAY_REQUIRED');
+    if (!day) return ok({ items: [] });
 
-    const rows = (await sql`
-      SELECT id, title, due_date, due_time, list
+    const r = await sql`
+      SELECT id, title, list, due_date, due_time
       FROM tasks
       WHERE user_id=${user.id} AND due_date=${day}
-      ORDER BY (due_time IS NULL), due_time ASC NULLS LAST, created_at DESC
-    `).rows;
-
-    const items = rows.map(r => ({
-      id: r.id,
-      title: r.title,
-      due_date: r.due_date ? r.due_date.toISOString().slice(0,10) : null,
-      due_time: r.due_time ? r.due_time.toString().slice(0,5) : null,
-      list: r.list
-    }));
-    return ok({ items });
+      ORDER BY COALESCE(due_time, TIME '00:00') ASC, created_at DESC`;
+    return ok({ items: r.rows });
   } catch (e) {
-    return err(500, e.message || 'INTERNAL_ERROR');
+    return err(500, e?.message || 'INTERNAL_ERROR');
   }
 }
