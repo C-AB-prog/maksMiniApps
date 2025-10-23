@@ -2,418 +2,361 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Business Assistance</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Growth Assistant</title>
 <style>
   :root{
-    --bg: #f5f8ff;
-    --ink:#0e1b2b;
-    --muted:#6a7890;
-    --brand:#2c7dfa;
-    --brand-2:#57a5ff;
-    --card:#ffffffea;
-    --card-br:#e9eef7;
-    --ring: rgba(44,125,250,.35);
-    --shadow: 0 10px 28px rgba(28,73,170,.14);
-    --r-xl: 22px; --r:16px;
-    --grad-hero: radial-gradient(1000px 600px at 100% -200px,#e9f2ff 0,transparent 60%),
-                 radial-gradient(800px 520px at -120px 80%,#edfff6 0,transparent 60%),
-                 linear-gradient(180deg,#fbfdff 0,#f0f5ff 100%);
-    --grad-btn: linear-gradient(180deg,var(--brand-2) 0%, var(--brand) 100%);
-    --pill: linear-gradient(180deg,#f7fbff 0,#ffffff 100%);
-    --progress-bg:#e1efff; --progress:#38a3ff;
+    --bg:#f5f8ff;
+    --card:#ffffff;
+    --txt:#0e1116;
+    --muted:#76839a;
+    --primary:#2d6cff;
+    --primary-2:#1a53f0;
+    --ok:#26c281;
+    --danger:#ff5a5a;
+    --shadow:0 10px 24px rgba(18, 35, 104, .10);
+    --radius:18px;
   }
+  *{box-sizing:border-box}
   html,body{height:100%}
   body{
-    margin:0; color:var(--ink);
-    font: 15px/1.36 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,'Noto Sans',sans-serif;
-    background: var(--grad-hero);
+    margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;
+    color:var(--txt); background: radial-gradient(1200px 500px at 50% -50%, #eaf1ff, transparent), var(--bg);
+  }
+  .app{
+    min-height:100%; display:flex; flex-direction:column; padding-bottom:86px;
+  }
+  header{
+    padding:14px 18px; display:flex; align-items:center; gap:12px;
+    background:linear-gradient(180deg,#f2f7ff,#f8fbff 40%, transparent);
+    position:sticky; top:0; z-index:20;
+  }
+  .brand{display:flex; align-items:center; gap:12px; font-weight:700; font-size:20px}
+  .brand .logo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
+    background:linear-gradient(180deg,#81b3ff,#2d6cff); color:#fff; font-size:18px; box-shadow:var(--shadow)}
+  }
+  main{padding:10px 14px 18px}
+  .section-title{font-weight:800; font-size:22px; margin:8px 4px 14px}
+
+  .card{
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:16px; margin:12px 4px;
   }
 
-  /* layout */
-  .app{max-width: 920px; margin:0 auto; padding: 18px 14px 150px;}
+  .row{display:flex; align-items:center; gap:12px}
+  .muted{color:var(--muted)}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:12px 16px; border-radius:14px; background:var(--primary);
+    color:#fff; font-weight:700; border:none; cursor:pointer; box-shadow:0 8px 18px rgba(45,108,255,.22);
+    transition:transform .06s ease, box-shadow .2s ease; user-select:none
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn.secondary{background:#edf3ff; color:var(--primary); box-shadow:none}
+  .btn.ghost{background:transparent; color:var(--primary); box-shadow:none}
 
-  /* header */
-  .top{display:flex;align-items:center;gap:12px;margin:6px 4px 12px}
-  .logo{width:46px;height:46px;border-radius:14px;background:linear-gradient(180deg,#eaf4ff,#fff);
-        display:grid;place-items:center;border:1px solid var(--card-br);box-shadow:var(--shadow)}
-  .brand{display:flex;flex-direction:column}
-  .brand h1{margin:0;font-weight:900;letter-spacing:.2px;font-size:22px;line-height:1.05}
-  .bell{margin-left:auto;width:38px;height:38px;border-radius:12px;background:linear-gradient(180deg,#eef6ff,#fff);
-        border:1px solid var(--card-br);display:grid;place-items:center;position:relative}
-  .bell::after{content:'';position:absolute;right:6px;top:6px;width:8px;height:8px;background:#ff5b5b;border-radius:50%;box-shadow:0 0 0 2px #fff}
+  .input{
+    width:100%; padding:12px 14px; border-radius:12px; border:1px solid #e7ecf6; outline:none;
+    background:#fbfdff; box-shadow: inset 0 2px 4px rgba(36,76,160,.04);
+    font-size:15px;
+  }
 
-  /* typography & cards */
-  h2{font-size:22px;font-weight:900;letter-spacing:.2px;margin:18px 6px 10px;color:#0f213c}
-  .card{background:var(--card);border:1px solid var(--card-br);
-        backdrop-filter:saturate(180%) blur(8px);-webkit-backdrop-filter:saturate(180%) blur(8px);
-        border-radius:var(--r-xl);box-shadow:var(--shadow);padding:16px;margin:10px 4px}
-  .row{display:flex;gap:10px;align-items:center}
+  .task{
+    display:flex; align-items:flex-start; gap:12px; padding:14px; border-radius:16px;
+    background: linear-gradient(180deg,#ffffff, #fbfdff);
+    border:1px solid #edf2ff; box-shadow:var(--shadow); margin:10px 0;
+  }
+  .task .icon{
+    width:38px; height:38px; border-radius:12px; background:#edf3ff; display:grid; place-items:center; color:var(--primary);
+    flex:0 0 auto; font-size:18px; box-shadow: inset 0 1px 0 #fff;
+  }
+  .task .title{font-weight:700; font-size:16px}
+  .task .sub{color:var(--muted); font-size:14px; margin-top:4px}
+  .task .done-btn{
+    margin-left:auto; width:34px; height:34px; border-radius:11px; border:1px solid #ecf1fb;
+    display:grid; place-items:center; cursor:pointer; background:#fff; color:#8aa6ff;
+  }
+  .task.done{opacity:.75}
+  .task.done .done-btn{background:linear-gradient(180deg,#5fd1a7,#26c281); border-color:#21a472; color:#fff}
 
-  /* inputs/buttons */
-  .input{flex:1;border:1px solid #e6eefb;background:#f8fbff;border-radius:14px;padding:12px 14px;outline:none}
-  .input:focus{border-color:var(--brand);box-shadow:0 0 0 4px var(--ring)}
-  .btn{border:0;border-radius:14px;background:var(--grad-btn);color:#fff;
-       padding:12px 16px;font-weight:900;box-shadow:0 12px 26px rgba(44,125,250,.35);cursor:pointer}
-  .btn:disabled{opacity:.6;cursor:not-allowed}
+  /* Chat bar */
+  .chatbar{
+    position:sticky; bottom:70px; z-index:12; margin:16px 10px;
+    background: linear-gradient(90deg,#7db8ff,#46a0ff);
+    color:#fff; padding:16px; border-radius:18px; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 14px 30px rgba(34,88,198,.25);
+  }
+  .chatbar button{all:unset; cursor:pointer; font-weight:800}
 
-  /* focus */
-  .focus-box{margin-top:10px;border:1px solid var(--card-br);border-radius:18px;padding:14px;background:linear-gradient(180deg,#f5fbff,#ffffff)}
-  .focus-title{font-weight:900;font-size:17px;margin-bottom:8px}
-  .focus-meta{color:var(--muted);font-size:14px;margin-bottom:12px}
-  .progress{height:10px;border-radius:999px;background:var(--progress-bg);position:relative;overflow:hidden}
-  .progress>span{position:absolute;left:0;top:0;bottom:0;background:var(--progress);width:45%;border-radius:999px;transition:width .25s}
-
-  /* chips */
-  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-  .chip{padding:8px 12px;border-radius:999px;background:var(--pill);border:1px solid var(--card-br);
-        color:#2e7efc;font-weight:800;cursor:pointer}
-  .chip.active{background:#eaf3ff;border-color:#cfe4ff}
-
-  /* grid */
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-
-  /* tasks */
-  .task{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--card-br);
-        border-radius:18px;padding:14px;box-shadow:var(--shadow);margin:10px 0}
-  .task-ic{width:42px;height:42px;border-radius:14px;background:var(--pill);border:1px solid var(--card-br);
-           display:grid;place-items:center;color:#2e7efc;font-size:18px;font-weight:800}
-  .task-mid{flex:1}
-  .task-title{font-weight:900;font-size:17px;margin:2px 0 6px}
-  .task-sub{color:var(--muted)}
-  .task-ok{min-width:28px;height:28px;border-radius:10px;border:1px solid var(--card-br);
-           display:grid;place-items:center;background:#fff;color:#2c7dfa;cursor:pointer}
-
-  .link-more{text-align:center;margin:6px 0 2px;color:#2c7dfa;font-weight:800;cursor:pointer}
-
-  /* chat button (sticky above nav) */
-  .chatbar{position:sticky;bottom:108px;margin:12px 4px -4px;display:flex;justify-content:center;z-index:40}
-  .chatbtn{width:100%;max-width:920px;border-radius:20px;border:1px solid #9fd0ff66;background:var(--grad-btn);
-           color:#fff;font-weight:900;font-size:17px;padding:16px 18px;box-shadow:0 16px 36px rgba(44,125,250,.35)}
-
-  /* bottom nav */
-  .nav{position:fixed;left:0;right:0;bottom:0;z-index:50;
-       padding:10px env(safe-area-inset-left) calc(12px + env(safe-area-inset-bottom)) env(safe-area-inset-right);
-       background:rgba(255,255,255,.9);border-top:1px solid var(--card-br);box-shadow:0 -10px 30px rgba(28,73,170,.12);
-       display:flex;justify-content:space-around;gap:8px}
-  .tab{display:flex;flex-direction:column;align-items:center;gap:6px;color:#6a7890;min-width:72px}
-  .tab .ic{width:28px;height:28px;border-radius:12px;background:#f3f6ff;border:1px solid #e6eefb;display:grid;place-items:center}
-  .tab.active{color:#2c7dfa}.tab.active .ic{background:#e9f2ff;border-color:#cfe4ff;color:#2c7dfa}
-
-  /* toast */
-  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;background:#111827;color:#fff;
-         padding:10px 14px;border-radius:12px;z-index:9999;max-width:92vw;box-shadow:var(--shadow)}
-
-  /* screens */
-  .screen{display:none;animation:fade .18s ease}
+  /* Tabs bottom */
+  .tabs{
+    position:fixed; left:0; right:0; bottom:0; height:70px; padding:8px 10px; backdrop-filter:saturate(120%) blur(10px);
+    background: rgba(255,255,255,.84); border-top:1px solid #e8eefb; z-index:25;
+    display:grid; grid-template-columns:repeat(4,1fr); gap:10px;
+  }
+  .tab{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    color:#6e7b92; font-size:12px; border-radius:14px; user-select:none; cursor:pointer;
+  }
+  .tab.active{color:var(--primary); background:#eef4ff}
+  .screen{display:none}
   .screen.active{display:block}
-  @keyframes fade{from{opacity:.6;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* Toast */
+  .toast{
+    position:fixed; left:50%; transform:translateX(-50%); bottom:86px; z-index:50;
+    background:#1f2b41; color:#fff; padding:12px 16px; border-radius:12px; box-shadow:0 10px 24px rgba(0,0,0,.18);
+    font-size:14px; max-width:90%; text-align:center;
+    animation:fade .2s ease;
+  }
+  @keyframes fade {from{opacity:.6; transform:translate(-50%,8px)} to{opacity:1; transform:translate(-50%,0)}}
 </style>
 </head>
 <body>
-  <div class="app">
+<div class="app">
+  <header>
+    <div class="brand"><div class="logo">⚡</div> Growth Assistant</div>
+  </header>
 
-    <!-- header -->
-    <div class="top">
-      <div class="logo">😊</div>
-      <div class="brand"><h1>Business<br/>Assistance</h1></div>
-      <div class="bell">🔔</div>
+  <!-- Экран: Сегодня -->
+  <main id="screen-home" class="screen active">
+    <div class="section-title">Сегодня</div>
+
+    <!-- Фокус дня -->
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px;">
+        <div class="row" style="gap:8px;">
+          <div class="logo" style="width:28px;height:28px;font-size:14px;border-radius:8px">⚡</div>
+          <b>Фокус дня</b>
+        </div>
+      </div>
+      <div class="row" style="gap:10px;">
+        <input id="focus-input" class="input" placeholder="Самое главное сегодня…" />
+        <button id="focus-save" class="btn">Сохранить</button>
+      </div>
+      <div id="focus-view" class="row" style="display:none; margin-top:10px; justify-content:space-between;">
+        <div id="focus-text" class="muted"></div>
+        <button id="focus-edit" class="btn secondary">✏️</button>
+      </div>
     </div>
 
-    <!-- ==== Screens ==== -->
-
-    <!-- TODAY -->
-    <section id="screen-today" class="screen active">
-      <h2>Фокус дня</h2>
-      <div class="card">
-        <div class="row" style="margin-bottom:12px">
-          <input id="focusInput" class="input" placeholder="Самое главное сегодня…" />
-          <button id="focusSave" class="btn">Сохранить</button>
-        </div>
-        <div id="focusGlass" class="focus-box" style="display:none">
-          <div id="focusMain" class="focus-title">…</div>
-          <div id="focusMeta" class="focus-meta">Срок до 18:00</div>
-          <div class="progress"><span id="focusProgress" style="width:45%"></span></div>
-        </div>
+    <!-- Быстрое добавление -->
+    <div class="card">
+      <div class="row" style="gap:8px; margin-bottom:8px">
+        <div class="logo" style="width:28px;height:28px;font-size:14px;border-radius:8px;background:#28c76f">+</div>
+        <b>Быстрое добавление</b>
       </div>
-
-      <h2>Быстрое добавление</h2>
-      <div class="card">
-        <input id="taskTitle" class="input" placeholder="Название задачи" />
-        <div id="chipGroup" class="chips">
-          <div class="chip active" data-list="today">Сегодня</div>
-          <div class="chip" data-list="week">Неделя</div>
-          <div class="chip" data-list="backlog">Бэклог</div>
-        </div>
-        <div class="grid2">
-          <input id="taskDate" class="input" type="date" />
-          <input id="taskTime" class="input" type="time" />
-        </div>
-        <div class="row" style="margin-top:12px">
-          <div style="flex:1"></div>
-          <button id="taskAdd" class="btn">Добавить</button>
-        </div>
+      <input id="task-title" class="input" placeholder="Название задачи" style="margin:8px 0 10px" />
+      <div class="row" style="gap:8px; margin:8px 0;">
+        <button class="btn secondary" data-list="today">Сегодня</button>
+        <button class="btn secondary" data-list="week">Неделя</button>
+        <button class="btn secondary" data-list="backlog">Бэклог</button>
       </div>
-
-      <h2>Задачи</h2>
-      <div class="card">
-        <div id="tasks"></div>
-        <div id="showAll" class="link-more">Показать всё</div>
+      <div class="row" style="gap:8px; margin-top:10px">
+        <input id="task-date" class="input" placeholder="дд.мм.гггг" style="max-width:170px" />
+        <input id="task-time" class="input" placeholder="--:--" style="max-width:120px" />
+        <button id="task-add" class="btn">Добавить</button>
       </div>
+    </div>
 
-      <!-- chat button sits ABOVE bottom-nav, never overlaps it -->
-      <div class="chatbar">
-        <button id="openChat" class="chatbtn">Чат с ассистентом  🎙️</button>
-      </div>
-    </section>
+    <!-- Список задач -->
+    <div class="section-title" style="margin-top:4px">Задачи</div>
+    <div id="tasks-list"></div>
 
-    <!-- PLAN -->
-    <section id="screen-plan" class="screen">
-      <h2>План</h2>
-      <div class="card">
-        Готово к наполнению: здесь будет недельный/месячный план, сводка прогресса и HADI-блоки.
-      </div>
-    </section>
+    <!-- Чат -->
+    <div class="chatbar"><button id="chat-open">💬 Чат с ассистентом</button></div>
+  </main>
 
-    <!-- CALENDAR -->
-    <section id="screen-calendar" class="screen">
-      <h2>Календарь</h2>
-      <div class="card">
-        Мини-календарь и события (позже подкинем реальный список из задач).
-      </div>
-    </section>
+  <!-- Экран: План -->
+  <main id="screen-plan" class="screen">
+    <div class="section-title">План</div>
+    <div class="card muted">Здесь появится недельный/месячный обзор.</div>
+  </main>
 
-    <!-- PROFILE -->
-    <section id="screen-profile" class="screen">
-      <h2>Профиль</h2>
-      <div class="card">
-        Имя, параметры фокуса дня, быстрые настройки и выход.
-      </div>
-    </section>
+  <!-- Экран: Календарь -->
+  <main id="screen-calendar" class="screen">
+    <div class="section-title">Календарь</div>
+    <div class="card muted">Отображаем задачи с дедлайнами. (read-only)</div>
+  </main>
 
-  </div>
+  <!-- Экран: Профиль -->
+  <main id="screen-profile" class="screen">
+    <div class="section-title">Профиль</div>
+    <div class="card">
+      <div class="muted">Настройки и информация будут здесь.</div>
+    </div>
+  </main>
 
-  <!-- bottom nav -->
-  <nav class="nav" id="nav">
-    <div class="tab active" data-target="today"><div class="ic">🏠</div><div>Главная</div></div>
-    <div class="tab" data-target="plan"><div class="ic">🗓️</div><div>План</div></div>
-    <div class="tab" data-target="calendar"><div class="ic">📅</div><div>Календарь</div></div>
-    <div class="tab" data-target="profile"><div class="ic">👤</div><div>Профиль</div></div>
+  <!-- Табы -->
+  <nav class="tabs">
+    <div class="tab active" data-tab="home">🏠<div>Главная</div></div>
+    <div class="tab" data-tab="plan">🗂<div>План</div></div>
+    <div class="tab" data-tab="calendar">📅<div>Календарь</div></div>
+    <div class="tab" data-tab="profile">👤<div>Профиль</div></div>
   </nav>
+</div>
 
-  <!-- chat modal -->
-  <div id="chatModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);z-index:60;align-items:flex-end">
-    <div style="background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.18);width:100%;max-height:80vh;overflow:auto">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #eef0f6">
-        <strong>Чат с ассистентом</strong>
-        <button id="closeChat" class="btn" style="padding:8px 12px">Закрыть</button>
-      </div>
-      <div id="msgs" style="display:flex;flex-direction:column;gap:8px;padding:10px 12px"></div>
-      <div style="display:flex;gap:8px;padding:12px;border-top:1px solid #eef0f6;position:sticky;bottom:0;background:#fff">
-        <input id="chatInput" class="input" placeholder="Спросите про план, HADI или задачи…" />
-        <button id="sendMsg" class="btn">Отправить</button>
-      </div>
-    </div>
-  </div>
+<script>
+  // --- TG init header
+  function getInitData() {
+    try { return window.Telegram?.WebApp?.initData || ''; } catch { return ''; }
+  }
+  async function authFetch(url, opts={}) {
+    const headers = Object.assign({'content-type':'application/json'}, (opts.headers||{}));
+    const init = getInitData();
+    if (init) headers['x-telegram-init'] = init;
+    return fetch(url, Object.assign({}, opts, { headers }));
+  }
 
-  <!-- TG SDK -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script>
-    /* ===== CONFIG ===== */
-    const PROD_ORIGIN = 'https://maks-mini-apps.vercel.app';
-    const ORIGIN = (PROD_ORIGIN && PROD_ORIGIN.trim()) ? PROD_ORIGIN.trim().replace(/\/+$/,'') : window.location.origin;
+  // --- UI helpers
+  const toast = (msg) => {
+    const t = document.createElement('div');
+    t.className = 'toast'; t.textContent = msg;
+    document.body.appendChild(t); setTimeout(()=>t.remove(), 2500);
+  };
 
-    /* ===== TG ===== */
-    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-    if(tg){ try{ tg.ready(); tg.expand(); }catch(e){} }
-    window.__TG_INIT_DATA__ = tg && tg.initData ? tg.initData : '';
+  // --- Tabs
+  const screens = {
+    home: document.getElementById('screen-home'),
+    plan: document.getElementById('screen-plan'),
+    calendar: document.getElementById('screen-calendar'),
+    profile: document.getElementById('screen-profile'),
+  };
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function switchTab(name){
+    for (const [key,el] of Object.entries(screens)) el.classList.toggle('active', key===name);
+    tabs.forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  tabs.forEach(t=>t.addEventListener('click',()=>switchTab(t.dataset.tab)));
 
-    /* ===== TOAST ===== */
-    let toastEl=null;
-    function toast(text){ if(toastEl) toastEl.remove(); toastEl=document.createElement('div'); toastEl.className='toast'; toastEl.textContent=text; document.body.appendChild(toastEl); setTimeout(()=>toastEl&&toastEl.remove(),3000); }
+  // --- Data rendering
+  const focusInput = document.getElementById('focus-input');
+  const focusSave  = document.getElementById('focus-save');
+  const focusView  = document.getElementById('focus-view');
+  const focusText  = document.getElementById('focus-text');
+  const focusEdit  = document.getElementById('focus-edit');
 
-    /* ===== FETCH w/ auth, timeout, retry ===== */
-    async function explain(url,res){ let t=''; try{ t = await res.clone().text() }catch{} toast(`API: ${res.status} ${res.statusText}`) }
-    async function authFetch(route,opts,timeout=20000){
-      const url = `${ORIGIN}${route.startsWith('/')?route:`/${route}`}`;
-      async function once(){
-        const ctrl=new AbortController(); const timer=setTimeout(()=>ctrl.abort('timeout'),timeout);
-        try{
-          const res = await fetch(url,{...(opts||{}),headers:{...(opts?.headers||{}),'x-telegram-init':window.__TG_INIT_DATA__||''},signal:ctrl.signal});
-          clearTimeout(timer); if(!res.ok) await explain(url,res); return res;
-        }catch(e){ clearTimeout(timer); throw e; }
+  async function loadFocus(){
+    try{
+      const r = await authFetch('/api/focus');
+      const j = await r.json();
+      if (r.ok) {
+        if (j.text) {
+          focusInput.value = '';
+          focusText.textContent = j.text;
+          focusView.style.display='flex';
+        } else {
+          focusView.style.display='none';
+        }
       }
+    }catch(e){}
+  }
+  focusSave.addEventListener('click', async ()=>{
+    const text = focusInput.value.trim();
+    if (!text) return toast('Введите текст фокуса');
+    try{
+      const r = await authFetch('/api/focus', { method:'PUT', body: JSON.stringify({ text }) });
+      if (!r.ok) throw 0;
+      toast('Фокус сохранён'); focusInput.value=''; loadFocus(); loadTasks();
+    }catch(e){ toast('Ошибка сервера (focus)'); }
+  });
+  focusEdit.addEventListener('click', ()=>{
+    focusInput.value = focusText.textContent || ''; focusView.style.display='none';
+  });
+
+  // --- Tasks
+  const tasksList  = document.getElementById('tasks-list');
+  const addBtn     = document.getElementById('task-add');
+  const titleIn    = document.getElementById('task-title');
+  const dateIn     = document.getElementById('task-date');
+  const timeIn     = document.getElementById('task-time');
+  let currentList  = 'today';
+  document.querySelectorAll('[data-list]').forEach(b=>{
+    b.addEventListener('click', ()=>{ currentList=b.dataset.list; toast('Список: '+(b.textContent.trim())); });
+  });
+
+  function taskNode(item){
+    const el = document.createElement('div');
+    el.className = 'task'+(item.done?' done':'');
+    el.innerHTML = `
+      <div class="icon">🧩</div>
+      <div style="flex:1">
+        <div class="title">${escapeHtml(item.title)}</div>
+        ${item.note ? `<div class="sub">${escapeHtml(item.note)}</div>` : ``}
+      </div>
+      <div class="done-btn" title="Готово">${item.done ? '✔️' : '➔'}</div>
+    `;
+    const btn = el.querySelector('.done-btn');
+    btn.addEventListener('click', async ()=>{
       try{
-        const r=await once(); if(r.ok) return r;
-        if(r.status>=500){ await new Promise(r=>setTimeout(r,600)); return await once(); }
-        return r;
-      }catch(e){ toast('API: network error'); throw e; }
-    }
-
-    /* ===== NAVIGATION ===== */
-    const screens = {
-      today:   document.getElementById('screen-today'),
-      plan:    document.getElementById('screen-plan'),
-      calendar:document.getElementById('screen-calendar'),
-      profile: document.getElementById('screen-profile'),
-    };
-    const tabs = Array.from(document.querySelectorAll('.nav .tab'));
-    function openScreen(name){
-      Object.entries(screens).forEach(([k,el])=>el.classList.toggle('active', k===name));
-      tabs.forEach(t=>t.classList.toggle('active', t.dataset.target===name));
-      // подгрузка при входе на «Сегодня»
-      if(name==='today'){ loadFocus(); loadTasks(); }
-    }
-    document.getElementById('nav').addEventListener('click',(e)=>{
-      const t=e.target.closest('.tab'); if(!t) return;
-      openScreen(t.dataset.target);
-    });
-
-    /* ===== DOM refs (Today) ===== */
-    const elFocusInput  = document.getElementById('focusInput');
-    const elFocusSave   = document.getElementById('focusSave');
-    const elFocusGlass  = document.getElementById('focusGlass');
-    const elFocusMain   = document.getElementById('focusMain');
-    const elFocusMeta   = document.getElementById('focusMeta');
-    const elProgress    = document.getElementById('focusProgress');
-
-    const listEl        = document.getElementById('tasks');
-    const showAll       = document.getElementById('showAll');
-
-    const taskTitle     = document.getElementById('taskTitle');
-    const chipGroup     = document.getElementById('chipGroup');
-    const taskDate      = document.getElementById('taskDate');
-    const taskTime      = document.getElementById('taskTime');
-    const taskAdd       = document.getElementById('taskAdd');
-
-    const chatModal = document.getElementById('chatModal');
-    const openChat  = document.getElementById('openChat');
-    const closeChat = document.getElementById('closeChat');
-    const msgs      = document.getElementById('msgs');
-    const chatInput = document.getElementById('chatInput');
-    const sendMsg   = document.getElementById('sendMsg');
-
-    let todayTasks=[]; let currentList='today';
-
-    /* ===== HEALTH (silent) ===== */
-    (async function(){
-      try{
-        const r=await authFetch('/api/health'); const j=await r.json().catch(()=>({}));
-        if(!j.db_ok){ /* можно вывести лёгкий индикатор, но не мешаем UX */ }
-      }catch(e){}
-    })();
-
-    /* ===== FOCUS ===== */
-    async function loadFocus(){
-      const day=new Date().toISOString().slice(0,10);
-      try{
-        const r=await authFetch(`/api/focus?day=${day}`);
-        const j=await r.json().catch(()=>({}));
-        const text=j.text||'';
-        elFocusInput.value=text;
-        if(text){
-          elFocusMain.textContent=text;
-          elFocusMeta.textContent=j.meta||'Срок до 18:00';
-          elProgress.style.width=(j.progressPct||45)+'%';
-          elFocusGlass.style.display='block';
-        }else elFocusGlass.style.display='none';
-      }catch(e){}
-    }
-    async function saveFocus(){
-      const text=(elFocusInput.value||'').trim(); if(!text) return toast('Введите фокус дня');
-      const old=elFocusSave.textContent; elFocusSave.disabled=true; elFocusSave.textContent='Сохраняю…';
-      try{
-        const r=await authFetch('/api/focus',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({day:new Date().toISOString().slice(0,10),text})});
-        if(r.ok){ await loadFocus(); toast('Фокус сохранён'); }
-      }catch(e){}
-      elFocusSave.disabled=false; elFocusSave.textContent=old;
-    }
-    elFocusSave.onclick=saveFocus;
-
-    /* ===== CHIPS ===== */
-    chipGroup.addEventListener('click',e=>{
-      const c=e.target.closest('.chip'); if(!c) return;
-      chipGroup.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
-      c.classList.add('active'); currentList=c.dataset.list||'today';
-    });
-
-    /* ===== TASKS ===== */
-    function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-    function renderTasks(items){
-      if(!items.length){ listEl.innerHTML='<div style="text-align:center;color:#6b7a90;padding:10px">Задач нет</div>'; return; }
-      listEl.innerHTML=items.map(t=>{
-        const sub=t.note||t.subtitle||'';
-        const ic=t.icon||'🧩';
-        const ok=t.done?'✅':'✔️';
-        return `<div class="task" data-id="${t.id||''}" data-done="${!!t.done}">
-          <div class="task-ic">${ic}</div>
-          <div class="task-mid">
-            <div class="task-title">${escapeHtml(t.title||'Без названия')}</div>
-            ${sub?`<div class="task-sub">${escapeHtml(sub)}</div>`:''}
-          </div>
-          <div class="task-ok" title="Отметить выполненной">${ok}</div>
-        </div>`;
-      }).join('');
-    }
-    async function loadTasks(){
-      try{
-        const r=await authFetch('/api/tasks?list=today');
-        const j=await r.json().catch(()=>({items:[]}));
-        todayTasks=j.items||[]; renderTasks(todayTasks);
-      }catch(e){}
-    }
-
-    // toggle done (оптимистично с откатом)
-    listEl.addEventListener('click',async e=>{
-      const ok=e.target.closest('.task-ok'); if(!ok) return;
-      const task=e.target.closest('.task'); const id=task?.dataset?.id; if(!id) return;
-      const wasDone=task.dataset.done==='true';
-      task.dataset.done=(!wasDone).toString(); ok.textContent = wasDone ? '✔️' : '✅';
-      try{
-        const r=await authFetch(`/api/tasks/${encodeURIComponent(id)}`,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({done:!wasDone})});
-        if(!r.ok) throw 0;
+        const r = await authFetch('/api/tasks/'+item.id, {
+          method:'PUT',
+          body: JSON.stringify({ done: !item.done })
+        });
+        const j = await r.json().catch(()=>({}));
+        if (!r.ok) throw new Error(j.error||'ERR');
+        item.done = !!j.done;
+        el.classList.toggle('done', item.done);
+        btn.textContent = item.done ? '✔️' : '➔';
       }catch(e){
-        task.dataset.done=wasDone.toString(); ok.textContent = wasDone ? '✅' : '✔️';
-        toast('Не удалось обновить задачу');
+        toast('API: 500 — ' + (e.message || 'server error'));
       }
     });
+    return el;
+  }
 
-    // add task
-    function toISO(dateStr,timeStr){
-      if(!dateStr && !timeStr) return null;
-      let d = dateStr ? new Date(dateStr) : new Date();
-      if(timeStr){ const [h,m]=timeStr.split(':'); d.setHours(+h||0, +m||0, 0, 0); }
-      return d.toISOString();
-    }
-    taskAdd.onclick = async ()=>{
-      const title=(taskTitle.value||'').trim(); if(!title) return toast('Введите название задачи');
-      const payload={ title, list: currentList, deadline: toISO(taskDate.value, taskTime.value) };
-      const old=taskAdd.textContent; taskAdd.disabled=true; taskAdd.textContent='Добавляю…';
-      try{
-        const r=await authFetch('/api/tasks',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
-        if(r.ok){ taskTitle.value=''; taskDate.value=''; taskTime.value=''; toast('Задача добавлена'); await loadTasks(); }
-      }catch(e){}
-      taskAdd.disabled=false; taskAdd.textContent=old;
-    };
+  async function loadTasks(){
+    tasksList.textContent='';
+    try{
+      const r = await authFetch('/api/tasks?list=today');
+      const j = await r.json();
+      if (!r.ok) throw 0;
+      (j.items||[]).forEach(x=>tasksList.appendChild(taskNode(x)));
+    }catch(e){ toast('Не удалось загрузить задачи'); }
+  }
 
-    showAll.onclick = ()=> toast('Скоро: экран «Все задачи»');
+  addBtn.addEventListener('click', async ()=>{
+    const title = titleIn.value.trim();
+    if (!title) return toast('Введите название задачи');
+    // примитивный парсер даты/времени → ISO
+    let deadline = null;
+    try{
+      if (dateIn.value.trim()) {
+        const [d,m,y] = dateIn.value.trim().split('.').map(n=>parseInt(n,10));
+        if (y && m && d) {
+          const [hh,mm] = (timeIn.value||'00:00').split(':').map(n=>parseInt(n,10));
+          const dt = new Date(Date.UTC(y, (m-1), d, hh||0, mm||0, 0));
+          deadline = dt.toISOString();
+        }
+      }
+    }catch(e){}
+    try{
+      const r = await authFetch('/api/tasks', {
+        method:'POST',
+        body: JSON.stringify({ title, list: currentList, deadline })
+      });
+      const j = await r.json().catch(()=>({}));
+      if (!r.ok) throw new Error(j.error||'ERR');
+      titleIn.value=''; dateIn.value=''; timeIn.value='';
+      tasksList.prepend(taskNode(j));
+    }catch(e){ toast('Ошибка сервера (task)'); }
+  });
 
-    /* ===== CHAT ===== */
-    function pushMsg(w,t){const b=document.createElement('div');b.style.cssText='padding:10px 12px;border-radius:12px;max-width:80%;margin:2px 0';b.textContent=t;if(w==='me'){b.style.marginLeft='auto';b.style.background='#eff6ff'}else{b.style.marginRight='auto';b.style.background='#f3f4f6'};msgs.appendChild(b);msgs.scrollTop=msgs.scrollHeight;}
-    async function sendChat(){
-      const q=(chatInput.value||'').trim(); if(!q) return; pushMsg('me',q); chatInput.value='';
-      try{
-        const r=await authFetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message:q})},22000);
-        const j=await r.json().catch(()=>({})); (r.ok&&j.reply)?pushMsg('bot',j.reply):pushMsg('bot','[ошибка ответа]');
-      }catch(e){ pushMsg('bot','[network error]') }
-    }
-    document.getElementById('openChat').onclick = ()=>{ chatModal.style.display='flex'; chatInput.focus() };
-    document.getElementById('closeChat').onclick = ()=>{ chatModal.style.display='none' };
-    document.getElementById('sendMsg').onclick  = sendChat;
-    chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter') sendChat() });
+  // --- utils
+  function escapeHtml(s=''){ return s.replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
 
-    /* ===== INITIAL LOAD ===== */
-    (function boot(){ loadFocus(); loadTasks(); })();
-  </script>
+  // --- Chat open (заглушка)
+  document.getElementById('chat-open').addEventListener('click', ()=> toast('Чат откроется позже ✨'));
+
+  // init
+  (async function init(){
+    // dev-проверка whoami (не мешает продакшену)
+    try{
+      const r = await authFetch('/api/whoami'); if (r.ok) { /* ok */ }
+    }catch(e){}
+    await loadFocus(); await loadTasks();
+  })();
+</script>
 </body>
 </html>
