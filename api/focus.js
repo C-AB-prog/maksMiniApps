@@ -1,12 +1,17 @@
 // /api/focus.js
 import { sql } from '@vercel/postgres';
 import { requireUser } from './_utils/tg_node.js';
+import { ensureSchema } from './_utils/schema.js';
 
 export default async function handler(req, res) {
   const user = await requireUser(req, res);
-  if (!user) return; // уже отдан 401
+  if (!user) return;
 
-  const day = (req.method === 'GET' ? req.query.day : (req.body?.day)) || new Date().toISOString().slice(0, 10);
+  await ensureSchema();
+
+  const day =
+    (req.method === 'GET' ? req.query.day : req.body?.day) ||
+    new Date().toISOString().slice(0, 10);
 
   try {
     if (req.method === 'GET') {
@@ -16,8 +21,7 @@ export default async function handler(req, res) {
         WHERE user_id=${user.id} AND day=${day}
         LIMIT 1
       `;
-      res.status(200).json(rows[0] || { text: '', meta: '', progress_pct: 0 });
-      return;
+      return res.status(200).json(rows[0] || { text: '', meta: '', progress_pct: 0 });
     }
 
     if (req.method === 'PUT') {
@@ -28,12 +32,11 @@ export default async function handler(req, res) {
         ON CONFLICT (user_id, day)
         DO UPDATE SET text=${text}, meta=${meta}, progress_pct=${progress_pct}, updated_at=now()
       `;
-      res.status(200).json({ ok: true });
-      return;
+      return res.status(200).json({ ok: true });
     }
 
-    res.status(405).end();
+    return res.status(405).end();
   } catch (e) {
-    res.status(500).json({ ok: false, error: e.message });
+    return res.status(500).json({ ok: false, error: e?.message || String(e) });
   }
 }
