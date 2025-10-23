@@ -1,39 +1,27 @@
-// api/tasks/[id].js
-export const config = { runtime: 'nodejs' };
-
+// /api/tasks/[id].js
 import { sql } from '@vercel/postgres';
-import { ensureTables, requestIsSigned, getOrCreateUser, ok, err } from '../_utils/db.js';
+import { requireUser } from '../_utils/tg_node.js';
 
-export default async function handler(req) {
+export default async function handler(req, res) {
+  const user = await requireUser(req, res);
+  if (!user) return;
+
+  const id = req.query.id;
+  if (!id) return res.status(400).json({ ok: false, error: 'NO_ID' });
+
   try {
-    await ensureTables();
-    const init = req.headers.get('x-telegram-init') || '';
-    const botToken = process.env.BOT_TOKEN || '';
-
-    if (!requestIsSigned(init, botToken)) return err(401, 'UNAUTHORIZED');
-    const user = await getOrCreateUser(init);
-    if (!user) return err(401, 'NO_USER');
-
-    const id = req.url.split('/').pop();
-
-    if (req.method === 'PATCH') {
-      const b = await req.json().catch(()=> ({}));
-      const done = !!b.done;
-      const r = await sql`
-        UPDATE tasks SET done=${done}, updated_at=NOW()
+    if (req.method === 'PUT') {
+      const { done } = req.body || {};
+      await sql`
+        UPDATE tasks SET done=${!!done}, updated_at=now()
         WHERE id=${id} AND user_id=${user.id}
-        RETURNING *`;
-      if (!r.rowCount) return err(404, 'NOT_FOUND');
-      return ok(r.rows[0]);
+      `;
+      res.status(200).json({ ok: true });
+      return;
     }
 
-    if (req.method === 'DELETE') {
-      await sql`DELETE FROM tasks WHERE id=${id} AND user_id=${user.id}`;
-      return ok({ deleted: true });
-    }
-
-    return err(405, 'METHOD_NOT_ALLOWED');
+    res.status(405).end();
   } catch (e) {
-    return err(500, e?.message || 'INTERNAL_ERROR');
+    res.status(500).json({ ok: false, error: e.message });
   }
 }
