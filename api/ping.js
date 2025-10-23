@@ -1,9 +1,4 @@
 // api/ping.js
-export const config = { runtime: 'nodejs' };
-
-export default async function handler() {
-  return new Response(JSON.stringify({ ok: true, ts: Date.now() }), {
-    status: 200,
-    headers: { 'content-type': 'application/json' }
-  });
+export default async function handler(req, res) {
+  res.status(200).json({ ok: true, time: new Date().toISOString() });
 }
