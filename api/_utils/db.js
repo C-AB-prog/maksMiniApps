@@ -1,111 +1,43 @@
 // api/_utils/db.js
 import { sql } from '@vercel/postgres';
-import crypto from 'crypto';
 
-/** ---------- Парсинг initData из Telegram ---------- */
-export function parseTelegramUser(initData) {
+export function haveEnv() {
+  return {
+    has_POSTGRES_URL: !!process.env.POSTGRES_URL || !!process.env.DATABASE_URL,
+    POSTGRES_URL: process.env.POSTGRES_URL || process.env.DATABASE_URL || '',
+  };
+}
+
+export async function pingDb() {
   try {
-    const p = new URLSearchParams(initData || '');
-    const raw = p.get('user');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
+    await sql`select 1 as ok`;
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
   }
 }
 
-/** ---------- Проверка подписи Telegram WebApp ---------- */
-export function verifyTelegramInit(initData, botToken) {
-  if (!initData || !botToken) return false;
-  const params = new URLSearchParams(initData);
-  const hash = params.get('hash') || '';
-  params.delete('hash');
+// Упрощённый парсер userId.
+// В DEV разрешаем без подписи (ALLOW_UNSIGNED=1), берём DEV_USER_ID.
+// В prod берём userId из заголовка Telegram WebApp (initData) как plain-search.
+export function getUserId(req) {
+  const allowUnsigned = process.env.ALLOW_UNSIGNED === '1';
+  const devId = process.env.DEV_USER_ID || '12345';
+  const init = req.headers['x-telegram-init'] || '';
 
-  const dataCheckString = [...params.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([k, v]) => `${k}=${v}`)
-    .join('\n');
+  if (allowUnsigned) return devId;
 
-  const secret = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
-  const calc = crypto.createHmac('sha256', secret).update(dataCheckString).digest('hex');
-  return calc === hash;
-}
-
-/** ---------- DEV-режим (для тестов без подписи) ---------- */
-const allowUnsigned = () => process.env.ALLOW_UNSIGNED === '1';
-
-/** ---------- Инициализация БД ---------- */
-export async function ensureTables() {
-  await sql`
-    CREATE TABLE IF NOT EXISTS users (
-      id           TEXT PRIMARY KEY,
-      username     TEXT,
-      first_name   TEXT,
-      last_name    TEXT,
-      created_at   TIMESTAMP DEFAULT NOW()
-    );
-  `;
-  await sql`
-    CREATE TABLE IF NOT EXISTS tasks (
-      id           TEXT PRIMARY KEY,
-      user_id      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      title        TEXT NOT NULL,
-      list         TEXT NOT NULL CHECK (list IN ('today','week','backlog')),
-      done         BOOLEAN NOT NULL DEFAULT FALSE,
-      due_date     DATE,
-      due_time     TIME,
-      hint         TEXT,
-      created_at   TIMESTAMP DEFAULT NOW(),
-      updated_at   TIMESTAMP DEFAULT NOW()
-    );
-  `;
-  await sql`
-    CREATE TABLE IF NOT EXISTS focus (
-      user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      day        DATE NOT NULL,
-      text       TEXT NOT NULL,
-      updated_at TIMESTAMP DEFAULT NOW(),
-      PRIMARY KEY (user_id, day)
-    );
-  `;
-}
-
-/** ---------- Гард запроса ---------- */
-export function requestIsSigned(initData, botToken) {
-  if (allowUnsigned()) return true; // в DEV пропускаем подпись
-  return verifyTelegramInit(initData, botToken);
-}
-
-/** ---------- Юзер из initData (и upsert в БД) ---------- */
-export async function getOrCreateUser(initData) {
-  const u = parseTelegramUser(initData);
-  if (u && u.id) {
-    await sql`
-      INSERT INTO users (id, username, first_name, last_name)
-      VALUES (${String(u.id)}, ${u.username || null}, ${u.first_name || null}, ${u.last_name || null})
-      ON CONFLICT (id) DO UPDATE SET
-        username = EXCLUDED.username,
-        first_name = EXCLUDED.first_name,
-        last_name = EXCLUDED.last_name;
-    `;
-    return { id: String(u.id), username: u.username || null };
-  }
-  // DEV-пользователь, если включён allowUnsigned
-  if (allowUnsigned()) {
-    const id = String(process.env.DEV_USER_ID || 'dev-user');
-    await sql`INSERT INTO users (id, username) VALUES (${id}, 'dev') ON CONFLICT (id) DO NOTHING`;
-    return { id, username: 'dev' };
-  }
+  // Пытаемся выцепить user.id из initData без верификации (минимально для MVP)
+  try {
+    const parts = decodeURIComponent(String(init));
+    const m = parts.match(/user=(%7B.*?%7D|\{.*?\})/);
+    if (m) {
+      const json = decodeURIComponent(m[1]);
+      const obj = JSON.parse(json);
+      if (obj && obj.id) return String(obj.id);
+    }
+  } catch {}
   return null;
 }
 
-/** ---------- Утилиты ответа ---------- */
-export function ok(data = {}) {
-  return new Response(JSON.stringify(data), {
-    status: 200, headers: { 'content-type': 'application/json' }
-  });
-}
-export function err(status, message) {
-  return new Response(JSON.stringify({ error: message }), {
-    status, headers: { 'content-type': 'application/json' }
-  });
-}
+export default sql;
