@@ -1,13 +1,13 @@
 // /api/tasks/index.js
 import { sql } from '@vercel/postgres';
 import { requireUser } from '../_utils/tg_node.js';
-import { ensureSchema } from '../_utils/schema.js';
+import { ensureTables } from '../_utils/schema.js';
 
 export default async function handler(req, res) {
   const user = await requireUser(req, res);
   if (!user) return;
 
-  await ensureSchema();
+  await ensureTables();
 
   try {
     if (req.method === 'GET') {
@@ -30,8 +30,6 @@ export default async function handler(req, res) {
       const list = (body.list || 'today').toString();
       const note = (body.note || '').toString();
       const icon = (body.icon || '🧩').toString();
-
-      // deadline может быть null или ISO строкой/числом — приводить будем на клиенте
       const deadline = body.deadline ?? null;
 
       const { rows } = await sql`
