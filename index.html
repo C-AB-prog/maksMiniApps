@@ -3,245 +3,323 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>Growth Assistant</title>
+<title>Business / Growth Assistant</title>
 <style>
   :root{
-    --bg:#f7f8fb;--card:#fff;--text:#0f172a;--muted:#667085;
-    --brand:#2563eb;--ring:rgba(37,99,235,.35);--shadow:0 6px 20px rgba(15,23,42,.10);--r:16px
+    --bg:#eaf3ff; --text:#0f172a; --muted:#657285; --brand:#2c7dfa;
+    --card:rgba(255,255,255,.86); --card-border:rgba(255,255,255,.65);
+    --shadow:0 14px 34px rgba(36,78,170,.15); --r-xl:22px; --r:16px; --ring:rgba(44,125,250,.35);
+    --grad-hero: radial-gradient(1200px 600px at 100% -200px,#e7f1ff 0,transparent 60%),
+                 radial-gradient(1000px 600px at -120px 100%,#e9fff5 0,transparent 60%),
+                 linear-gradient(180deg,#fafdff 0%,#f2f7ff 100%);
+    --grad-btn: linear-gradient(180deg,#57a5ff 0%,#2c7dfa 100%);
+    --grad-pill: linear-gradient(180deg,#dff0ff 0%,#eef7ff 100%);
+    --progress-bg:#dceefe; --progress-fill:#38a3ff;
   }
-  html,body{height:100%}
-  body{
-    margin:0;font:15px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,'Noto Sans',sans-serif;color:var(--text);
-    background:
-      radial-gradient(1200px 600px at 100% -200px,#e0eaff 0,transparent 60%),
-      radial-gradient(1200px 600px at -100px 100%,#e8fff1 0,transparent 60%),
-      var(--bg)
-  }
-  .app{max-width:920px;margin:0 auto;padding:16px 12px 108px}
-  .topbar{display:flex;gap:12px;align-items:center;background:var(--card);padding:12px;border-radius:14px;box-shadow:var(--shadow)}
-  .bolt{width:28px;height:28px;border-radius:10px;background:linear-gradient(135deg,#5b8cff,#7cc0ff);display:grid;place-items:center;color:#fff;font-weight:700}
-  .title{font-weight:800}
-  h2{margin:16px 4px 10px;font-size:22px}
-  .card{background:var(--card);border-radius:var(--r);padding:14px;margin:10px 0;box-shadow:var(--shadow)}
-  .label{display:flex;align-items:center;gap:10px;font-weight:800}
-  .dot{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;color:#fff}
-  .dot.blue{background:linear-gradient(135deg,#457BFF,#6CA3FF)}
-  .dot.green{background:linear-gradient(135deg,#22c55e,#63e08c)}
-  .row{display:flex;gap:12px;align-items:center;margin-top:10px}
-  input[type="text"],input[type="date"],input[type="time"]{
-    width:100%;padding:12px 14px;border:1px solid #e6e8f0;border-radius:12px;background:#fbfcff;outline:none;color:var(--text)
-  }
-  input:focus{border-color:var(--brand);box-shadow:0 0 0 4px var(--ring)}
-  .btn{border:0;border-radius:12px;padding:12px 16px;font-weight:800;cursor:pointer;color:#fff;background:linear-gradient(135deg,#2e6ef5,#4c8dff);box-shadow:0 6px 14px rgba(46,110,245,.3)}
-  .btn.secondary{background:linear-gradient(135deg,#0ea5e9,#60a5fa)}
+  html,body{height:100%} body{margin:0;font:15px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,'Noto Sans',sans-serif;color:var(--text);background:var(--grad-hero)}
+  .app{max-width:940px;margin:0 auto;padding:18px 14px 120px}
+  .top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .logo{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(180deg,#e6f2ff,#ffffff);box-shadow:var(--shadow);border:1px solid var(--card-border)}
+  .brand h1{margin:0;font-size:22px;line-height:1.05;letter-spacing:.2px;font-weight:900}
+  .bell{margin-left:auto;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(180deg,#eef6ff,#ffffff);border:1px solid var(--card-border);box-shadow:var(--shadow);position:relative}
+  .bell::after{content:'';position:absolute;right:6px;top:6px;width:8px;height:8px;background:#ff5959;border-radius:50%;box-shadow:0 0 0 2px #fff}
+  h2{font-size:22px;font-weight:900;margin:18px 6px 10px;letter-spacing:.2px;color:#0e1d36}
+  .card{background:var(--card);border:1px solid var(--card-border);backdrop-filter:saturate(180%) blur(8px);-webkit-backdrop-filter:saturate(180%) blur(8px);border-radius:var(--r-xl);box-shadow:var(--shadow);padding:16px;margin:12px 4px}
+  .row{display:flex;gap:10px;align-items:center}
+  .input{flex:1;background:#f7fbff;border:1px solid #e6eefb;border-radius:14px;padding:12px 14px;outline:none}
+  .input:focus{border-color:var(--brand);box-shadow:0 0 0 4px var(--ring)}
+  .btn{border:0;color:#fff;border-radius:14px;padding:12px 16px;font-weight:900;cursor:pointer;background:var(--grad-btn);box-shadow:0 10px 24px rgba(44,125,250,.35)}
   .btn:disabled{opacity:.6;cursor:not-allowed}
-  .pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-  .pill{border:1px solid #e6e8f0;border-radius:999px;padding:8px 12px;color:#475569;background:#fff;cursor:pointer}
-  .pill.active{border-color:#c7d2fe;background:#eef2ff;color:#3730a3}
-  .list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-  .item{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid #eef0f6;border-radius:12px;background:#fff}
-  .empty{color:#64748b;text-align:center;padding:12px}
-  .nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #eef0f6;display:flex;gap:6px;justify-content:space-around;padding:10px env(safe-area-inset-left) calc(10px + env(safe-area-inset-bottom)) env(safe-area-inset-right)}
-  .nav .btn{flex:1;background:#f6f7fb;color:#0f172a;box-shadow:none}
-  .chatbar{position:fixed;left:16px;right:16px;bottom:94px;display:flex;justify-content:center}
-  .chatbtn{width:100%;max-width:920px;border-radius:14px;background:linear-gradient(135deg,#6b8bff,#92e0ff);color:#fff;font-weight:900;padding:14px;border:0;box-shadow:0 10px 24px rgba(107,139,255,.35);cursor:pointer}
-  .modal{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:flex-end}
-  .sheet{background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.2);width:100%;max-height:80vh;overflow:auto}
-  .sheet header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #eef0f6}
-  .msglist{display:flex;flex-direction:column;gap:8px;padding:10px 12px}
-  .bubble{padding:10px 12px;border-radius:12px;max-width:80%}
-  .me{background:#eff6ff;margin-left:auto}.bot{background:#f3f4f6;margin-right:auto}
-  .composer{display:flex;gap:8px;padding:12px;border-top:1px solid #eef0f6;position:sticky;bottom:0;background:#fff}
-  .composer input{flex:1}
-  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:28px;background:#111827;color:#fff;padding:10px 14px;border-radius:12px;max-width:92vw;box-shadow:var(--shadow);z-index:9999}
+  .focus-inner{background:linear-gradient(180deg,#f5fbff,#ffffff);border:1px solid var(--card-border);border-radius:18px;padding:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.45);margin-top:10px}
+  .focus-main{font-size:17px;font-weight:800;margin-bottom:8px}
+  .focus-meta{color:var(--muted);font-size:14px;margin-bottom:12px}
+  .progress{height:10px;border-radius:999px;background:var(--progress-bg);overflow:hidden;position:relative}
+  .progress>span{position:absolute;left:0;top:0;bottom:0;width:45%;background:var(--progress-fill);border-radius:999px;transition:width .25s ease}
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .chip{padding:8px 12px;background:var(--grad-pill);border:1px solid var(--card-border);border-radius:999px;color:#2f7efb;font-weight:700;cursor:pointer;user-select:none}
+  .chip.active{background:#e6f1ff;border-color:#cfe4ff;color:#2c7dfa}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .task{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--card-border);backdrop-filter:saturate(180%) blur(8px);border-radius:18px;padding:14px;box-shadow:var(--shadow);margin:10px 0}
+  .task-ic{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:var(--grad-pill);border:1px solid var(--card-border);color:#2f7efb;font-size:18px;font-weight:700}
+  .task-mid{flex:1}
+  .task-title{font-weight:900;font-size:17px;margin:2px 0 6px}
+  .task-sub{color:var(--muted)}
+  .task-ok{width:28px;height:28px;border-radius:10px;border:1px solid var(--card-border);display:grid;place-items:center;background:#fff;color:#2c7dfa;cursor:pointer}
+  .link-more{text-align:center;margin:6px 0 2px;color:#2c7dfa;font-weight:800;cursor:pointer}
+
+  .chatbar{position:fixed;left:16px;right:16px;bottom:92px;display:flex;justify-content:center}
+  .chatbtn{width:100%;max-width:940px;border-radius:22px;border:1px solid #9fd0ff66;background:var(--grad-btn);color:#fff;font-weight:900;font-size:17px;padding:16px 18px;box-shadow:0 16px 36px rgba(44,125,250,.35)}
+
+  .nav{position:fixed;left:0;right:0;bottom:0;padding:10px env(safe-area-inset-left) calc(10px + env(safe-area-inset-bottom)) env(safe-area-inset-right);background:rgba(255,255,255,.86);border-top:1px solid var(--card-border);box-shadow:0 -10px 30px rgba(36,78,170,.10);display:flex;justify-content:space-around;gap:8px}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:6px;color:#6b7a90}.tab .ic{width:28px;height:28px;border-radius:12px;display:grid;place-items:center;background:#f2f6ff;border:1px solid #e6eefb}.tab.active{color:#2c7dfa}.tab.active .ic{background:#e6f1ff;color:#2c7dfa;border-color:#cfe4ff}
+
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#111827;color:#fff;padding:10px 14px;border-radius:12px;max-width:92vw;box-shadow:var(--shadow);z-index:9999}
 </style>
 </head>
 <body>
 <div class="app">
-  <div class="topbar"><div class="bolt">⚡</div><div class="title">Growth Assistant</div></div>
-  <h2>Сегодня</h2>
 
+  <!-- Шапка -->
+  <div class="top">
+    <div class="logo">😊</div>
+    <div class="brand"><h1>Business<br/>Assistance</h1></div>
+    <div class="bell">🔔</div>
+  </div>
+
+  <!-- Фокус -->
+  <h2>Фокус дня</h2>
   <section class="card">
-    <div class="label"><span class="dot blue">⚡</span>Фокус дня</div>
-    <div class="row">
-      <input id="focusInput" type="text" placeholder="Самое главное сегодня…"/>
+    <div class="row" style="margin-bottom:12px">
+      <input id="focusInput" class="input" type="text" placeholder="Самое главное сегодня…" />
       <button id="focusSave" class="btn">Сохранить</button>
     </div>
-    <div class="pills" id="focusChip" style="display:none"></div>
-  </section>
-
-  <section class="card">
-    <div class="label"><span class="dot green">＋</span>Быстрое добавление</div>
-    <div class="row"><input id="taskTitle" type="text" placeholder="Название задачи"/></div>
-    <div class="pills" id="lists">
-      <div class="pill active" data-list="today">Сегодня</div>
-      <div class="pill" data-list="week">Неделя</div>
-      <div class="pill" data-list="backlog">Бэклог</div>
-    </div>
-    <div class="row">
-      <input id="dueDate" type="date"/><input id="dueTime" type="time"/>
-      <button id="taskAdd" class="btn secondary">Добавить</button>
+    <div class="focus-inner" id="focusGlass" style="display:none">
+      <div class="focus-main" id="focusMain">…</div>
+      <div class="focus-meta" id="focusMeta">Срок до 18:00</div>
+      <div class="progress"><span id="focusProgress" style="width:40%"></span></div>
     </div>
   </section>
 
+  <!-- Быстрое добавление -->
+  <h2>Быстрое добавление</h2>
   <section class="card">
-    <div class="label" style="margin-bottom:6px">Задачи на сегодня</div>
-    <div id="todayList" class="list"></div>
+    <input id="taskTitle" class="input" placeholder="Название задачи"/>
+    <div class="chips" id="chipGroup">
+      <div class="chip active" data-list="today">Сегодня</div>
+      <div class="chip" data-list="week">Неделя</div>
+      <div class="chip" data-list="backlog">Бэклог</div>
+    </div>
+    <div class="grid2">
+      <input id="taskDate" class="input" type="date" />
+      <input id="taskTime" class="input" type="time" />
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div style="flex:1"></div>
+      <button id="taskAdd" class="btn">Добавить</button>
+    </div>
   </section>
+
+  <!-- Задачи -->
+  <h2>Задачи</h2>
+  <section class="card" id="tasksBox">
+    <div id="tasks"></div>
+    <div class="link-more" id="showAll">Показать всё</div>
+  </section>
+
 </div>
 
-<div class="chatbar"><button class="chatbtn" id="openChat">💬 Чат с ассистентом</button></div>
-<div class="nav"><button class="btn">Сегодня</button><button class="btn">План</button><button class="btn">Календарь</button><button class="btn">Профиль</button></div>
+<!-- Большая кнопка чата -->
+<div class="chatbar"><button class="chatbtn" id="openChat">Чат с ассистентом  🎙️</button></div>
 
-<div class="modal" id="chatModal"><div class="sheet">
-  <header><strong>Чат с ассистентом</strong><button id="closeChat" class="btn" style="padding:8px 12px">Закрыть</button></header>
-  <div id="msgs" class="msglist"></div>
-  <div class="composer"><input id="chatInput" type="text" placeholder="Спросите про план, HADI или задачи…"/><button id="sendMsg" class="btn">Отправить</button></div>
-</div></div>
+<!-- Навигация -->
+<nav class="nav">
+  <div class="tab active"><div class="ic">🏠</div><div>Главная</div></div>
+  <div class="tab"><div class="ic">🗓️</div><div>План</div></div>
+  <div class="tab"><div class="ic">📅</div><div>Календарь</div></div>
+  <div class="tab"><div class="ic">📊</div><div>Hadi</div></div>
+  <div class="tab"><div class="ic">👤</div><div>Профиль</div></div>
+</nav>
+
+<!-- Модалка чата -->
+<div id="chatModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);z-index:50;align-items:flex-end">
+  <div style="background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.2);width:100%;max-height:80vh;overflow:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #eef0f6">
+      <strong>Чат с ассистентом</strong>
+      <button id="closeChat" class="btn" style="padding:8px 12px">Закрыть</button>
+    </div>
+    <div id="msgs" style="display:flex;flex-direction:column;gap:8px;padding:10px 12px"></div>
+    <div style="display:flex;gap:8px;padding:12px;border-top:1px solid #eef0f6;position:sticky;bottom:0;background:#fff">
+      <input id="chatInput" class="input" placeholder="Спросите про план, HADI или задачи…" />
+      <button id="sendMsg" class="btn">Отправить</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
-/* ===== Настройки ===== */
-// Жёстко — на твой домен. Если хочешь авто-определять, поставь пустую строку.
+/* ===== Конфиг ===== */
 const PROD_ORIGIN = 'https://maks-mini-apps.vercel.app';
 const ORIGIN = (PROD_ORIGIN && PROD_ORIGIN.trim()) ? PROD_ORIGIN.trim().replace(/\/+$/,'') : window.location.origin;
 
-/* ===== Удаляем старые debug-плашки (если кэш подкинул старую версию) ===== */
-(function cleanupDebug(){
-  const nodes=[...document.querySelectorAll('div,pre,code')];
-  for(const el of nodes){
-    const t=(el.textContent||'').trim();
-    if(t.startsWith('origin: ') && t.includes(' health: ')) { el.remove(); }
-  }
-})();
+/* ===== ТГ ===== */
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+if(tg){ try{ tg.ready(); tg.expand(); }catch(e){} }
+window.__TG_INIT_DATA__ = tg && tg.initData ? tg.initData : '';
 
-/* ===== UI helpers ===== */
+/* ===== Тосты ===== */
 let toastEl=null;
-function toast(t){
-  if(toastEl){toastEl.remove();toastEl=null}
-  toastEl=document.createElement('div');
-  toastEl.className='toast';
-  toastEl.textContent=t;
-  document.body.appendChild(toastEl);
-  setTimeout(()=>{toastEl&&toastEl.remove()},4200);
-}
+function toast(text){ if(toastEl){toastEl.remove()} toastEl=document.createElement('div');toastEl.className='toast';toastEl.textContent=text;document.body.appendChild(toastEl);setTimeout(()=>toastEl&&toastEl.remove(),3200) }
 
-/* ===== Telegram ===== */
-const tg = window.Telegram?.WebApp ?? null;
-try{ tg?.ready(); tg?.expand(); }catch(e){}
-window.__TG_INIT_DATA__ = tg?.initData || '';
-
-/* ===== fetch с подписью и понятной ошибкой ===== */
+/* ===== fetch с подписью/таймаутом/повтором ===== */
 async function explain(url,res){
-  let body=''; try{ body=await res.clone().text(); }catch{}
-  toast(`API(${url}): ${res.status} ${res.statusText} — ${body.slice(0,200)}`);
-  console.warn('API error', url, res.status, body);
+  let t='';try{t=await res.clone().text()}catch{} toast(`API: ${res.status} ${res.statusText}${t?` — ${t.slice(0,120)}`:''}`);
 }
 async function authFetch(route,opts,timeout=20000){
-  const url=`${ORIGIN}${route.startsWith('/')?route:`/${route}`}`;
+  const url = `${ORIGIN}${route.startsWith('/')?route:`/${route}`}`;
   async function once(){
-    const c=new AbortController(); const t=setTimeout(()=>c.abort('timeout'),timeout);
+    const c=new AbortController(); const timer=setTimeout(()=>c.abort('timeout'),timeout);
     try{
       const res=await fetch(url,{...(opts||{}),headers:{...(opts?.headers||{}),'x-telegram-init':window.__TG_INIT_DATA__||''},signal:c.signal});
-      clearTimeout(t); if(!res.ok) await explain(url,res); return res;
-    }catch(e){ clearTimeout(t); throw e }
+      clearTimeout(timer); if(!res.ok) await explain(url,res); return res;
+    }catch(e){ clearTimeout(timer); throw e }
   }
   try{
-    const r1=await once(); if(r1.ok) return r1;
-    if(r1.status>=500){ await new Promise(r=>setTimeout(r,700)); return await once(); }
-    return r1;
+    const r=await once(); if(r.ok) return r;
+    if(r.status>=500){ await new Promise(r=>setTimeout(r,600)); return await once(); }
+    return r;
   }catch(e){ toast('API: network error'); throw e }
 }
 
-/* ===== State / elements ===== */
-let picked='today', focusText='', today=[];
-const elFocusInput=document.getElementById('focusInput');
-const elFocusSave=document.getElementById('focusSave');
-const elChip=document.getElementById('focusChip');
-const elLists=document.getElementById('lists');
-const elTitle=document.getElementById('taskTitle');
-const elAdd=document.getElementById('taskAdd');
-const elToday=document.getElementById('todayList');
+/* ===== DOM ===== */
+const elFocusInput  = document.getElementById('focusInput');
+const elFocusSave   = document.getElementById('focusSave');
+const elFocusGlass  = document.getElementById('focusGlass');
+const elFocusMain   = document.getElementById('focusMain');
+const elFocusMeta   = document.getElementById('focusMeta');
+const elProgress    = document.getElementById('focusProgress');
+
+const listEl        = document.getElementById('tasks');
+const showAll       = document.getElementById('showAll');
+
+const taskTitle     = document.getElementById('taskTitle');
+const chipGroup     = document.getElementById('chipGroup');
+const taskDate      = document.getElementById('taskDate');
+const taskTime      = document.getElementById('taskTime');
+const taskAdd       = document.getElementById('taskAdd');
+
+const chatModal = document.getElementById('chatModal');
+const openChat  = document.getElementById('openChat');
+const closeChat = document.getElementById('closeChat');
+const msgs      = document.getElementById('msgs');
+const chatInput = document.getElementById('chatInput');
+const sendMsg   = document.getElementById('sendMsg');
+
+let todayTasks=[]; let currentList='today';
+
+/* ===== Health ===== */
+(async function health(){
+  try{
+    const r = await authFetch('/api/health');
+    const j = await r.json().catch(()=>({}));
+    if(!j.db_ok) toast('База недоступна');
+  }catch(e){ /* не шумим лишний раз */ }
+})();
 
 /* ===== Focus ===== */
-function renderChip(){
-  if(!focusText){ elChip.style.display='none'; return; }
-  elChip.style.display='flex';
-  elChip.innerHTML=`<div class="pill active">Фокус: ${focusText}</div>`;
-}
 async function loadFocus(){
-  const d=new Date().toISOString().slice(0,10);
+  const day=new Date().toISOString().slice(0,10);
   try{
-    const r=await authFetch(`/api/focus?day=${d}`);
+    const r=await authFetch(`/api/focus?day=${day}`);
     const j=await r.json().catch(()=>({}));
-    focusText=j.text||''; elFocusInput.value=focusText; renderChip();
-  }catch{}
+    const text=j.text||'';
+    elFocusInput.value=text;
+    if(text){
+      elFocusMain.textContent=text;
+      elFocusMeta.textContent=j.meta||'Срок до 18:00';
+      elProgress.style.width=(j.progressPct||45)+'%';
+      elFocusGlass.style.display='block';
+    }else elFocusGlass.style.display='none';
+  }catch(e){}
 }
 async function saveFocus(){
-  const v=(elFocusInput.value||'').trim();
-  if(!v) return toast('Введите фокус дня');
-  elFocusSave.disabled=true; const old=elFocusSave.textContent; elFocusSave.textContent='Сохраняю…';
+  const text=(elFocusInput.value||'').trim(); if(!text) return toast('Введите фокус дня');
+  const old=elFocusSave.textContent; elFocusSave.disabled=true; elFocusSave.textContent='Сохраняю…';
   try{
-    const r=await authFetch('/api/focus',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({day:new Date().toISOString().slice(0,10),text:v})});
-    if(r.ok){ focusText=v; renderChip(); toast('Фокус сохранён'); }
-  }catch{} finally{ elFocusSave.disabled=false; elFocusSave.textContent=old; }
+    const r=await authFetch('/api/focus',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({day:new Date().toISOString().slice(0,10),text})});
+    if(r.ok){ await loadFocus(); toast('Фокус сохранён') }
+  }catch(e){}
+  elFocusSave.disabled=false; elFocusSave.textContent=old;
 }
+elFocusSave.onclick=saveFocus;
+
+/* ===== Chips ===== */
+chipGroup.addEventListener('click',e=>{
+  const c=e.target.closest('.chip'); if(!c) return;
+  chipGroup.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+  c.classList.add('active'); currentList=c.dataset.list||'today';
+});
 
 /* ===== Tasks ===== */
-function renderToday(){
-  if(!today.length){ elToday.innerHTML='<div class="empty">Пока нет задач</div>'; return; }
-  elToday.innerHTML=today.map(t=>`<div class="item"><input type="checkbox" disabled><div>${t.title}</div></div>`).join('');
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function renderTasks(items){
+  if(!items.length){ listEl.innerHTML='<div style="text-align:center;color:#6b7a90;padding:10px">Задач нет</div>'; return; }
+  listEl.innerHTML=items.map(t=>{
+    const sub=t.note||t.subtitle||'';
+    const ic=t.icon||'🧩';
+    const ok=t.done?'✅':'✔️';
+    return `<div class="task" data-id="${t.id||''}" data-done="${!!t.done}">
+      <div class="task-ic">${ic}</div>
+      <div class="task-mid">
+        <div class="task-title">${escapeHtml(t.title||'Без названия')}</div>
+        ${sub?`<div class="task-sub">${escapeHtml(sub)}</div>`:''}
+      </div>
+      <div class="task-ok" title="Отметить выполненной">${ok}</div>
+    </div>`;
+  }).join('');
 }
 async function loadTasks(){
   try{
     const r=await authFetch('/api/tasks?list=today');
     const j=await r.json().catch(()=>({items:[]}));
-    today=j.items||[]; renderToday();
-  }catch{}
-}
-async function quickAdd(){
-  const title=(elTitle.value||'').trim(); if(!title) return toast('Введите название задачи');
-  elAdd.disabled=true; const old=elAdd.textContent; elAdd.textContent='Добавляю…';
-  const body={
-    title,
-    list:picked,
-    due_date:(document.getElementById('dueDate')?.value||null),
-    due_time:(document.getElementById('dueTime')?.value||null)
-  };
-  try{
-    const r=await authFetch('/api/tasks',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    if(r.ok){ elTitle.value=''; await loadTasks(); toast('Добавлено'); }
-  }catch{} finally{ elAdd.disabled=false; elAdd.textContent=old; }
+    todayTasks=j.items||[]; renderTasks(todayTasks);
+  }catch(e){}
 }
 
-/* ===== Chat ===== */
-const chatModal=document.getElementById('chatModal');
-document.getElementById('openChat').onclick=()=>{ chatModal.style.display='flex'; document.getElementById('chatInput').focus(); };
-document.getElementById('closeChat').onclick=()=>{ chatModal.style.display='none'; };
-const msgs=document.getElementById('msgs'); const chatInput=document.getElementById('chatInput'); const sendMsg=document.getElementById('sendMsg');
-function pushMsg(w,t){ const b=document.createElement('div'); b.className='bubble '+(w==='me'?'me':'bot'); b.textContent=t; msgs.appendChild(b); msgs.scrollTop=msgs.scrollHeight; }
-async function sendChat(){
-  const q=(chatInput.value||'').trim(); if(!q) return;
-  pushMsg('me',q); chatInput.value='';
+/* toggle done */
+listEl.addEventListener('click',async e=>{
+  const ok=e.target.closest('.task-ok'); if(!ok) return;
+  const task=e.target.closest('.task'); const id=task?.dataset?.id; if(!id) return;
+  const wasDone=task.dataset.done==='true';
+  // оптимистичный апдейт
+  task.dataset.done=(!wasDone).toString(); ok.textContent = wasDone ? '✔️' : '✅';
   try{
-    const r=await authFetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message:q})},22000);
-    const j=await r.json().catch(()=>({}));
-    (r.ok&&j.reply)?pushMsg('bot',j.reply):pushMsg('bot','[ошибка ответа]');
-  }catch{ pushMsg('bot','[network error]'); }
-}
-sendMsg.onclick=sendChat; chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter') sendChat(); });
-
-/* ===== Switch list ===== */
-elLists.addEventListener('click',e=>{
-  const pill=e.target.closest('.pill'); if(!pill) return;
-  document.querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));
-  pill.classList.add('active'); picked=pill.dataset.list;
+    const r=await authFetch(`/api/tasks/${encodeURIComponent(id)}`,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({done:!wasDone})});
+    if(!r.ok) throw 0;
+  }catch(e){
+    // откат
+    task.dataset.done=wasDone.toString(); ok.textContent = wasDone ? '✅' : '✔️';
+    toast('Не удалось обновить задачу');
+  }
 });
 
+/* add task */
+function toISO(dateStr,timeStr){
+  if(!dateStr && !timeStr) return null;
+  let d = dateStr ? new Date(dateStr) : new Date();
+  if(timeStr){ const [h,m]=timeStr.split(':'); d.setHours(+h||0, +m||0, 0, 0); }
+  return d.toISOString();
+}
+taskAdd.onclick = async ()=>{
+  const title=(taskTitle.value||'').trim(); if(!title) return toast('Введите название задачи');
+  const deadline=toISO(taskDate.value,taskTime.value);
+  const payload={ title, list: currentList, deadline };
+  const old=taskAdd.textContent; taskAdd.disabled=true; taskAdd.textContent='Добавляю…';
+  try{
+    const r=await authFetch('/api/tasks',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
+    if(r.ok){ taskTitle.value=''; taskDate.value=''; taskTime.value=''; toast('Задача добавлена'); await loadTasks(); }
+  }catch(e){}
+  taskAdd.disabled=false; taskAdd.textContent=old;
+};
+
+showAll.onclick = ()=> toast('Скоро: экран «Все задачи»');
+
+/* ===== Chat ===== */
+openChat.onclick = ()=>{ chatModal.style.display='flex'; chatInput.focus() };
+closeChat.onclick = ()=>{ chatModal.style.display='none' };
+function pushMsg(w,t){const b=document.createElement('div');b.style.cssText='padding:10px 12px;border-radius:12px;max-width:80%;margin:2px 0';b.textContent=t;if(w==='me'){b.style.marginLeft='auto';b.style.background='#eff6ff'}else{b.style.marginRight='auto';b.style.background='#f3f4f6'};msgs.appendChild(b);msgs.scrollTop=msgs.scrollHeight;}
+async function sendChat(){
+  const q=(chatInput.value||'').trim(); if(!q) return; pushMsg('me',q); chatInput.value='';
+  try{
+    const r=await authFetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message:q})},22000);
+    const j=await r.json().catch(()=>({})); (r.ok&&j.reply)?pushMsg('bot',j.reply):pushMsg('bot','[ошибка ответа]');
+  }catch(e){ pushMsg('bot','[network error]') }
+}
+sendMsg.onclick=sendChat; chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter') sendChat() });
+
 /* ===== Boot ===== */
-document.getElementById('focusSave').onclick=saveFocus;
-document.getElementById('taskAdd').onclick=quickAdd;
-(async function(){ await Promise.all([loadFocus(),loadTasks()]); })();
+(async function boot(){ await Promise.all([loadFocus(),loadTasks()]); })();
 </script>
 </body>
 </html>
