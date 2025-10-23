@@ -1,33 +1,17 @@
 // api/health.js
-export const config = { runtime: 'nodejs' };
+import sql, { haveEnv, pingDb } from './_utils/db.js';
 
-import { sql } from '@vercel/postgres';
-import { ensureTables, verifyTelegramInit, parseTelegramUser } from './_utils/db.js';
-
-export default async function handler(req) {
+export default async function handler(req, res) {
   try {
-    const init = req.headers.get('x-telegram-init') || '';
-    const botToken = process.env.BOT_TOKEN || '';
-
-    let telegram_signature_ok = false;
-    try { telegram_signature_ok = !!botToken && verifyTelegramInit(init, botToken); } catch {}
-
-    let db_ok = false;
-    try { await ensureTables(); await sql`select 1`; db_ok = true; } catch {}
-
-    const hasPg = !!process.env.POSTGRES_URL;
-    const u = parseTelegramUser(init);
-
-    return new Response(JSON.stringify({
-      ok: telegram_signature_ok && db_ok,
-      telegram_signature_ok, db_ok,
-      user_id: u?.id || null,
-      env: { has_POSTGRES_URL: hasPg, has_BOT_TOKEN: !!botToken }
-    }), { status: 200, headers: { 'content-type': 'application/json' } });
-
-  } catch (e) {
-    return new Response(JSON.stringify({ error: e?.message || 'INTERNAL_ERROR' }), {
-      status: 500, headers: { 'content-type': 'application/json' }
+    const env = haveEnv();
+    const db = await pingDb();
+    res.status(200).json({
+      ok: true,
+      db_ok: db.ok,
+      db_error: db.ok ? undefined : db.error,
+      env,
     });
+  } catch (e) {
+    res.status(200).json({ ok: true, db_ok: false, error: e.message, env: haveEnv() });
   }
 }
