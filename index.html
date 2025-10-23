@@ -9,10 +9,14 @@
     --bg:#f7f8fb;--card:#fff;--text:#0f172a;--muted:#667085;
     --brand:#2563eb;--ring:rgba(37,99,235,.35);--shadow:0 6px 20px rgba(15,23,42,.10);--r:16px
   }
-  html,body{height:100%} body{margin:0;font:15px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,'Noto Sans',sans-serif;color:var(--text);
+  html,body{height:100%}
+  body{
+    margin:0;font:15px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,'Noto Sans',sans-serif;color:var(--text);
     background:
       radial-gradient(1200px 600px at 100% -200px,#e0eaff 0,transparent 60%),
-      radial-gradient(1200px 600px at -100px 100%,#e8fff1 0,transparent 60%),var(--bg)}
+      radial-gradient(1200px 600px at -100px 100%,#e8fff1 0,transparent 60%),
+      var(--bg)
+  }
   .app{max-width:920px;margin:0 auto;padding:16px 12px 108px}
   .topbar{display:flex;gap:12px;align-items:center;background:var(--card);padding:12px;border-radius:14px;box-shadow:var(--shadow)}
   .bolt{width:28px;height:28px;border-radius:10px;background:linear-gradient(135deg,#5b8cff,#7cc0ff);display:grid;place-items:center;color:#fff;font-weight:700}
@@ -25,7 +29,8 @@
   .dot.green{background:linear-gradient(135deg,#22c55e,#63e08c)}
   .row{display:flex;gap:12px;align-items:center;margin-top:10px}
   input[type="text"],input[type="date"],input[type="time"]{
-    width:100%;padding:12px 14px;border:1px solid #e6e8f0;border-radius:12px;background:#fbfcff;outline:none;color:var(--text)}
+    width:100%;padding:12px 14px;border:1px solid #e6e8f0;border-radius:12px;background:#fbfcff;outline:none;color:var(--text)
+  }
   input:focus{border-color:var(--brand);box-shadow:0 0 0 4px var(--ring)}
   .btn{border:0;border-radius:12px;padding:12px 16px;font-weight:800;cursor:pointer;color:#fff;background:linear-gradient(135deg,#2e6ef5,#4c8dff);box-shadow:0 6px 14px rgba(46,110,245,.3)}
   .btn.secondary{background:linear-gradient(135deg,#0ea5e9,#60a5fa)}
@@ -40,7 +45,6 @@
   .nav .btn{flex:1;background:#f6f7fb;color:#0f172a;box-shadow:none}
   .chatbar{position:fixed;left:16px;right:16px;bottom:94px;display:flex;justify-content:center}
   .chatbtn{width:100%;max-width:920px;border-radius:14px;background:linear-gradient(135deg,#6b8bff,#92e0ff);color:#fff;font-weight:900;padding:14px;border:0;box-shadow:0 10px 24px rgba(107,139,255,.35);cursor:pointer}
-  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:28px;background:#111827;color:#fff;padding:10px 14px;border-radius:12px;max-width:92vw;box-shadow:var(--shadow);z-index:9999}
 
   /* modal chat */
   .modal{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:flex-end}
@@ -51,9 +55,7 @@
   .me{background:#eff6ff;margin-left:auto}.bot{background:#f3f4f6;margin-right:auto}
   .composer{display:flex;gap:8px;padding:12px;border-top:1px solid #eef0f6;position:sticky;bottom:0;background:#fff}
   .composer input{flex:1}
-
-  /* debug bar */
-  .dbg{position:fixed;right:10px;bottom:154px;background:#fff;border:1px dashed #dbe1f0;color:#334155;padding:6px 8px;border-radius:10px;font-size:12px}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:28px;background:#111827;color:#fff;padding:10px 14px;border-radius:12px;max-width:92vw;box-shadow:var(--shadow);z-index:9999}
 </style>
 </head>
 <body>
@@ -103,13 +105,14 @@
   <div class="composer"><input id="chatInput" type="text" placeholder="Спросите про план, HADI или задачи…"/><button id="sendMsg" class="btn">Отправить</button></div>
 </div></div>
 
-<div class="dbg" id="dbg"></div>
-
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
-/*** === НАСТРОЙКА ДОМЕНА ДЛЯ API (очень важно в Telegram) === ***/
-const PROD_ORIGIN = 'https://maks-mini-apps.vercel.app'; // <- твой реальный прод-домен БЕЗ слеша в конце
-// ← ПОМЕНЯЙ на свой прод-домен! (или оставь '' чтобы брать location.origin)
+/*** === Настройки === ***/
+// Поставь сюда свой домен, или оставь пусто, чтобы брать window.location.origin
+const PROD_ORIGIN = 'https://maks-mini-apps.vercel.app';
+// Показывать ли отладочный блок (мы его выключаем)
+const SHOW_DEBUG = false;
+
 const ORIGIN = (PROD_ORIGIN && PROD_ORIGIN.trim()) ? PROD_ORIGIN.trim().replace(/\/+$/,'') : window.location.origin;
 
 /*** ===== UI helpers ===== ***/
@@ -122,7 +125,7 @@ const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : 
 if(tg){ try{ tg.ready(); tg.expand(); }catch(e){} }
 window.__TG_INIT_DATA__ = tg && tg.initData ? tg.initData : '';
 
-/*** ===== fetch с подписью, 20s таймаутом и подробной ошибкой ===== ***/
+/*** ===== fetch с подписью и подробной ошибкой ===== ***/
 async function explain(url,res){
   let body=''; try{ body = await res.clone().text(); }catch{}
   const msg = `API(${url}): ${res.status} ${res.statusText} — ${body.slice(0,200)}`;
@@ -144,10 +147,6 @@ async function authFetch(route,opts,timeout=20000){
   }catch(e){ showSticky('API: network error'); throw e }
 }
 
-/*** ===== Debug box ===== ***/
-const dbg = document.getElementById('dbg');
-dbg.textContent = `origin: ${window.location.origin}\nAPI: ${ORIGIN}\n`;
-
 /*** ===== State / elements ===== ***/
 let picked='today', focusText='', today=[];
 const elFocusInput=document.getElementById('focusInput');
@@ -163,7 +162,13 @@ async function health(){
   try{
     const r = await authFetch('/api/health');
     const j = await r.json().catch(()=> ({}));
-    dbg.textContent += `health: ${r.status} db_ok=${j.db_ok} env=${JSON.stringify(j.env||{})}\n`;
+    if(SHOW_DEBUG){
+      const box=document.createElement('div');
+      box.style.cssText='position:fixed;right:10px;bottom:154px;background:#fff;border:1px dashed #dbe1f0;color:#334155;padding:6px 8px;border-radius:10px;font-size:12px;z-index:9998';
+      box.textContent=`origin: ${window.location.origin} API: ${ORIGIN} health: ${r.status} db_ok=${j.db_ok}`;
+      document.body.appendChild(box);
+      setTimeout(()=>box.remove(),4000);
+    }
     if(!j.db_ok) showSticky('HEALTH: db=false');
   }catch{ showSticky('HEALTH: network error') }
 }
@@ -177,7 +182,8 @@ async function loadFocus(){
 async function saveFocus(){
   const v=(elFocusInput.value||'').trim(); if(!v) return toast('Введите фокус дня');
   elFocusSave.disabled=true; const old=elFocusSave.textContent; elFocusSave.textContent='Сохраняю…';
-  try{ const r=await authFetch('/api/focus',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({day:new Date().toISOString().slice(0,10),text:v})});
+  try{
+    const r=await authFetch('/api/focus',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({day:new Date().toISOString().slice(0,10),text:v})});
     if(r.ok){ focusText=v; renderChip(); toast('Фокус сохранён') }
   }catch{} finally{ elFocusSave.disabled=false; elFocusSave.textContent=old }
 }
@@ -203,13 +209,11 @@ async function sendChat(){ const q=(chatInput.value||'').trim(); if(!q) return; 
 sendMsg.onclick=sendChat; chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter') sendChat() });
 
 /*** ===== Switch list ===== ***/
-elLists.addEventListener('click',e=>{ const pill=e.target.closest('.pill'); if(!pill) return; document.querySelectorAll('.pill').forEach(x=>x.classList.remove('active')); pill.classList.add('active'); picked=pill.dataset.list });
-
-/*** ===== Bindings ===== ***/
-document.getElementById('focusSave').onclick=saveFocus;
-document.getElementById('taskAdd').onclick=quickAdd;
+document.getElementById('lists').addEventListener('click',e=>{ const pill=e.target.closest('.pill'); if(!pill) return; document.querySelectorAll('.pill').forEach(x=>x.classList.remove('active')); pill.classList.add('active'); picked=pill.dataset.list });
 
 /*** ===== Boot ===== ***/
+document.getElementById('focusSave').onclick=saveFocus;
+document.getElementById('taskAdd').onclick=quickAdd;
 (async function(){ await health(); await Promise.all([loadFocus(),loadTasks()]) })();
 </script>
 </body>
