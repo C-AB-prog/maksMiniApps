@@ -11,7 +11,7 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const list = req.query.list || 'today';
+      const list = (req.query.list || 'today').toString();
       const { rows } = await sql`
         SELECT id, title, list, note, icon, done, deadline
         FROM tasks
@@ -23,8 +23,16 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { title = '', list = 'today', note = '', icon = '🧩', deadline = null } = req.body || {};
-      if (!title.trim()) return res.status(422).json({ ok: false, error: 'TITLE_REQUIRED' });
+      const body = req.body || {};
+      const title = (body.title || '').toString().trim();
+      if (!title) return res.status(422).json({ ok: false, error: 'TITLE_REQUIRED' });
+
+      const list = (body.list || 'today').toString();
+      const note = (body.note || '').toString();
+      const icon = (body.icon || '🧩').toString();
+
+      // deadline может быть null или ISO строкой/числом — приводить будем на клиенте
+      const deadline = body.deadline ?? null;
 
       const { rows } = await sql`
         INSERT INTO tasks (user_id, title, list, note, icon, deadline)
@@ -36,6 +44,7 @@ export default async function handler(req, res) {
 
     return res.status(405).end();
   } catch (e) {
+    console.error('tasks/index error:', e);
     return res.status(500).json({ ok: false, error: e?.message || String(e) });
   }
 }
