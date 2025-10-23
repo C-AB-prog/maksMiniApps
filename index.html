@@ -1,74 +1,45 @@
 <!doctype html>
 <html lang="ru">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>Growth Assistant</title>
 <style>
   :root{
-    --bg: #f7f8fb;
-    --card:#ffffff;
-    --text:#0f172a;
-    --muted:#667085;
-    --brand:#2563eb;
-    --brand-2:#22c55e;
-    --ring: rgba(37,99,235,.35);
-    --shadow: 0 6px 20px rgba(15,23,42,.10);
-    --radius:16px;
+    --bg:#f7f8fb;--card:#fff;--text:#0f172a;--muted:#667085;
+    --brand:#2563eb;--ring:rgba(37,99,235,.35);--shadow:0 6px 20px rgba(15,23,42,.10);--r:16px
   }
-  html,body{height:100%;}
-  body{
-    margin:0;
-    font: 15px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,'Noto Sans',sans-serif;
-    color:var(--text);
+  html,body{height:100%} body{margin:0;font:15px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,'Noto Sans',sans-serif;color:var(--text);
     background:
-      radial-gradient(1200px 600px at 100% -200px, #e0eaff 0, transparent 60%),
-      radial-gradient(1200px 600px at -100px 100%, #e8fff1 0, transparent 60%),
-      var(--bg);
-  }
-  .app{max-width:920px;margin:0 auto;padding:16px 12px 96px;}
-  .topbar{
-    display:flex;align-items:center;gap:12px;padding:12px;
-    background:var(--card);border-radius:14px;box-shadow:var(--shadow)
-  }
+      radial-gradient(1200px 600px at 100% -200px,#e0eaff 0,transparent 60%),
+      radial-gradient(1200px 600px at -100px 100%,#e8fff1 0,transparent 60%),var(--bg)}
+  .app{max-width:920px;margin:0 auto;padding:16px 12px 108px}
+  .topbar{display:flex;gap:12px;align-items:center;background:var(--card);padding:12px;border-radius:14px;box-shadow:var(--shadow)}
   .bolt{width:28px;height:28px;border-radius:10px;background:linear-gradient(135deg,#5b8cff,#7cc0ff);display:grid;place-items:center;color:#fff;font-weight:700}
-  .title{font-weight:700;font-size:16px}
-  h2{margin:16px 4px 10px;font-size:22px;letter-spacing:.2px}
-
-  .card{
-    background:var(--card);border-radius:var(--radius);
-    padding:14px 14px 12px;margin:10px 0;box-shadow:var(--shadow)
-  }
-  .row{display:flex;align-items:center;gap:12px;margin-top:10px}
-  .label{display:flex;align-items:center;gap:10px;font-weight:700}
+  .title{font-weight:800}
+  h2{margin:16px 4px 10px;font-size:22px}
+  .card{background:var(--card);border-radius:var(--r);padding:14px;margin:10px 0;box-shadow:var(--shadow)}
+  .label{display:flex;align-items:center;gap:10px;font-weight:800}
   .dot{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;color:#fff}
   .dot.blue{background:linear-gradient(135deg,#457BFF,#6CA3FF)}
   .dot.green{background:linear-gradient(135deg,#22c55e,#63e08c)}
-  input[type="text"], input[type="date"], input[type="time"]{
-    appearance:none;border:1px solid #e6e8f0;border-radius:12px;outline:none;
-    padding:12px 14px;width:100%;background:#fbfcff;color:var(--text)
-  }
+  .row{display:flex;gap:12px;align-items:center;margin-top:10px}
+  input[type="text"],input[type="date"],input[type="time"]{
+    width:100%;padding:12px 14px;border:1px solid #e6e8f0;border-radius:12px;background:#fbfcff;outline:none;color:var(--text)}
   input:focus{border-color:var(--brand);box-shadow:0 0 0 4px var(--ring)}
-  .btn{
-    border:0;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;
-    background:linear-gradient(135deg,#2e6ef5,#4c8dff);color:#fff;box-shadow:0 6px 14px rgba(46,110,245,.3)
-  }
+  .btn{border:0;border-radius:12px;padding:12px 16px;font-weight:800;cursor:pointer;color:#fff;background:linear-gradient(135deg,#2e6ef5,#4c8dff);box-shadow:0 6px 14px rgba(46,110,245,.3)}
   .btn.secondary{background:linear-gradient(135deg,#0ea5e9,#60a5fa)}
   .btn:disabled{opacity:.6;cursor:not-allowed}
-  .pills{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-  .pill{border:1px solid #e6e8f0;border-radius:999px;padding:8px 12px;color:var(--muted);cursor:pointer;background:#fff}
+  .pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .pill{border:1px solid #e6e8f0;border-radius:999px;padding:8px 12px;color:#475569;background:#fff;cursor:pointer}
   .pill.active{border-color:#c7d2fe;background:#eef2ff;color:#3730a3}
   .list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-  .item{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #eef0f6;border-radius:12px;background:#fff}
-  .item input{width:18px;height:18px}
-  .empty{color:var(--muted);padding:12px;text-align:center}
-  .nav{
-    position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #eef0f6;
-    display:flex;gap:6px;justify-content:space-around;padding:10px env(safe-area-inset-left) calc(10px + env(safe-area-inset-bottom)) env(safe-area-inset-right)
-  }
+  .item{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid #eef0f6;border-radius:12px;background:#fff}
+  .empty{color:#64748b;text-align:center;padding:12px}
+  .nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #eef0f6;display:flex;gap:6px;justify-content:space-around;padding:10px env(safe-area-inset-left) calc(10px + env(safe-area-inset-bottom)) env(safe-area-inset-right)}
   .nav .btn{flex:1;background:#f6f7fb;color:#0f172a;box-shadow:none}
-  .chatbar{position:fixed;left:16px;right:16px;bottom:84px;display:flex;justify-content:center}
-  .chatbtn{width:100%;max-width:920px;border-radius:14px;background:linear-gradient(135deg,#6b8bff,#92e0ff);color:#fff;font-weight:800;padding:14px;border:0;box-shadow:0 10px 24px rgba(107,139,255,.35);cursor:pointer}
+  .chatbar{position:fixed;left:16px;right:16px;bottom:94px;display:flex;justify-content:center}
+  .chatbtn{width:100%;max-width:920px;border-radius:14px;background:linear-gradient(135deg,#6b8bff,#92e0ff);color:#fff;font-weight:900;padding:14px;border:0;box-shadow:0 10px 24px rgba(107,139,255,.35);cursor:pointer}
   .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:28px;background:#111827;color:#fff;padding:10px 14px;border-radius:12px;max-width:92vw;box-shadow:var(--shadow);z-index:9999}
 
   /* modal chat */
@@ -77,26 +48,24 @@
   .sheet header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #eef0f6}
   .msglist{display:flex;flex-direction:column;gap:8px;padding:10px 12px}
   .bubble{padding:10px 12px;border-radius:12px;max-width:80%}
-  .me{background:#eff6ff;margin-left:auto}
-  .bot{background:#f3f4f6;margin-right:auto}
+  .me{background:#eff6ff;margin-left:auto}.bot{background:#f3f4f6;margin-right:auto}
   .composer{display:flex;gap:8px;padding:12px;border-top:1px solid #eef0f6;position:sticky;bottom:0;background:#fff}
   .composer input{flex:1}
+
+  /* debug bar */
+  .dbg{position:fixed;right:10px;bottom:154px;background:#fff;border:1px dashed #dbe1f0;color:#334155;padding:6px 8px;border-radius:10px;font-size:12px}
 </style>
 </head>
 <body>
 <div class="app">
-  <div class="topbar">
-    <div class="bolt">⚡</div>
-    <div class="title">Growth Assistant</div>
-  </div>
-
+  <div class="topbar"><div class="bolt">⚡</div><div class="title">Growth Assistant</div></div>
   <h2>Сегодня</h2>
 
-  <!-- Фокус дня -->
-  <section class="card" id="focusCard">
+  <!-- Фокус -->
+  <section class="card">
     <div class="label"><span class="dot blue">⚡</span>Фокус дня</div>
     <div class="row">
-      <input id="focusInput" type="text" placeholder="Самое главное сегодня…" />
+      <input id="focusInput" type="text" placeholder="Самое главное сегодня…"/>
       <button id="focusSave" class="btn">Сохранить</button>
     </div>
     <div class="pills" id="focusChip" style="display:none"></div>
@@ -105,232 +74,142 @@
   <!-- Быстрое добавление -->
   <section class="card">
     <div class="label"><span class="dot green">＋</span>Быстрое добавление</div>
-    <div class="row"><input id="taskTitle" type="text" placeholder="Название задачи" /></div>
+    <div class="row"><input id="taskTitle" type="text" placeholder="Название задачи"/></div>
     <div class="pills" id="lists">
       <div class="pill active" data-list="today">Сегодня</div>
       <div class="pill" data-list="week">Неделя</div>
       <div class="pill" data-list="backlog">Бэклог</div>
     </div>
     <div class="row">
-      <input id="dueDate" type="date" />
-      <input id="dueTime" type="time" />
+      <input id="dueDate" type="date"/><input id="dueTime" type="time"/>
       <button id="taskAdd" class="btn secondary">Добавить</button>
     </div>
   </section>
 
-  <!-- Задачи на сегодня -->
+  <!-- Список "Сегодня" -->
   <section class="card">
     <div class="label" style="margin-bottom:6px">Задачи на сегодня</div>
     <div id="todayList" class="list"></div>
   </section>
 </div>
 
-<!-- Кнопка чата -->
-<div class="chatbar">
-  <button class="chatbtn" id="openChat">💬 Чат с ассистентом</button>
-</div>
+<div class="chatbar"><button class="chatbtn" id="openChat">💬 Чат с ассистентом</button></div>
+<div class="nav"><button class="btn">Сегодня</button><button class="btn">План</button><button class="btn">Календарь</button><button class="btn">Профиль</button></div>
 
-<!-- Навигация (фиктивные вкладки для вида) -->
-<div class="nav">
-  <button class="btn">Сегодня</button>
-  <button class="btn">План</button>
-  <button class="btn">Календарь</button>
-  <button class="btn">Профиль</button>
-</div>
+<!-- Chat modal -->
+<div class="modal" id="chatModal"><div class="sheet">
+  <header><strong>Чат с ассистентом</strong><button id="closeChat" class="btn" style="padding:8px 12px">Закрыть</button></header>
+  <div id="msgs" class="msglist"></div>
+  <div class="composer"><input id="chatInput" type="text" placeholder="Спросите про план, HADI или задачи…"/><button id="sendMsg" class="btn">Отправить</button></div>
+</div></div>
 
-<!-- Модалка чата -->
-<div class="modal" id="chatModal">
-  <div class="sheet">
-    <header>
-      <strong>Чат с ассистентом</strong>
-      <button id="closeChat" class="btn" style="padding:8px 12px">Закрыть</button>
-    </header>
-    <div id="msgs" class="msglist"></div>
-    <div class="composer">
-      <input id="chatInput" type="text" placeholder="Спросите про план, HADI или задачи…" />
-      <button id="sendMsg" class="btn">Отправить</button>
-    </div>
-  </div>
-</div>
+<div class="dbg" id="dbg"></div>
 
-<!-- Telegram WebApp SDK -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
-/* ===== helpers: UI ===== */
-let toastEl=null;
-function showSticky(text){
-  if(toastEl){ toastEl.remove(); toastEl=null; }
-  toastEl=document.createElement('div');
-  toastEl.className='toast';
-  toastEl.textContent=text;
-  document.body.appendChild(toastEl);
-  setTimeout(()=>{ if(toastEl){ toastEl.remove(); toastEl=null; } }, 4200);
-}
-function toast(t){ showSticky(t); }
+/*** === НАСТРОЙКА ДОМЕНА ДЛЯ API (очень важно в Telegram) === ***/
+const PROD_ORIGIN = 'https://YOUR-PROD-DOMAIN.vercel.app'; // ← ПОМЕНЯЙ на свой прод-домен! (или оставь '' чтобы брать location.origin)
+const ORIGIN = (PROD_ORIGIN && PROD_ORIGIN.trim()) ? PROD_ORIGIN.trim().replace(/\/+$/,'') : window.location.origin;
 
-/* ===== Telegram init ===== */
+/*** ===== UI helpers ===== ***/
+let toastEl=null;
+function showSticky(text){ if(toastEl){toastEl.remove();toastEl=null} toastEl=document.createElement('div');toastEl.className='toast';toastEl.textContent=text;document.body.appendChild(toastEl);setTimeout(()=>{toastEl&&toastEl.remove()},4200) }
+function toast(t){ showSticky(t) }
+
+/*** ===== Telegram init ===== ***/
 const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 if(tg){ try{ tg.ready(); tg.expand(); }catch(e){} }
 window.__TG_INIT_DATA__ = tg && tg.initData ? tg.initData : '';
 
-/* ===== fetch с подписью, таймаутом, ретраями и объяснением ошибок ===== */
-async function explain(res, route){
+/*** ===== fetch с подписью, 20s таймаутом и подробной ошибкой ===== ***/
+async function explain(url,res){
   let body=''; try{ body = await res.clone().text(); }catch{}
-  const msg=`API(${route}): ${res.status} ${res.statusText} — ${body.slice(0,180)}`;
+  const msg = `API(${url}): ${res.status} ${res.statusText} — ${body.slice(0,200)}`;
   showSticky(msg); console.warn(msg);
 }
-async function authFetch(route, opts, timeoutMs=8000){
-  const url = route.startsWith('/')?route:`/${route}`;
+async function authFetch(route,opts,timeout=20000){
+  const url = `${ORIGIN}${route.startsWith('/')?route:`/${route}`}`;
   async function once(){
-    const c=new AbortController(); const t=setTimeout(()=>c.abort('timeout'), timeoutMs);
+    const c = new AbortController(); const t = setTimeout(()=>c.abort('timeout'),timeout);
     try{
-      const res=await fetch(url,{...(opts||{}),
-        headers:{...(opts?.headers||{}),'x-telegram-init': window.__TG_INIT_DATA__ || ''},
-        signal:c.signal});
-      clearTimeout(t);
-      if(!res.ok) await explain(url,res);
-      return res;
-    }catch(e){ clearTimeout(t); throw e; }
+      const res = await fetch(url,{...(opts||{}),headers:{...(opts?.headers||{}),'x-telegram-init':window.__TG_INIT_DATA__||''},signal:c.signal});
+      clearTimeout(t); if(!res.ok) await explain(url,res); return res;
+    }catch(e){ clearTimeout(t); throw e }
   }
   try{
-    const r1=await once(); if(r1.ok) return r1;
-    if(r1.status>=500){ await new Promise(r=>setTimeout(r,600)); return await once(); }
+    const r1 = await once(); if(r1.ok) return r1;
+    if(r1.status>=500){ await new Promise(r=>setTimeout(r,700)); return await once(); }
     return r1;
-  }catch(e){ showSticky('API: network error'); throw e; }
+  }catch(e){ showSticky('API: network error'); throw e }
 }
 
-/* ===== состояние ===== */
-let pickedList='today';
-let focusText='';
-let todayTasks=[];
+/*** ===== Debug box ===== ***/
+const dbg = document.getElementById('dbg');
+dbg.textContent = `origin: ${window.location.origin}\nAPI: ${ORIGIN}\n`;
 
-/* ===== элементы ===== */
-const elFocusInput = document.getElementById('focusInput');
-const elFocusSave  = document.getElementById('focusSave');
-const elFocusChip  = document.getElementById('focusChip');
-const elLists      = document.getElementById('lists');
-const elTaskTitle  = document.getElementById('taskTitle');
-const elAddBtn     = document.getElementById('taskAdd');
-const elTodayList  = document.getElementById('todayList');
+/*** ===== State / elements ===== ***/
+let picked='today', focusText='', today=[];
+const elFocusInput=document.getElementById('focusInput');
+const elFocusSave=document.getElementById('focusSave');
+const elChip=document.getElementById('focusChip');
+const elLists=document.getElementById('lists');
+const elTitle=document.getElementById('taskTitle');
+const elAdd=document.getElementById('taskAdd');
+const elToday=document.getElementById('todayList');
 
-/* ===== health check ===== */
+/*** ===== Health ===== ***/
 async function health(){
   try{
     const r = await authFetch('/api/health');
-    if(!r.ok){ return; }
     const j = await r.json().catch(()=> ({}));
-    if(!j.db_ok){ showSticky('HEALTH: db=false'); }
-    if(!j.env?.has_POSTGRES_URL){ showSticky('HEALTH: no POSTGRES_URL'); }
-  }catch(e){ showSticky('HEALTH: network error'); }
+    dbg.textContent += `health: ${r.status} db_ok=${j.db_ok} env=${JSON.stringify(j.env||{})}\n`;
+    if(!j.db_ok) showSticky('HEALTH: db=false');
+  }catch{ showSticky('HEALTH: network error') }
 }
 
-/* ===== focus ===== */
-function lockFocusUI(lock){ elFocusInput.disabled=lock; elFocusSave.disabled=lock; }
-function renderFocusChip(){
-  if(!focusText){ elFocusChip.style.display='none'; return; }
-  elFocusChip.style.display='flex';
-  elFocusChip.innerHTML = `<div class="pill active">Фокус: ${focusText}</div>`;
-}
+/*** ===== Focus ===== ***/
+function renderChip(){ if(!focusText){elChip.style.display='none';return} elChip.style.display='flex'; elChip.innerHTML=`<div class="pill active">Фокус: ${focusText}</div>` }
 async function loadFocus(){
-  const day=new Date().toISOString().slice(0,10);
-  try{
-    const r=await authFetch('/api/focus?day='+day);
-    const j=await r.json().catch(()=> ({}));
-    focusText=j.text||'';
-    elFocusInput.value=focusText||'';
-    renderFocusChip();
-  }catch{}
+  const d = new Date().toISOString().slice(0,10);
+  try{ const r=await authFetch(`/api/focus?day=${d}`); const j=await r.json().catch(()=>({})); focusText=j.text||''; elFocusInput.value=focusText; renderChip(); }catch{}
 }
 async function saveFocus(){
-  const v=(elFocusInput.value||'').trim();
-  if(!v){ return toast('Введите фокус дня'); }
-  lockFocusUI(true); const old=elFocusSave.textContent; elFocusSave.textContent='Сохраняю…';
-  const body={ day:new Date().toISOString().slice(0,10), text:v };
-  try{
-    const r=await authFetch('/api/focus',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    if(r.ok){ focusText=v; renderFocusChip(); toast('Фокус сохранён'); }
-  }catch{}
-  finally{ lockFocusUI(false); elFocusSave.textContent=old; }
+  const v=(elFocusInput.value||'').trim(); if(!v) return toast('Введите фокус дня');
+  elFocusSave.disabled=true; const old=elFocusSave.textContent; elFocusSave.textContent='Сохраняю…';
+  try{ const r=await authFetch('/api/focus',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({day:new Date().toISOString().slice(0,10),text:v})});
+    if(r.ok){ focusText=v; renderChip(); toast('Фокус сохранён') }
+  }catch{} finally{ elFocusSave.disabled=false; elFocusSave.textContent=old }
 }
 
-/* ===== tasks ===== */
-function renderToday(){
-  if(!todayTasks.length){ elTodayList.innerHTML=`<div class="empty">Пока нет задач на сегодня</div>`; return; }
-  elTodayList.innerHTML = todayTasks.map(t=>(
-    `<div class="item">
-      <input type="checkbox" disabled />
-      <div>${t.title}</div>
-    </div>`
-  )).join('');
-}
-async function loadTasks(){
-  try{
-    const r=await authFetch('/api/tasks?list=today');
-    const j=await r.json().catch(()=>({items:[]}));
-    todayTasks=j.items||[];
-    renderToday();
-  }catch{}
-}
+/*** ===== Tasks ===== ***/
+function renderToday(){ if(!today.length){ elToday.innerHTML='<div class="empty">Пока нет задач</div>'; return } elToday.innerHTML=today.map(t=>`<div class="item"><input type="checkbox" disabled><div>${t.title}</div></div>`).join('') }
+async function loadTasks(){ try{ const r=await authFetch('/api/tasks?list=today'); const j=await r.json().catch(()=>({items:[]})); today=j.items||[]; renderToday(); }catch{} }
 async function quickAdd(){
-  const title=(elTaskTitle.value||'').trim();
-  if(!title){ return toast('Введите название задачи'); }
-  elAddBtn.disabled=true; const old=elAddBtn.textContent; elAddBtn.textContent='Добавляю…';
-  const body={
-    title, list:pickedList,
-    due_date: (document.getElementById('dueDate').value||null),
-    due_time: (document.getElementById('dueTime').value||null)
-  };
-  try{
-    const r=await authFetch('/api/tasks',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    const created=await r.json().catch(()=> (null));
-    if(r.ok && created){ toast('Добавлено'); elTaskTitle.value=''; await loadTasks(); }
-  }catch{}
-  finally{ elAddBtn.disabled=false; elAddBtn.textContent=old; }
+  const title=(elTitle.value||'').trim(); if(!title) return toast('Введите название задачи');
+  elAdd.disabled=true; const old=elAdd.textContent; elAdd.textContent='Добавляю…';
+  const body={ title, list:picked, due_date:(document.getElementById('dueDate').value||null), due_time:(document.getElementById('dueTime').value||null) };
+  try{ const r=await authFetch('/api/tasks',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    if(r.ok){ elTitle.value=''; await loadTasks(); toast('Добавлено') }
+  }catch{} finally{ elAdd.disabled=false; elAdd.textContent=old }
 }
 
-/* ===== chat ===== */
-const chatModal=document.getElementById('chatModal');
-const openChat=document.getElementById('openChat');
-const closeChat=document.getElementById('closeChat');
-const msgs=document.getElementById('msgs');
-const chatInput=document.getElementById('chatInput');
-const sendMsg=document.getElementById('sendMsg');
+/*** ===== Chat ===== ***/
+const chatModal=document.getElementById('chatModal'); const openChat=document.getElementById('openChat'); const closeChat=document.getElementById('closeChat');
+const msgs=document.getElementById('msgs'); const chatInput=document.getElementById('chatInput'); const sendMsg=document.getElementById('sendMsg');
+openChat.onclick=()=>{ chatModal.style.display='flex'; chatInput.focus() }; closeChat.onclick=()=>{ chatModal.style.display='none' };
+function pushMsg(w,t){ const b=document.createElement('div'); b.className='bubble '+(w==='me'?'me':'bot'); b.textContent=t; msgs.appendChild(b); msgs.scrollTop=msgs.scrollHeight }
+async function sendChat(){ const q=(chatInput.value||'').trim(); if(!q) return; pushMsg('me',q); chatInput.value=''; try{ const r=await authFetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message:q})},22000); const j=await r.json().catch(()=> ({})); (r.ok&&j.reply)?pushMsg('bot',j.reply):pushMsg('bot','[ошибка ответа]') }catch{ pushMsg('bot','[network error]') } }
+sendMsg.onclick=sendChat; chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter') sendChat() });
 
-openChat.onclick=()=>{ chatModal.style.display='flex'; chatInput.focus(); };
-closeChat.onclick=()=>{ chatModal.style.display='none'; };
+/*** ===== Switch list ===== ***/
+elLists.addEventListener('click',e=>{ const pill=e.target.closest('.pill'); if(!pill) return; document.querySelectorAll('.pill').forEach(x=>x.classList.remove('active')); pill.classList.add('active'); picked=pill.dataset.list });
 
-function pushMsg(who,text){
-  const b=document.createElement('div');
-  b.className='bubble '+(who==='me'?'me':'bot');
-  b.textContent=text; msgs.appendChild(b); msgs.scrollTop=msgs.scrollHeight;
-}
-async function sendChat(){
-  const q=(chatInput.value||'').trim(); if(!q) return;
-  pushMsg('me',q); chatInput.value='';
-  try{
-    const r=await authFetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message:q})},12000);
-    const j=await r.json().catch(()=> ({}));
-    if(r.ok && j.reply){ pushMsg('bot',j.reply); } else { pushMsg('bot','[ошибка ответа]'); }
-  }catch{ pushMsg('bot','[network error]'); }
-}
-sendMsg.onclick=sendChat; chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter') sendChat(); });
+/*** ===== Bindings ===== ***/
+document.getElementById('focusSave').onclick=saveFocus;
+document.getElementById('taskAdd').onclick=quickAdd;
 
-/* ===== picks ===== */
-elLists.addEventListener('click',e=>{
-  const pill=e.target.closest('.pill'); if(!pill) return;
-  document.querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));
-  pill.classList.add('active'); pickedList=pill.dataset.list;
-});
-
-/* ===== binding ===== */
-elFocusSave.onclick=saveFocus;
-elAddBtn.onclick=quickAdd;
-
-/* ===== boot ===== */
-(async function(){
-  await health();
-  await Promise.all([loadFocus(), loadTasks()]);
-})();
+/*** ===== Boot ===== ***/
+(async function(){ await health(); await Promise.all([loadFocus(),loadTasks()]) })();
 </script>
 </body>
 </html>
