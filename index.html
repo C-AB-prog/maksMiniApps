@@ -108,7 +108,8 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
 /*** === НАСТРОЙКА ДОМЕНА ДЛЯ API (очень важно в Telegram) === ***/
-const PROD_ORIGIN = 'https://YOUR-PROD-DOMAIN.vercel.app'; // ← ПОМЕНЯЙ на свой прод-домен! (или оставь '' чтобы брать location.origin)
+const PROD_ORIGIN = 'https://maks-mini-apps.vercel.app'; // <- твой реальный прод-домен БЕЗ слеша в конце
+// ← ПОМЕНЯЙ на свой прод-домен! (или оставь '' чтобы брать location.origin)
 const ORIGIN = (PROD_ORIGIN && PROD_ORIGIN.trim()) ? PROD_ORIGIN.trim().replace(/\/+$/,'') : window.location.origin;
 
 /*** ===== UI helpers ===== ***/
