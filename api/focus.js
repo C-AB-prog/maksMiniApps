@@ -1,42 +1,39 @@
-// api/focus.js
-import sql, { getUserId } from './_utils/db.js';
+// /api/focus.js
+import { sql } from '@vercel/postgres';
+import { requireUser } from './_utils/tg_node.js';
 
 export default async function handler(req, res) {
-  const uid = getUserId(req);
-  if (!uid) return res.status(401).json({ error: 'UNAUTHORIZED' });
+  const user = await requireUser(req, res);
+  if (!user) return; // уже отдан 401
 
-  if (req.method === 'GET') {
-    const day = (req.query.day || '').slice(0, 10);
-    if (!day) return res.status(400).json({ error: 'day is required (YYYY-MM-DD)' });
-    try {
+  const day = (req.method === 'GET' ? req.query.day : (req.body?.day)) || new Date().toISOString().slice(0, 10);
+
+  try {
+    if (req.method === 'GET') {
       const { rows } = await sql`
-        select text from ga_focus
-        where tg_user_id = ${uid} and day = ${day}::date
-        limit 1
+        SELECT text, meta, progress_pct
+        FROM focus
+        WHERE user_id=${user.id} AND day=${day}
+        LIMIT 1
       `;
-      res.status(200).json({ text: rows[0]?.text || '' });
-    } catch (e) {
-      res.status(500).json({ error: 'DB_ERROR', message: e.message });
+      res.status(200).json(rows[0] || { text: '', meta: '', progress_pct: 0 });
+      return;
     }
-    return;
-  }
 
-  if (req.method === 'PUT') {
-    try {
-      const { day, text } = req.body || {};
-      if (!day || !text) return res.status(400).json({ error: 'day & text required' });
+    if (req.method === 'PUT') {
+      const { text = '', meta = '', progress_pct = 45 } = req.body || {};
       await sql`
-        insert into ga_focus (tg_user_id, day, text)
-        values (${uid}, ${day}::date, ${text})
-        on conflict (tg_user_id, day) do update set text = ${text}, updated_at = now()
+        INSERT INTO focus (user_id, day, text, meta, progress_pct)
+        VALUES (${user.id}, ${day}, ${text}, ${meta}, ${progress_pct})
+        ON CONFLICT (user_id, day)
+        DO UPDATE SET text=${text}, meta=${meta}, progress_pct=${progress_pct}, updated_at=now()
       `;
       res.status(200).json({ ok: true });
-    } catch (e) {
-      res.status(500).json({ error: 'DB_ERROR', message: e.message });
+      return;
     }
-    return;
-  }
 
-  res.setHeader('Allow', 'GET, PUT');
-  res.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
+    res.status(405).end();
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 }
