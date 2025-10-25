@@ -27,6 +27,7 @@ export default async function handler(req, res) {
          WHERE id=${id} AND user_id=${user.id}
       `;
       if ((result.rowCount || 0) === 0) {
+        // это тот самый случай «задача создана другим user_id»
         return res.status(404).json({ ok: false, error: 'TASK_NOT_FOUND' });
       }
       return res.status(200).json({ ok: true, id, done });
