@@ -1,21 +1,13 @@
 // /api/_utils.js
-// Проверка Telegram WebApp initData:
-// - initData читаем из заголовка x-telegram-init-data ИЛИ из query ?init_data=...
-// - data_check_string строим из "сырой" строки (без decodeURIComponent)
-
 const crypto = require('crypto');
 
 function getInitDataFromReq(req) {
-  // 1) Из заголовка (обычный путь)
   let initDataStr = req.headers['x-telegram-init-data'] || '';
-
-  // 2) Фолбэк: из query-параметра init_data (если заголовки режутся)
   if (!initDataStr && req.url) {
     try {
-      const u = new URL(req.url, 'http://localhost'); // базовый URL для парсинга
+      const u = new URL(req.url, 'http://localhost');
       const q = u.searchParams.get('init_data');
-      if (q) initDataStr = q; // ВНИМАНИЕ: это уже "внешне" декодированная строка initData,
-                              // внутри нее проценты исходные (как выдаёт Telegram)
+      if (q) initDataStr = q; // уже «сырая» строка initData от Telegram
     } catch (_) {}
   }
   return initDataStr || '';
@@ -31,13 +23,11 @@ function parsedInitData(initDataStr='') {
     const v = i>=0 ? part.slice(i+1) : '';
     obj[decodeURIComponent(k)] = decodeURIComponent(v || '');
   }
-  if (typeof obj.user === 'string') {
-    try { obj.user = JSON.parse(obj.user); } catch {}
-  }
+  if (typeof obj.user === 'string') { try { obj.user = JSON.parse(obj.user); } catch {} }
   return obj;
 }
 
-// data_check_string: строго из "сырой" строки, без decode
+// data_check_string: из «сырой» строки, без decode
 function buildDataCheckStringRaw(initDataStr='') {
   const pairs = [];
   for (const part of initDataStr.split('&')) {
@@ -46,7 +36,7 @@ function buildDataCheckStringRaw(initDataStr='') {
     const k = i>=0 ? part.slice(0,i) : part;
     if (k === 'hash') continue;
     const v = i>=0 ? part.slice(i+1) : '';
-    pairs.push([k, v]); // оба — как есть
+    pairs.push([k, v]);
   }
   pairs.sort((a,b)=> a[0].localeCompare(b[0]));
   return pairs.map(([k,v])=> `${k}=${v}`).join('\n');
@@ -55,20 +45,19 @@ function buildDataCheckStringRaw(initDataStr='') {
 function verifyInitData(initDataStr, botToken, maxAgeSeconds = 86400) {
   if (!initDataStr) return { ok:false, reason:'NO_INITDATA' };
 
-  // TTL проверяем по "parsed"
   const parsed = parsedInitData(initDataStr);
   if (!parsed.hash) return { ok:false, reason:'NO_HASH' };
   if (!parsed.auth_date) return { ok:false, reason:'NO_AUTH_DATE' };
+
   const now = Math.floor(Date.now()/1000);
   const authDate = Number(parsed.auth_date);
   if (Number.isFinite(authDate) && (now - authDate) > maxAgeSeconds) {
     return { ok:false, reason:'EXPIRED' };
   }
 
-  // Подпись — строго по сырой строке
-  const dataCheckString = buildDataCheckStringRaw(initDataStr);
+  const dcs = buildDataCheckStringRaw(initDataStr);
   const secret = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
-  const calc   = crypto.createHmac('sha256', secret).update(dataCheckString).digest('hex');
+  const calc   = crypto.createHmac('sha256', secret).update(dcs).digest('hex');
 
   const ok = (calc === parsed.hash);
   return { ok, data: parsed, reason: ok ? null : 'BAD_HASH' };
