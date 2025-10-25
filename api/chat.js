@@ -1,22 +1,25 @@
-const { getUserFromReq, sendJSON, setSessionCookie, signSession, SESSION_TTL_SEC } = require('./_utils');
+const { getOrCreateUser, readJSON, sendJSON } = require('./_utils');
 const { ensureSchema, upsertUser } = require('./_db');
-
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const SESSION_SECRET = process.env.SESSION_SECRET || BOT_TOKEN || 'dev_secret';
 
 module.exports = async (req,res)=>{
   try{
     if(req.method!=='POST'){ res.setHeader('Allow','POST'); return sendJSON(res,405,{error:'Method Not Allowed'}); }
-    const auth = await getUserFromReq(req, BOT_TOKEN);
-    if(!auth.ok) return sendJSON(res, auth.status, { error:auth.error, reason:auth.reason });
-    if(auth.source !== 'cookie'){ const now=Math.floor(Date.now()/1000); const tok=signSession({user:auth.user,iat:now,exp:now+SESSION_TTL_SEC}, SESSION_SECRET); setSessionCookie(res,tok); }
+    const qs = (()=>{ try{ return new URL(req.url,'http://x').searchParams }catch{ return new URLSearchParams() } })();
+    const tz = qs.get('tz') || null;
 
-    await ensureSchema(); await upsertUser(auth.user);
+    const { user } = getOrCreateUser(req,res);
+    await ensureSchema(); await upsertUser(user, tz);
 
-    const chunks=[]; for await(const ch of req) chunks.push(ch);
-    const body = JSON.parse(Buffer.concat(chunks).toString()||'{}');
+    const body = await readJSON(req);
     const q = String(body.q||'').trim();
-    const a = q ? `Вы спросили: “${q}”. Я пока в режиме подсказок по фокусу/задачам.` : 'Спросите про фокус или задачи.';
+
+    // мини-подсказки до подключения LLM
+    let a = 'Я могу: сформировать фокус, разбить задачу на подзадачи, расставить приоритеты, составить план, поставить напоминания.';
+    if (/фокус/i.test(q)) a = 'Ок, давай сформируем фокус. Напиши главную цель на сегодня/неделю — предложу формулировку и чек-лист.';
+    if (/подзадач/i.test(q)) a = 'Скинь задачу — разложу на подзадачи и приоритеты.';
+    if (/план/i.test(q)) a = 'Сделаю план на неделю: цели → задачи → дедлайны. Напиши, что важно достигнуть.';
+    if (/напомин/i.test(q)) a = 'Готов поставить напоминание: укажи задачу и время (напр. «напомни завтра в 10:00»).';
+
     return sendJSON(res,200,{ a });
   }catch(e){ return sendJSON(res,500,{error:e.message}); }
 };
