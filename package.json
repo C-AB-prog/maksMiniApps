@@ -1,0 +1,10 @@
+{
+  "name": "maks-mini-apps-api",
+  "private": true,
+  "version": "1.0.0",
+  "license": "UNLICENSED",
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "pg": "8.12.0"
+  }
+}
