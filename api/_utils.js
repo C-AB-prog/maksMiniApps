@@ -1,64 +1,82 @@
 // /api/_utils.js
+// Валидация Telegram WebApp initData без повторного stringify значений.
+// data_check_string строится из сырых пар key=value (после decodeURIComponent).
+
 const crypto = require('crypto');
 
-function parseInitData(initDataStr = '') {
-  const out = {};
+// Разбор initData в два представления:
+// - raw: объект со строковыми значениями как в initData (после decodeURIComponent)
+// - parsed: то же, но user дополнительно распарсен в объект (для удобства)
+function splitInitData(initDataStr = '') {
+  const raw = {};
   for (const pair of initDataStr.split('&')) {
     if (!pair) continue;
-    const [k, v = ''] = pair.split('=');
-    out[decodeURIComponent(k)] = decodeURIComponent(v);
+    const eq = pair.indexOf('=');
+    const k = eq >= 0 ? pair.slice(0, eq) : pair;
+    const v = eq >= 0 ? pair.slice(eq + 1) : '';
+    // decodeURIComponent — согласно докам Telegram
+    raw[decodeURIComponent(k)] = decodeURIComponent(v || '');
   }
-  if (out.user) { try { out.user = JSON.parse(out.user); } catch (_) {} }
-  return out;
+  const parsed = { ...raw };
+  if (typeof parsed.user === 'string') {
+    try { parsed.user = JSON.parse(parsed.user); } catch { /* leave as string */ }
+  }
+  return { raw, parsed };
 }
 
-function buildDataCheckString(obj) {
-  return Object.entries(obj)
-    .filter(([k]) => k !== 'hash')
-    .sort(([a],[b]) => a.localeCompare(b))
-    .map(([k, v]) => (typeof v === 'object' && v !== null) ? `${k}=${JSON.stringify(v)}` : `${k}=${v}`)
+// data_check_string: сортировка по ключу, значения — ровно из raw
+function buildDataCheckStringFromRaw(raw) {
+  return Object.keys(raw)
+    .filter((k) => k !== 'hash')
+    .sort((a, b) => a.localeCompare(b))
+    .map((k) => `${k}=${raw[k]}`)
     .join('\n');
 }
 
+// Основная проверка подписи. TTL по умолчанию 24 часа.
 function verifyInitData(initDataStr, botToken, maxAgeSeconds = 86400) {
-  if (!initDataStr) return { ok:false, reason:'NO_INITDATA' };
-  const data = parseInitData(initDataStr);
-  if (!data.hash) return { ok:false, reason:'NO_HASH' };
-  if (!data.auth_date) return { ok:false, reason:'NO_AUTH_DATE' };
+  if (!initDataStr) return { ok: false, reason: 'NO_INITDATA' };
 
-  const now = Math.floor(Date.now()/1000);
-  const authDate = Number(data.auth_date);
-  if (Number.isFinite(authDate) && (now - authDate) > maxAgeSeconds) {
-    return { ok:false, reason:'EXPIRED' };
+  const { raw, parsed } = splitInitData(initDataStr);
+  if (!raw.hash) return { ok: false, reason: 'NO_HASH' };
+  if (!raw.auth_date) return { ok: false, reason: 'NO_AUTH_DATE' };
+
+  const now = Math.floor(Date.now() / 1000);
+  const authDate = Number(raw.auth_date);
+  if (Number.isFinite(authDate) && now - authDate > maxAgeSeconds) {
+    return { ok: false, reason: 'EXPIRED' };
   }
 
-  const dataCheckString = buildDataCheckString(data);
+  const dataCheckString = buildDataCheckStringFromRaw(raw);
 
-  // Вариант A (по спецификации)
-  const secretA = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
-  const hashA = crypto.createHmac('sha256', secretA).update(dataCheckString).digest('hex');
+  // Официальная формула: secret_key = HMAC_SHA256(data=botToken, key="WebAppData")
+  // Затем hash = HMAC_SHA256(data_check_string, secret_key)
+  const secret = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+  const calc = crypto.createHmac('sha256', secret).update(dataCheckString).digest('hex');
 
-  // Вариант B (обратный порядок — встречается в некоторых реализациях)
-  const secretB = crypto.createHmac('sha256', botToken).update('WebAppData').digest();
-  const hashB = crypto.createHmac('sha256', secretB).update(dataCheckString).digest('hex');
-
-  const ok = (hashA === data.hash) || (hashB === data.hash);
-  return { ok, data, reason: ok ? null : 'BAD_HASH' };
+  const ok = calc === raw.hash;
+  return { ok, data: parsed, reason: ok ? null : 'BAD_HASH' };
 }
 
 function getUserFromReq(req, botToken) {
   const initDataStr = req.headers['x-telegram-init-data'] || '';
   const v = verifyInitData(initDataStr, botToken);
+
   if (!v.ok) {
-    const payload = { ok:false, status:401, error:'Unauthorized' };
+    const payload = { ok: false, status: 401, error: 'Unauthorized' };
     if (process.env.DEBUG_INIT === '1') {
-      payload.reason = v.reason; payload.hasInit = !!initDataStr; payload.initLen = initDataStr.length || 0;
+      payload.reason = v.reason;
+      payload.hasInit = !!initDataStr;
+      payload.initLen = initDataStr.length || 0;
     }
     return payload;
   }
+
   const user = v.data.user;
-  if (!user || !user.id) return { ok:false, status:401, error:'Unauthorized', reason:'NO_USER' };
-  return { ok:true, user, initData: v.data };
+  if (!user || !user.id) {
+    return { ok: false, status: 401, error: 'Unauthorized', reason: 'NO_USER' };
+  }
+  return { ok: true, user, initData: v.data };
 }
 
 function sendJSON(res, status, obj) {
@@ -66,4 +84,10 @@ function sendJSON(res, status, obj) {
   res.status(status).end(JSON.stringify(obj));
 }
 
-module.exports = { parseInitData, buildDataCheckString, verifyInitData, getUserFromReq, sendJSON };
+module.exports = {
+  splitInitData,
+  buildDataCheckStringFromRaw,
+  verifyInitData,
+  getUserFromReq,
+  sendJSON
+};
