@@ -1,41 +1,31 @@
-// /api/tasks/[id].js
-import { sql } from '@vercel/postgres';
-import { requireUser } from '../_utils/tg_node.js';
-import { ensureTables } from '../_utils/schema.js';
+// api/tasks/[id].js
+import { getUserFromRequest } from "../_utils/auth.js";
+import { q, ensureTables, ensureUser } from "../_utils/db.js";
 
-export default async function handler(req, res) {
-  const user = await requireUser(req, res);
-  if (!user) return;
+export default async function handler(req,res){
+  try{
+    await ensureTables();
+    const { user_id } = getUserFromRequest(req);
+    await ensureUser(user_id);
 
-  await ensureTables();
+    const id = Number(req.query.id);
+    if(!id) return res.status(400).json({error:"BAD_ID"});
 
-  const idRaw = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
-  const id = Number(idRaw);
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ ok: false, error: 'BAD_ID' });
-  }
-
-  try {
-    if (req.method === 'PUT') {
-      let { done } = req.body || {};
-      if (typeof done === 'string') done = done === 'true' || done === '1';
-      done = !!done;
-
-      const result = await sql`
-        UPDATE tasks
-           SET done=${done}, updated_at=now()
-         WHERE id=${id} AND user_id=${user.id}
-      `;
-      if ((result.rowCount || 0) === 0) {
-        // это тот самый случай «задача создана другим user_id»
-        return res.status(404).json({ ok: false, error: 'TASK_NOT_FOUND' });
-      }
-      return res.status(200).json({ ok: true, id, done });
+    if(req.method === "PUT"){
+      const { done } = JSON.parse(req.body||"{}");
+      const r = await q(`update tasks set done=$1, updated_at=now() where id=$2 and user_id=$3`,
+        [!!done, id, user_id]);
+      if(r.rowCount===0) return res.status(404).json({error:"TASK_NOT_FOUND"});
+      return res.status(200).json({ok:true});
     }
 
-    return res.status(405).end();
-  } catch (e) {
-    console.error('tasks/[id] error:', e);
-    return res.status(500).json({ ok: false, error: e?.message || String(e) });
+    if(req.method === "DELETE"){
+      await q(`delete from tasks where id=$1 and user_id=$2`,[id,user_id]);
+      return res.status(200).json({ok:true});
+    }
+
+    res.status(405).json({error:"METHOD_NOT_ALLOWED"});
+  }catch(e){
+    res.status(e.status||500).json({error:e.message||"SERVER_ERROR"});
   }
 }
