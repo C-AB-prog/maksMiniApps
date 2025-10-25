@@ -54,18 +54,8 @@
       color:#fff; font-weight:700; box-shadow: 0 8px 20px rgba(99,102,241,.25);
       user-select:none;
     }
-    .brand .title{
-      font-weight:800; letter-spacing:.2px;
-    }
-    .brand .subtitle{
-      color:var(--ink-3); font-size:13px; margin-top:-2px;
-    }
-    .net-badge{
-      display:inline-block; margin-left:8px; padding:4px 8px;
-      border-radius:999px; font-weight:800; font-size:12px;
-      background:#fee2e2; color:#991b1b; vertical-align:middle;
-    }
-    .net-badge.online{ background:#dcfce7; color:#065f46; }
+    .brand .title{ font-weight:800; letter-spacing:.2px; }
+    .brand .subtitle{ color:var(--ink-3); font-size:13px; margin-top:-2px; }
 
     /* sections */
     h2{
@@ -183,9 +173,7 @@
     .view.active{ display:block }
 
     /* modal chat */
-    .modal{
-      position:fixed; inset:0; display:none; z-index:40;
-    }
+    .modal{ position:fixed; inset:0; display:none; z-index:40; }
     .modal.open{ display:block }
     .scrim{ position:absolute; inset:0; background:rgba(2,6,23,.48); backdrop-filter: blur(8px); }
     .sheet{
@@ -217,10 +205,7 @@
       <div class="logo" title="Growth Assistant">GA</div>
       <div>
         <div class="title">Growth Assistant</div>
-        <div class="subtitle">
-          Мини-помощник в Telegram
-          <span id="net-badge" class="net-badge" aria-live="polite">OFFLINE</span>
-        </div>
+        <div class="subtitle">Мини-помощник в Telegram</div>
       </div>
     </div>
 
@@ -246,9 +231,9 @@
         </div>
         <input id="task-title" type="text" placeholder="Название задачи">
         <div class="row" style="margin-top:10px">
-          <button class="btn secondary" data-scope="today" id="scope-today" aria-label="Скопировать в область Сегодня">Сегодня</button>
-          <button class="btn secondary" data-scope="week" id="scope-week" aria-label="Скопировать в область Неделя">Неделя</button>
-          <button class="btn secondary" data-scope="backlog" id="scope-backlog" aria-label="Скопировать в область Бэклог">Бэклог</button>
+          <button class="btn secondary" data-scope="today" id="scope-today">Сегодня</button>
+          <button class="btn secondary" data-scope="week" id="scope-week">Неделя</button>
+          <button class="btn secondary" data-scope="backlog" id="scope-backlog">Бэклог</button>
           <span class="grow"></span>
         </div>
         <div class="row" style="margin-top:10px">
@@ -282,7 +267,7 @@
     <section id="view-profile" class="view">
       <h2>Профиль</h2>
       <div class="card">
-        <div class="muted">Версия мини-аппа. Всё локально, приватно и без лишних кнопок.</div>
+        <div class="muted">Версия мини-аппа. Все данные сохраняются в облаке по вашему Telegram ID.</div>
       </div>
     </section>
   </div>
@@ -319,14 +304,10 @@
     const tg = window.Telegram?.WebApp;
     if (tg?.expand) try{ tg.expand() }catch(e){}
 
-    const viewIds = ["home","plan","calendar","profile"];
     const tabs = [...document.querySelectorAll('.tab')];
 
-    // Базовый API-клиент (используется только в ONLINE-режиме)
+    // Базовый API-клиент
     const API = (path, opt={}) => {
-      const proto = window.location.protocol;
-      // Если файл открыт локально (file://) — сразу уходим в оффлайн.
-      if (proto === 'file:') return Promise.reject(new Error('offline'));
       const base = window.location.origin;
       const initData = tg?.initData || '';
       const headers = Object.assign({
@@ -340,7 +321,6 @@
             try{ const j = await r.json(); msg = j.error || msg }catch(_){}
             throw new Error(msg);
           }
-          // допускаем пустой ответ
           return r.status===204 ? {} : (r.json().catch(()=> ({})));
         });
     };
@@ -366,11 +346,6 @@
     });
     scopeButtons.today.classList.add('ok');
 
-    // Безопасный текст
-    const escapeHTML = (s='') => s
-      .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
-      .replaceAll('"','&quot;').replaceAll("'",'&#39;');
-
     // Локальный конструктор даты (без Safari-багов)
     function buildLocalDate(dateStr, timeStr){
       if(!dateStr && !timeStr) return null;
@@ -391,103 +366,27 @@
       });
     }
 
-    // Простой sleep для ретраев
-    const wait = (ms)=> new Promise(r=> setTimeout(r, ms));
-
-    // ---------- Network status & Store ----------
-    const badge = ()=> document.getElementById('net-badge');
-
-    async function probeAPI(){
-      // если соединения нет или запущено локально — офлайн
-      if (!navigator.onLine || window.location.protocol === 'file:') return false;
-      try{
-        // короткий тайм-аут
-        const ctrl = new AbortController();
-        const t = setTimeout(()=> ctrl.abort(), 1800);
-        await fetch(`${window.location.origin}/api/health`, {signal: ctrl.signal});
-        clearTimeout(t);
-        return true;
-      }catch(_){ return false; }
-    }
-
-    const LS = {
-      focus: 'ga.focus.v1',
-      tasks: 'ga.tasks.v1'
-    };
-
-    // Оффлайн store (LocalStorage)
-    const offlineStore = {
-      async getFocus(){
-        try{ return JSON.parse(localStorage.getItem(LS.focus) || 'null') || {text:'', updated_at:null}; }
-        catch(_){ return {text:'', updated_at:null}; }
-      },
-      async setFocus(text){
-        const obj = { text, updated_at: new Date().toISOString() };
-        localStorage.setItem(LS.focus, JSON.stringify(obj));
-        return obj;
-      },
-      async listTasks(){
-        try{ return JSON.parse(localStorage.getItem(LS.tasks) || '[]'); }
-        catch(_){ return []; }
-      },
-      async saveTasks(list){
-        localStorage.setItem(LS.tasks, JSON.stringify(list));
-        return list;
-      },
-      async addTask(t){
-        const list = await this.listTasks();
-        list.unshift(t);
-        return this.saveTasks(list);
-      },
-      async updateTask(id, patch){
-        const list = await this.listTasks();
-        const i = list.findIndex(x=> x.id===id);
-        if(i>=0){ list[i] = {...list[i], ...patch}; }
-        return this.saveTasks(list);
-      },
-      async removeTask(id){
-        const list = await this.listTasks();
-        return this.saveTasks(list.filter(x=> x.id!==id));
-      }
-    };
-
-    // Онлайн store (через backend API)
-    const onlineStore = {
-      async getFocus(){ return API('/focus'); },
-      async setFocus(text){ return API('/focus', {method:'PUT', body:JSON.stringify({text})}); },
-      async listTasks(){ return API('/tasks'); }, // ожидает {tasks:[...]}
-      async addTask(payload){ return API('/tasks', {method:'POST', body:JSON.stringify(payload)}); },
-      async updateTask(id, patch){ return API(`/tasks/${id}`, {method:'PUT', body:JSON.stringify(patch)}); },
-      async removeTask(id){ return API(`/tasks/${id}`, {method:'DELETE'}); },
-    };
-
-    const store = {
-      mode: 'offline',
-      async detect(){
-        this.mode = (await probeAPI()) ? 'online' : 'offline';
-        const b = badge(); if(b){ b.textContent = this.mode==='online' ? 'ONLINE' : 'OFFLINE'; b.classList.toggle('online', this.mode==='online'); }
-      },
-      get use(){ return this.mode==='online' ? onlineStore : offlineStore; }
-    };
-
-    // ---------- Focus ----------
+    // ---------- Focus (ONLINE only) ----------
     async function loadFocus(){
       try{
-        const data = await store.use.getFocus();
+        const data = await API('/focus');
         const input = document.getElementById('focus-input');
         const hint  = document.getElementById('focus-hint');
         input.value = data?.text || '';
         hint.textContent = data?.updated_at ? `Обновлено: ${fmtDateTime(new Date(data.updated_at))}` : '';
-      }catch(e){ /* noop */ }
+      }catch(e){ /* тихо, пока нет прав/инициализации */ }
     }
     async function saveFocus(){
       const text = document.getElementById('focus-input').value.trim();
       if(!text) return toast('Введите фокус дня');
+      const btn = document.getElementById('focus-save'); btn.disabled = true;
       try{
-        await store.use.setFocus(text);
+        await API('/focus', {method:'PUT', body:JSON.stringify({text})});
         toast('Фокус сохранён ✅');
         loadFocus();
-      }catch(e){ toast('Ошибка: не удалось сохранить фокус'); }
+      }catch(e){
+        toast('Открой мини-приложение через кнопку бота в Telegram.');
+      }finally{ btn.disabled = false; }
     }
     document.getElementById('focus-save').onclick = saveFocus;
     document.getElementById('focus-input').addEventListener('keydown', (e)=>{
@@ -498,7 +397,7 @@
       el.focus(); el.select();
     });
 
-    // ---------- Tasks ----------
+    // ---------- Tasks (ONLINE only) ----------
     const tasksEl = document.getElementById('tasks');
 
     function renderEmpty(){
@@ -510,9 +409,7 @@
 
     function taskRow(t){
       const row = document.createElement('div'); row.className='task'+(t.done?' done':'');
-      // левая точка
       const dot = document.createElement('div'); dot.className='dot'; dot.textContent = '•';
-      // контент
       const grow = document.createElement('div'); grow.className='grow';
       const ttl = document.createElement('div'); ttl.className='title'; ttl.textContent = t.title || 'Без названия';
       grow.appendChild(ttl);
@@ -521,7 +418,6 @@
         sub.textContent = `Дедлайн: ${fmtDateTime(new Date(t.due_at))}`;
         grow.appendChild(sub);
       }
-      // действия
       const actions = document.createElement('div'); actions.className='actions';
       const btnToggle = document.createElement('button'); btnToggle.className='toggle'; btnToggle.setAttribute('aria-label','Переключить готовность'); btnToggle.title='Готово'; btnToggle.textContent='✓';
       const btnDel = document.createElement('button'); btnDel.className='toggle'; btnDel.setAttribute('aria-label','Удалить задачу'); btnDel.title='Удалить'; btnDel.textContent='✕';
@@ -536,8 +432,8 @@
     async function loadTasks(){
       tasksEl.innerHTML = '';
       try{
-        const data = await store.use.listTasks();
-        const list = Array.isArray(data?.tasks) ? data.tasks : Array.isArray(data) ? data : [];
+        const data = await API('/tasks');
+        const list = Array.isArray(data?.tasks) ? data.tasks : [];
         if(!list.length){ renderEmpty(); return; }
         list.forEach(t=> tasksEl.appendChild(taskRow(t)));
       }catch(e){
@@ -554,26 +450,19 @@
 
       const due = buildLocalDate(date, time);
       const payload = {
-        id: (crypto?.randomUUID?.() || ('t_'+Date.now())),
         title, scope: currentScope,
-        // храним как ISO в UTC
-        due_at: due ? new Date(due.getTime() - due.getTimezoneOffset()*60000).toISOString() : null,
-        done: false
+        due_at: due ? new Date(due.getTime() - due.getTimezoneOffset()*60000).toISOString() : null
       };
 
       const btn = document.getElementById('task-add');
       btn.disabled = true;
       try{
-        if(store.mode==='online'){
-          await store.use.addTask({ title: payload.title, scope: payload.scope, due_at: payload.due_at });
-        }else{
-          await offlineStore.addTask(payload);
-        }
+        await API('/tasks', {method:'POST', body:JSON.stringify(payload)});
         titleEl.value='';
         toast('Задача добавлена ✅');
         await loadTasks();
       }catch(e){
-        toast('Не удалось добавить задачу');
+        toast('Открой мини-приложение через кнопку бота в Telegram.');
       }finally{
         btn.disabled = false;
       }
@@ -585,20 +474,16 @@
 
     async function toggleTask(id, done){
       try{
-        if(store.mode==='online'){
-          await store.use.updateTask(id, {done});
-        }else{
-          await offlineStore.updateTask(id, {done});
-        }
+        await API(`/tasks/${id}`, {method:'PUT', body:JSON.stringify({done})});
         await loadTasks();
-      }catch(e){ toast('Не удалось изменить статус'); }
+      }catch(e){ toast('Не удалось изменить статус (открой через кнопку бота)'); }
     }
     async function removeTask(id){
       if(!confirm('Удалить задачу?')) return;
       try{
-        await store.use.removeTask(id);
+        await API(`/tasks/${id}`, {method:'DELETE'});
         await loadTasks();
-      }catch(e){ toast('Не удалось удалить'); }
+      }catch(e){ toast('Не удалось удалить (открой через кнопку бота)'); }
     }
 
     // ---------- Chat ----------
@@ -622,28 +507,14 @@
       chat.list.scrollTop = chat.list.scrollHeight;
     }
 
-    // Простейший офлайн-ответ (эвристика)
-    function localAI(q){
-      const s = q.toLowerCase();
-      if(s.includes('фокус')) return 'Совет: сформулируйте фокус как результат (“Закрыть лендинг”, “Собеседование в 15:00”). Можно задать дедлайн и добавить 3–5 ключевых задач.';
-      if(s.includes('hadi')) return 'HADI: Гипотеза → Действие → Данные → Инсайт. Предложить? 1) Увеличить конверсию формы; 2) Сократить время ответа; 3) Протестировать новое УТП.';
-      if(s.includes('план')||s.includes('спринт')) return 'Спринт-план: выберите 3 приоритета на неделю, разнесите по дням и добавьте дедлайны. Я могу разложить их на задачи.';
-      if(s.includes('задач')) return 'Добавляйте задачи с датой/временем — они появятся в списке. Нажмите ✓, чтобы отметить выполненной.';
-      return 'Я в офлайн-режиме и отвечаю локально. Спросите про фокус, задачи, HADI или план — подскажу.';
-    }
-
     async function sendChat(){
       const q = chat.input.value.trim(); if(!q) return;
       pushBubble(q, true); chat.input.value='';
       try{
-        if(store.mode==='online'){
-          const r = await API('/chat', {method:'POST', body:JSON.stringify({q})});
-          pushBubble(r?.a || '…');
-        }else{
-          pushBubble(localAI(q));
-        }
+        const r = await API('/chat', {method:'POST', body:JSON.stringify({q})});
+        pushBubble(r?.a || '…');
       }catch(e){
-        pushBubble(`Ошибка: ${String(e.message||e)}`);
+        pushBubble('Открой мини-приложение через кнопку бота, чтобы чат работал.');
       }
     }
     chat.send.onclick = sendChat;
@@ -658,8 +529,24 @@
     tabs.forEach(t=> t.addEventListener('click', ()=> showView(t.dataset.view)));
 
     // ---------- Init ----------
+    async function probeAPI(){
+      if (!navigator.onLine) return false;
+      if (!(tg && tg.initData)) return false; // только в WebApp
+      try{
+        const ctrl = new AbortController();
+        const t = setTimeout(()=> ctrl.abort(), 1500);
+        const r = await fetch(`${window.location.origin}/api/health`, { signal: ctrl.signal });
+        clearTimeout(t);
+        return r.ok;
+      }catch(_){ return false; }
+    }
+
     async function init(){
-      await store.detect();                // определяем online/offline + обновляем бейдж
+      const ok = await probeAPI();
+      if (!ok) {
+        // Дадим подсказку, но не блокируем UI — просто тост при попытке сохранить
+        toast('Открой мини-приложение через кнопку бота в Telegram.');
+      }
       await Promise.all([loadFocus(), loadTasks()]);
     }
     init();
