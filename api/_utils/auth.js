@@ -1,95 +1,64 @@
 // api/_utils/auth.js
-import crypto from "crypto";
+import crypto from 'crypto';
+import { URL } from 'url';
 
-/**
- * Универсальная выборка initData из заголовка/URL.
- */
-export function extractInitData(req) {
-  const fromHeader = req.headers["x-telegram-init-data"] || req.headers["x-telegram-web-app-data"];
-  if (fromHeader) return String(fromHeader);
+const { BOT_TOKEN, ALLOW_UNSIGNED = '0', DEV_USER_ID } = process.env;
+
+// валидация Telegram initData (минимальная)
+function validateTelegramInitData(initDataRaw) {
   try {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const q = url.searchParams.get("tgWebAppData");
-    if (q) return q;
-  } catch (_) {}
-  const raw = req.body?.__initData || ""; // на случай, если фронт прислал вручную
-  return String(raw || "");
-}
+    if (!initDataRaw || !BOT_TOKEN) return null;
 
-/**
- * Проверка подписи Telegram WebApp.
- * Возвращает { ok, userId, reason }
- */
-export function verifyTelegramInitData(rawInitData, botToken) {
-  try {
-    if (!rawInitData) return { ok: false, reason: "NO_INIT_DATA" };
-    const params = new URLSearchParams(rawInitData);
-    const hash = params.get("hash");
-    if (!hash) return { ok: false, reason: "NO_HASH" };
+    const parsed = Object.fromEntries(new URLSearchParams(initDataRaw));
+    const hash = parsed.hash;
+    if (!hash) return null;
 
-    // data_check_string — отсортированные пары key=value (кроме hash)
-    const pairs = [];
-    for (const [k, v] of params.entries()) {
-      if (k === "hash") continue;
-      pairs.push(`${k}=${v}`);
+    const dataCheckString = Object.keys(parsed)
+      .filter(k => k !== 'hash')
+      .sort()
+      .map(k => `${k}=${parsed[k]}`)
+      .join('\n');
+
+    const secret = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
+    const calcHash = crypto.createHmac('sha256', secret).update(dataCheckString).digest('hex');
+
+    if (calcHash !== hash) return null;
+
+    // в user лежит json
+    if (parsed.user) {
+      const user = JSON.parse(parsed.user);
+      if (user?.id) return { id: String(user.id) };
     }
-    pairs.sort();
-    const data_check_string = pairs.join("\n");
-
-    // secret_key = HMAC-SHA256 от "WebAppData" по SHA256(botToken)
-    if (!botToken) return { ok: false, reason: "NO_BOT_TOKEN" };
-    const secret = crypto.createHmac("sha256", crypto.createHash("sha256").update(botToken).digest())
-      .update("WebAppData")
-      .digest();
-
-    const signature = crypto.createHmac("sha256", secret).update(data_check_string).digest("hex");
-    if (signature !== hash) return { ok: false, reason: "BAD_SIGNATURE" };
-
-    // достаём user.id
-    const userStr = params.get("user");
-    const user = userStr ? JSON.parse(userStr) : null;
-    const userId = user?.id ? Number(user.id) : null;
-    if (!userId) return { ok: false, reason: "NO_USER_ID" };
-    return { ok: true, userId };
-  } catch (e) {
-    return { ok: false, reason: "VERIFY_ERR" };
+    return null;
+  } catch {
+    return null;
   }
 }
 
-/**
- * Мягкая авторизация.
- * По порядку:
- *  1) если подпись валидна — берём userId из Telegram
- *  2) если нет — dev-фолбэк (вшитый), по секрету в query (?dev=dev-allow) либо по tg_id
- *  3) иначе 401
- */
-export function softAuth(req) {
-  const raw = extractInitData(req);
-  const botToken = process.env.BOT_TOKEN || ""; // может быть пустым — тогда сразу уйдем в dev-ветку
-  const ver = verifyTelegramInitData(raw, botToken);
-  if (ver.ok) return { ok: true, userId: ver.userId, mode: "telegram" };
+export async function authUser(req, res) {
+  // 1) попытка через Telegram подпись
+  const initData = req.headers['x-telegram-init-data'];
+  const fromTg = validateTelegramInitData(initData);
+  if (fromTg) return fromTg;
 
-  // --- dev-фолбэк (код-только, без переменных окружения) ---
-  const DEV = { enabled: true, secret: "dev-allow", defaultUserId: 999000111 }; // можно поменять
+  // 2) dev-режим через query (?dev=dev-allow&tg_id=123)
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
-    const dev = url.searchParams.get("dev");
-    const tgIdParam = url.searchParams.get("tg_id");
-    if (DEV.enabled && dev === DEV.secret) {
-      const tgId = tgIdParam ? Number(tgIdParam) : DEV.defaultUserId;
-      if (Number.isFinite(tgId)) return { ok: true, userId: tgId, mode: "dev" };
+    const dev = url.searchParams.get('dev');
+    const tgId = url.searchParams.get('tg_id');
+    if (dev === 'dev-allow' && tgId) {
+      return { id: String(tgId) };
     }
-  } catch (_) {}
+  } catch {}
 
-  // как самый последний шанс — если в initData есть user без подписи, доверимся ему
-  if (raw) {
-    try {
-      const u = new URLSearchParams(raw).get("user");
-      const parsed = u ? JSON.parse(u) : null;
-      const uid = parsed?.id ? Number(parsed.id) : null;
-      if (uid) return { ok: true, userId: uid, mode: "unsafe" };
-    } catch (_) {}
+  // 3) флаг в переменных окружения (временный режим)
+  if (ALLOW_UNSIGNED === '1') {
+    if (DEV_USER_ID) return { id: String(DEV_USER_ID) };
+    return { id: 'dev-user' }; // запасной id
   }
 
-  return { ok: false, reason: ver.reason || "UNAUTHORIZED" };
+  // если дошли сюда — запрещаем
+  res.statusCode = 401;
+  res.end(JSON.stringify({ ok: false, error: 'UNAUTHORIZED' }));
+  throw new Error('UNAUTHORIZED');
 }
