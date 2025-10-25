@@ -2,361 +2,622 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Growth Assistant</title>
 <style>
-  :root{
-    --bg:#f5f8ff;
-    --card:#ffffff;
-    --txt:#0e1116;
-    --muted:#76839a;
-    --primary:#2d6cff;
-    --primary-2:#1a53f0;
-    --ok:#26c281;
-    --danger:#ff5a5a;
-    --shadow:0 10px 24px rgba(18, 35, 104, .10);
-    --radius:18px;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;
-    color:var(--txt); background: radial-gradient(1200px 500px at 50% -50%, #eaf1ff, transparent), var(--bg);
-  }
-  .app{
-    min-height:100%; display:flex; flex-direction:column; padding-bottom:86px;
-  }
-  header{
-    padding:14px 18px; display:flex; align-items:center; gap:12px;
-    background:linear-gradient(180deg,#f2f7ff,#f8fbff 40%, transparent);
-    position:sticky; top:0; z-index:20;
-  }
-  .brand{display:flex; align-items:center; gap:12px; font-weight:700; font-size:20px}
-  .brand .logo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
-    background:linear-gradient(180deg,#81b3ff,#2d6cff); color:#fff; font-size:18px; box-shadow:var(--shadow)}
-  }
-  main{padding:10px 14px 18px}
-  .section-title{font-weight:800; font-size:22px; margin:8px 4px 14px}
+:root{
+  --bg: #f6f8fb;
+  --card: rgba(255,255,255,.72);
+  --stroke: rgba(15,23,42,.08);
+  --text: #0f172a;
+  --text-2:#475569;
+  --brand-1:#4f46e5;
+  --brand-2:#22c1c3;
+  --accent:#2563eb;
+  --success:#22c55e;
+  --danger:#ef4444;
+  --shadow: 0 10px 30px rgba(24,39,75,.08), 0 6px 14px rgba(24,39,75,.06);
+  --radius: 18px;
+}
 
-  .card{
-    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
-    padding:16px; margin:12px 4px;
-  }
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Segoe UI Symbol";
+  color:var(--text);
+  background:
+    radial-gradient(1200px 600px at 80% -10%, #e0f2fe 0%, transparent 60%),
+    radial-gradient(1000px 560px at 10% -10%, #e9d5ff 0%, transparent 60%),
+    var(--bg);
+}
 
-  .row{display:flex; align-items:center; gap:12px}
-  .muted{color:var(--muted)}
-  .btn{
-    display:inline-flex; align-items:center; justify-content:center; gap:8px;
-    padding:12px 16px; border-radius:14px; background:var(--primary);
-    color:#fff; font-weight:700; border:none; cursor:pointer; box-shadow:0 8px 18px rgba(45,108,255,.22);
-    transition:transform .06s ease, box-shadow .2s ease; user-select:none
-  }
-  .btn:active{transform:translateY(1px)}
-  .btn.secondary{background:#edf3ff; color:var(--primary); box-shadow:none}
-  .btn.ghost{background:transparent; color:var(--primary); box-shadow:none}
+.app{
+  max-width: 840px;
+  margin:0 auto;
+  min-height:100%;
+  display:flex; flex-direction:column;
+}
 
-  .input{
-    width:100%; padding:12px 14px; border-radius:12px; border:1px solid #e7ecf6; outline:none;
-    background:#fbfdff; box-shadow: inset 0 2px 4px rgba(36,76,160,.04);
-    font-size:15px;
-  }
+/* top bar */
+.top{
+  display:flex; align-items:center; gap:14px;
+  padding:16px 18px 6px;
+}
+.logo{
+  width:40px;height:40px; border-radius:12px;
+  background: linear-gradient(135deg, #60a5fa, #7c3aed);
+  display:grid; place-items:center; color:#fff;
+  box-shadow: var(--shadow);
+}
+.h1{
+  font-weight:800; letter-spacing:.2px; font-size:20px;
+}
 
-  .task{
-    display:flex; align-items:flex-start; gap:12px; padding:14px; border-radius:16px;
-    background: linear-gradient(180deg,#ffffff, #fbfdff);
-    border:1px solid #edf2ff; box-shadow:var(--shadow); margin:10px 0;
-  }
-  .task .icon{
-    width:38px; height:38px; border-radius:12px; background:#edf3ff; display:grid; place-items:center; color:var(--primary);
-    flex:0 0 auto; font-size:18px; box-shadow: inset 0 1px 0 #fff;
-  }
-  .task .title{font-weight:700; font-size:16px}
-  .task .sub{color:var(--muted); font-size:14px; margin-top:4px}
-  .task .done-btn{
-    margin-left:auto; width:34px; height:34px; border-radius:11px; border:1px solid #ecf1fb;
-    display:grid; place-items:center; cursor:pointer; background:#fff; color:#8aa6ff;
-  }
-  .task.done{opacity:.75}
-  .task.done .done-btn{background:linear-gradient(180deg,#5fd1a7,#26c281); border-color:#21a472; color:#fff}
+/* Gradient header card */
+.header-card{
+  margin:0 16px 16px;
+  padding:16px;
+  border-radius: 24px;
+  background: linear-gradient(105deg, #eef2ff 0%, #f0f9ff 100%);
+  border:1px solid var(--stroke);
+  box-shadow: var(--shadow);
+}
 
-  /* Chat bar */
-  .chatbar{
-    position:sticky; bottom:70px; z-index:12; margin:16px 10px;
-    background: linear-gradient(90deg,#7db8ff,#46a0ff);
-    color:#fff; padding:16px; border-radius:18px; display:flex; align-items:center; justify-content:center;
-    box-shadow:0 14px 30px rgba(34,88,198,.25);
-  }
-  .chatbar button{all:unset; cursor:pointer; font-weight:800}
+/* sections */
+.section-title{
+  font-size:22px; font-weight:800; margin:8px 16px 10px;
+}
+.card{
+  margin:12px 16px;
+  padding:14px;
+  background:var(--card);
+  border:1px solid var(--stroke);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+}
 
-  /* Tabs bottom */
-  .tabs{
-    position:fixed; left:0; right:0; bottom:0; height:70px; padding:8px 10px; backdrop-filter:saturate(120%) blur(10px);
-    background: rgba(255,255,255,.84); border-top:1px solid #e8eefb; z-index:25;
-    display:grid; grid-template-columns:repeat(4,1fr); gap:10px;
-  }
-  .tab{
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
-    color:#6e7b92; font-size:12px; border-radius:14px; user-select:none; cursor:pointer;
-  }
-  .tab.active{color:var(--primary); background:#eef4ff}
-  .screen{display:none}
-  .screen.active{display:block}
+/* Focus */
+.focus-row{display:flex; gap:12px; align-items:center}
+.input{
+  flex:1; display:flex; align-items:center; gap:10px;
+  background:#fff; border:1px solid var(--stroke);
+  border-radius: 14px; padding:12px 12px;
+}
+.input input{border:0; outline:0; width:100%; font-size:16px; background:transparent; color:var(--text)}
+.btn{
+  appearance:none; border:0; cursor:pointer;
+  font-weight:700; color:#fff;
+  padding:12px 16px; border-radius:14px;
+  background: linear-gradient(120deg, var(--accent), #7c3aed);
+  box-shadow: 0 8px 20px rgba(37,99,235,.25);
+  transition:.15s transform ease, .15s box-shadow ease;
+}
+.btn:active{transform:translateY(1px); box-shadow:0 6px 16px rgba(37,99,235,.2)}
+.btn.secondary{
+  background:#fff; color:var(--text); border:1px solid var(--stroke);
+  box-shadow:none;
+}
 
-  /* Toast */
-  .toast{
-    position:fixed; left:50%; transform:translateX(-50%); bottom:86px; z-index:50;
-    background:#1f2b41; color:#fff; padding:12px 16px; border-radius:12px; box-shadow:0 10px 24px rgba(0,0,0,.18);
-    font-size:14px; max-width:90%; text-align:center;
-    animation:fade .2s ease;
-  }
-  @keyframes fade {from{opacity:.6; transform:translate(-50%,8px)} to{opacity:1; transform:translate(-50%,0)}}
+/* Segmented control */
+.segment{display:flex; gap:10px; margin:10px 0 6px}
+.segment button{
+  flex:0 0 auto; padding:10px 14px; border-radius:12px;
+  border:1px solid var(--stroke); background:#fff; color:var(--text-2);
+  cursor:pointer; font-weight:600;
+}
+.segment button.active{border-color:transparent; color:#fff;
+  background:linear-gradient(120deg, var(--accent), #7c3aed);
+}
+
+/* Two inputs row */
+.row{display:flex; gap:10px; align-items:center}
+.row .input{flex:1}
+
+/* Tasks list */
+.list{display:flex; flex-direction:column; gap:10px}
+.task{
+  display:flex; align-items:center; gap:12px;
+  background:#fff; border:1px solid var(--stroke); border-radius:16px; padding:12px;
+}
+.check{
+  width:28px;height:28px; border-radius:50%;
+  border:2px solid #cbd5e1; display:grid; place-items:center; cursor:pointer;
+  transition: all .15s ease;
+}
+.check svg{width:16px;height:16px; opacity:0; transform:scale(.8); transition:.12s}
+.task.done .check{background:linear-gradient(120deg, #10b981, #22c55e); border-color:transparent; box-shadow:0 8px 18px rgba(16,185,129,.25)}
+.task.done .check svg{opacity:1; transform:scale(1)}
+.title{font-weight:700}
+.meta{color:var(--text-2); font-size:13px}
+
+/* Chat CTA */
+.chat-cta{
+  margin:16px;
+  padding:16px 18px;
+  border-radius:20px;
+  border:1px solid var(--stroke);
+  background:linear-gradient(120deg, #60a5fa, #22c1c3);
+  color:#fff; font-weight:800; text-align:center;
+  box-shadow: var(--shadow);
+  display:flex; justify-content:center; align-items:center; gap:10px;
+  cursor:pointer; user-select:none;
+}
+
+/* Tabs */
+.tabs{
+  position:sticky; bottom:0; left:0; right:0;
+  backdrop-filter: blur(10px);
+  background: rgba(248,250,252,.75);
+  border-top:1px solid var(--stroke);
+  display:grid; grid-template-columns:repeat(4,1fr);
+}
+.tab{
+  display:grid; place-items:center; gap:6px; padding:10px 0; cursor:pointer; color:var(--text-2); font-weight:700;
+}
+.tab.active{color:var(--accent)}
+.tab svg{width:20px;height:20px}
+
+/* views */
+.view{display:none; padding-bottom:10px}
+.view.active{display:block}
+
+/* Chat modal (bottom sheet) */
+.sheet{
+  position:fixed; inset:0; display:none;
+  background:rgba(15,23,42,.36); z-index:50;
+}
+.sheet.open{display:block}
+.sheet > .box{
+  position:absolute; left:0; right:0; bottom:0;
+  background:#fff; border-top-left-radius:20px; border-top-right-radius:20px;
+  box-shadow:0 -20px 40px rgba(2,6,23,.2);
+  max-height:80vh; display:flex; flex-direction:column;
+}
+.sheet-header{display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--stroke)}
+.sheet-title{font-weight:800}
+.chat{
+  padding:12px 14px; overflow:auto; flex:1; display:flex; flex-direction:column; gap:10px; background:#f7fafc;
+}
+.msg{max-width:85%; padding:10px 12px; border-radius:14px; box-shadow:var(--shadow)}
+.msg.me{align-self:flex-end; background:#e0f2fe}
+.msg.ai{align-self:flex-start; background:#fff}
+.chat-input{display:flex; gap:8px; padding:14px; border-top:1px solid var(--stroke)}
+.chat-input input{flex:1; padding:12px 14px; border-radius:12px; border:1px solid var(--stroke); outline:0; font-size:15px}
+.chat-input button{padding:12px 16px; border-radius:12px; border:0; background:linear-gradient(120deg, var(--accent), #7c3aed); color:#fff; font-weight:800; cursor:pointer}
+
+/* Toast */
+.toast{
+  position:fixed; left:50%; transform:translateX(-50%);
+  bottom:84px; background:rgba(15,23,42,.9); color:#fff;
+  padding:10px 14px; border-radius:12px; font-weight:700; z-index:60; display:none;
+}
+.toast.show{display:block}
+
+/* small helpers */
+.badge{
+  display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px;
+  background:#fff; border:1px solid var(--stroke); color:var(--text-2); font-weight:700
+}
+.icon-16{width:16px;height:16px}
+
+/* Responsive */
+@media (min-width:720px){
+  .top{padding:22px 22px 10px}
+  .header-card{margin:0 22px 18px}
+  .card{margin:14px 22px}
+  .chat-cta{margin:22px}
+}
 </style>
 </head>
 <body>
 <div class="app">
-  <header>
-    <div class="brand"><div class="logo">⚡</div> Growth Assistant</div>
-  </header>
 
-  <!-- Экран: Сегодня -->
-  <main id="screen-home" class="screen active">
-    <div class="section-title">Сегодня</div>
+  <!-- top -->
+  <div class="top">
+    <div class="logo" aria-hidden="true">
+      <!-- smile icon -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="22" height="22">
+        <circle cx="12" cy="12" r="9" stroke-width="2"></circle>
+        <circle cx="9" cy="10" r="1.5" fill="#fff" stroke="none"/>
+        <circle cx="15" cy="10" r="1.5" fill="#fff" stroke="none"/>
+        <path d="M8 14c1.2 1.3 2.6 2 4 2s2.8-.7 4-2" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="h1">Growth Assistant</div>
+      <div style="color:var(--text-2);font-weight:600">умный помощник в делах</div>
+    </div>
+  </div>
 
-    <!-- Фокус дня -->
-    <div class="card">
-      <div class="row" style="justify-content:space-between;margin-bottom:10px;">
-        <div class="row" style="gap:8px;">
-          <div class="logo" style="width:28px;height:28px;font-size:14px;border-radius:8px">⚡</div>
-          <b>Фокус дня</b>
+  <!-- switcher chips (list filter) -->
+  <div class="header-card">
+    <div class="segment" id="listSegment">
+      <button data-list="today" class="active">Сегодня</button>
+      <button data-list="week">Неделя</button>
+      <button data-list="backlog">Бэклог</button>
+    </div>
+
+    <div class="row">
+      <div class="input"><input id="dateInput" type="date" /></div>
+      <div class="input"><input id="timeInput" type="time" /></div>
+      <button class="btn" id="addTaskBtn">Добавить</button>
+    </div>
+  </div>
+
+  <!-- views -->
+  <main id="views" style="flex:1">
+    <!-- Home -->
+    <section class="view active" data-view="home">
+      <div class="section-title">Сегодня</div>
+
+      <!-- Focus -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div class="badge">
+            <svg class="icon-16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v5m5-5v5M5 3v5" stroke-width="2" stroke-linecap="round"/><rect x="3" y="8" width="18" height="13" rx="4" stroke-width="2"/></svg>
+            <span>Фокус дня</span>
+          </div>
+          <div id="focusStatus" style="color:var(--text-2);font-weight:700"></div>
+        </div>
+        <div class="focus-row">
+          <div class="input"><input id="focusInput" placeholder="Самое главное сегодня…" /></div>
+          <button class="btn" id="saveFocusBtn">Сохранить</button>
+          <button class="btn secondary" id="editFocusBtn" style="display:none">✏️ Редактировать</button>
         </div>
       </div>
-      <div class="row" style="gap:10px;">
-        <input id="focus-input" class="input" placeholder="Самое главное сегодня…" />
-        <button id="focus-save" class="btn">Сохранить</button>
+
+      <!-- Quick add -->
+      <div class="card">
+        <div class="badge" style="margin-bottom:8px">
+          <svg class="icon-16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14" stroke-width="2" stroke-linecap="round"/></svg>
+          Быстрое добавление
+        </div>
+        <div class="input" style="margin-bottom:8px">
+          <input id="quickTitle" placeholder="Название задачи" />
+        </div>
+        <div class="segment" id="quickList">
+          <button data-list="today" class="active">Сегодня</button>
+          <button data-list="week">Неделя</button>
+          <button data-list="backlog">Бэклог</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="input"><input id="quickDate" type="date" placeholder="дата"/></div>
+          <div class="input"><input id="quickTime" type="time" placeholder="время"/></div>
+          <button class="btn" id="quickAddBtn">Добавить</button>
+        </div>
       </div>
-      <div id="focus-view" class="row" style="display:none; margin-top:10px; justify-content:space-between;">
-        <div id="focus-text" class="muted"></div>
-        <button id="focus-edit" class="btn secondary">✏️</button>
+
+      <!-- Tasks -->
+      <div class="section-title">Задачи</div>
+      <div class="card" style="padding:10px 10px 14px">
+        <div id="tasks" class="list"></div>
       </div>
+
+      <!-- Chat CTA -->
+      <div id="openChat" class="chat-cta">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3 1.5-4.5A4 4 0 0 1 4 15V7a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4z" stroke-width="2" stroke-linejoin="round" /></svg>
+        Чат с ассистентом
+      </div>
+    </section>
+
+    <!-- Plan -->
+    <section class="view" data-view="plan">
+      <div class="section-title">План</div>
+      <div class="card">
+        <div style="color:var(--text-2);font-weight:600">Раздел в разработке. Тут будут недельные цели и HADI.</div>
+      </div>
+    </section>
+
+    <!-- Calendar -->
+    <section class="view" data-view="calendar">
+      <div class="section-title">Календарь</div>
+      <div class="card">
+        <div style="color:var(--text-2);font-weight:600">Календарь пока только отображает задачи (создавайте их на главной).</div>
+      </div>
+    </section>
+
+    <!-- Profile -->
+    <section class="view" data-view="profile">
+      <div class="section-title">Профиль</div>
+      <div class="card">
+        <div id="meInfo" style="font-weight:700"></div>
+        <div style="color:var(--text-2)">Данные берутся из Telegram WebApp initData.</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Tabs -->
+  <nav class="tabs" id="tabs">
+    <div data-go="home" class="tab active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11l9-8 9 8v9a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4a2 2 0 0 0-2-2h0a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9z" stroke-width="2" stroke-linejoin="round"/></svg>
+      Главная
     </div>
-
-    <!-- Быстрое добавление -->
-    <div class="card">
-      <div class="row" style="gap:8px; margin-bottom:8px">
-        <div class="logo" style="width:28px;height:28px;font-size:14px;border-radius:8px;background:#28c76f">+</div>
-        <b>Быстрое добавление</b>
-      </div>
-      <input id="task-title" class="input" placeholder="Название задачи" style="margin:8px 0 10px" />
-      <div class="row" style="gap:8px; margin:8px 0;">
-        <button class="btn secondary" data-list="today">Сегодня</button>
-        <button class="btn secondary" data-list="week">Неделя</button>
-        <button class="btn secondary" data-list="backlog">Бэклог</button>
-      </div>
-      <div class="row" style="gap:8px; margin-top:10px">
-        <input id="task-date" class="input" placeholder="дд.мм.гггг" style="max-width:170px" />
-        <input id="task-time" class="input" placeholder="--:--" style="max-width:120px" />
-        <button id="task-add" class="btn">Добавить</button>
-      </div>
+    <div data-go="plan" class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="3" stroke-width="2"/><path d="M8 2v4M16 2v4M3 10h18" stroke-width="2"/></svg>
+      План
     </div>
-
-    <!-- Список задач -->
-    <div class="section-title" style="margin-top:4px">Задачи</div>
-    <div id="tasks-list"></div>
-
-    <!-- Чат -->
-    <div class="chatbar"><button id="chat-open">💬 Чат с ассистентом</button></div>
-  </main>
-
-  <!-- Экран: План -->
-  <main id="screen-plan" class="screen">
-    <div class="section-title">План</div>
-    <div class="card muted">Здесь появится недельный/месячный обзор.</div>
-  </main>
-
-  <!-- Экран: Календарь -->
-  <main id="screen-calendar" class="screen">
-    <div class="section-title">Календарь</div>
-    <div class="card muted">Отображаем задачи с дедлайнами. (read-only)</div>
-  </main>
-
-  <!-- Экран: Профиль -->
-  <main id="screen-profile" class="screen">
-    <div class="section-title">Профиль</div>
-    <div class="card">
-      <div class="muted">Настройки и информация будут здесь.</div>
+    <div data-go="calendar" class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="3" stroke-width="2"/><path d="M8 2v4M16 2v4M3 10h18M7 14h4M7 18h4M15 14h2M15 18h2" stroke-width="2"/></svg>
+      Календарь
     </div>
-  </main>
-
-  <!-- Табы -->
-  <nav class="tabs">
-    <div class="tab active" data-tab="home">🏠<div>Главная</div></div>
-    <div class="tab" data-tab="plan">🗂<div>План</div></div>
-    <div class="tab" data-tab="calendar">📅<div>Календарь</div></div>
-    <div class="tab" data-tab="profile">👤<div>Профиль</div></div>
+    <div data-go="profile" class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4" stroke-width="2"/><path d="M4 20a8 8 0 0 1 16 0" stroke-width="2"/></svg>
+      Профиль
+    </div>
   </nav>
 </div>
 
+<!-- Chat sheet -->
+<div class="sheet" id="chatSheet" aria-modal="true" role="dialog">
+  <div class="box">
+    <div class="sheet-header">
+      <div class="sheet-title">Чат с ассистентом</div>
+      <button class="btn secondary" id="closeChat">Закрыть</button>
+    </div>
+    <div id="chat" class="chat"></div>
+    <div class="chat-input">
+      <input id="chatInput" placeholder="Спросите про план, HADI или задачи…" />
+      <button id="chatSend">Отправить</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-  // --- TG init header
-  function getInitData() {
-    try { return window.Telegram?.WebApp?.initData || ''; } catch { return ''; }
-  }
-  async function authFetch(url, opts={}) {
-    const headers = Object.assign({'content-type':'application/json'}, (opts.headers||{}));
-    const init = getInitData();
-    if (init) headers['x-telegram-init'] = init;
-    return fetch(url, Object.assign({}, opts, { headers }));
-  }
+/* ====== TELEGRAM & HELPERS ====== */
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+if (tg){ try{ tg.expand(); tg.ready(); }catch(e){} }
 
-  // --- UI helpers
-  const toast = (msg) => {
-    const t = document.createElement('div');
-    t.className = 'toast'; t.textContent = msg;
-    document.body.appendChild(t); setTimeout(()=>t.remove(), 2500);
-  };
+const API_BASE = ""; // тот же домен
+const initData = tg?.initData || "";
 
-  // --- Tabs
-  const screens = {
-    home: document.getElementById('screen-home'),
-    plan: document.getElementById('screen-plan'),
-    calendar: document.getElementById('screen-calendar'),
-    profile: document.getElementById('screen-profile'),
-  };
-  const tabs = Array.from(document.querySelectorAll('.tab'));
-  function switchTab(name){
-    for (const [key,el] of Object.entries(screens)) el.classList.toggle('active', key===name);
-    tabs.forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
-    window.scrollTo({top:0, behavior:'smooth'});
+function authHeaders(){
+  return { "Content-Type":"application/json", "X-Telegram-Init-Data": initData };
+}
+async function api(path, options={}){
+  const res = await fetch(API_BASE + path, {
+    method: options.method || "GET",
+    headers: { ...(options.headers||{}), ...authHeaders() },
+    body: options.body ? JSON.stringify(options.body) : undefined
+  });
+  if(!res.ok){
+    let msg = `HTTP ${res.status}`;
+    try{ const d = await res.json(); if(d?.error) msg = d.error; }catch(_){}
+    throw new Error(msg);
   }
-  tabs.forEach(t=>t.addEventListener('click',()=>switchTab(t.dataset.tab)));
+  return res.json();
+}
+function toast(msg, ms=2200){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._id);
+  toast._id = setTimeout(()=>t.classList.remove('show'), ms);
+}
 
-  // --- Data rendering
-  const focusInput = document.getElementById('focus-input');
-  const focusSave  = document.getElementById('focus-save');
-  const focusView  = document.getElementById('focus-view');
-  const focusText  = document.getElementById('focus-text');
-  const focusEdit  = document.getElementById('focus-edit');
+/* ====== STATE ====== */
+let currentList = "today";
+let me = null;
+let chatHistory = []; // [{role:'user'|'assistant', content:string}]
 
-  async function loadFocus(){
-    try{
-      const r = await authFetch('/api/focus');
-      const j = await r.json();
-      if (r.ok) {
-        if (j.text) {
-          focusInput.value = '';
-          focusText.textContent = j.text;
-          focusView.style.display='flex';
-        } else {
-          focusView.style.display='none';
-        }
-      }
-    }catch(e){}
-  }
-  focusSave.addEventListener('click', async ()=>{
+/* ====== UI HOOKS ====== */
+const focusInput = document.getElementById('focusInput');
+const saveFocusBtn = document.getElementById('saveFocusBtn');
+const editFocusBtn = document.getElementById('editFocusBtn');
+const focusStatus = document.getElementById('focusStatus');
+
+const tasksEl = document.getElementById('tasks');
+
+const quickTitle = document.getElementById('quickTitle');
+const quickDate  = document.getElementById('quickDate');
+const quickTime  = document.getElementById('quickTime');
+
+document.getElementById('addTaskBtn').addEventListener('click', onHeaderAdd);
+document.getElementById('quickAddBtn').addEventListener('click', onQuickAdd);
+
+saveFocusBtn.addEventListener('click', onFocusSave);
+editFocusBtn.addEventListener('click', ()=>setFocusEditable(true));
+
+document.getElementById('listSegment').addEventListener('click', (e)=>{
+  const b = e.target.closest('button'); if(!b) return;
+  [...e.currentTarget.children].forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  currentList = b.dataset.list;
+  loadTasks();
+});
+document.getElementById('quickList').addEventListener('click',(e)=>{
+  const b = e.target.closest('button'); if(!b) return;
+  [...e.currentTarget.children].forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+});
+
+/* Tabs */
+document.getElementById('tabs').addEventListener('click', (e)=>{
+  const tab = e.target.closest('.tab'); if(!tab) return;
+  const to = tab.dataset.go;
+  [...document.querySelectorAll('.tab')].forEach(x=>x.classList.remove('active'));
+  tab.classList.add('active');
+  [...document.querySelectorAll('.view')].forEach(v=>v.classList.remove('active'));
+  document.querySelector(`.view[data-view="${to}"]`).classList.add('active');
+});
+
+/* Chat */
+const chatSheet = document.getElementById('chatSheet');
+document.getElementById('openChat').addEventListener('click', ()=>{ chatSheet.classList.add('open'); setTimeout(()=>scrollChatToEnd(),0); });
+document.getElementById('closeChat').addEventListener('click', ()=> chatSheet.classList.remove('open'));
+document.getElementById('chatSend').addEventListener('click', sendChat);
+document.getElementById('chatInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') sendChat(); });
+
+/* ====== FOCUS ====== */
+async function loadFocus(){
+  try{
+    const d = await api('/api/focus');
+    const txt = d?.text || '';
+    focusInput.value = txt;
+    setFocusEditable(!txt); // если есть текст — в режим "просмотр + карандаш"
+  }catch(e){ toast('Не удалось загрузить фокус'); }
+}
+async function onFocusSave(){
+  try{
     const text = focusInput.value.trim();
-    if (!text) return toast('Введите текст фокуса');
-    try{
-      const r = await authFetch('/api/focus', { method:'PUT', body: JSON.stringify({ text }) });
-      if (!r.ok) throw 0;
-      toast('Фокус сохранён'); focusInput.value=''; loadFocus(); loadTasks();
-    }catch(e){ toast('Ошибка сервера (focus)'); }
-  });
-  focusEdit.addEventListener('click', ()=>{
-    focusInput.value = focusText.textContent || ''; focusView.style.display='none';
-  });
+    await api('/api/focus', { method:'PUT', body:{ text } });
+    setFocusEditable(false);
+    focusStatus.textContent = 'сохранено';
+    setTimeout(()=>focusStatus.textContent='', 1400);
+  }catch(e){ toast('Ошибка сервера (focus)'); }
+}
+function setFocusEditable(editable){
+  focusInput.disabled = !editable;
+  saveFocusBtn.style.display = editable ? '' : 'none';
+  editFocusBtn.style.display = editable ? 'none' : '';
+}
 
-  // --- Tasks
-  const tasksList  = document.getElementById('tasks-list');
-  const addBtn     = document.getElementById('task-add');
-  const titleIn    = document.getElementById('task-title');
-  const dateIn     = document.getElementById('task-date');
-  const timeIn     = document.getElementById('task-time');
-  let currentList  = 'today';
-  document.querySelectorAll('[data-list]').forEach(b=>{
-    b.addEventListener('click', ()=>{ currentList=b.dataset.list; toast('Список: '+(b.textContent.trim())); });
-  });
+/* ====== TASKS ====== */
+function currentQuickList(){ return document.querySelector('#quickList .active')?.dataset.list || 'today'; }
 
-  function taskNode(item){
-    const el = document.createElement('div');
-    el.className = 'task'+(item.done?' done':'');
-    el.innerHTML = `
-      <div class="icon">🧩</div>
-      <div style="flex:1">
-        <div class="title">${escapeHtml(item.title)}</div>
-        ${item.note ? `<div class="sub">${escapeHtml(item.note)}</div>` : ``}
-      </div>
-      <div class="done-btn" title="Готово">${item.done ? '✔️' : '➔'}</div>
-    `;
-    const btn = el.querySelector('.done-btn');
-    btn.addEventListener('click', async ()=>{
-      try{
-        const r = await authFetch('/api/tasks/'+item.id, {
-          method:'PUT',
-          body: JSON.stringify({ done: !item.done })
-        });
-        const j = await r.json().catch(()=>({}));
-        if (!r.ok) throw new Error(j.error||'ERR');
-        item.done = !!j.done;
-        el.classList.toggle('done', item.done);
-        btn.textContent = item.done ? '✔️' : '➔';
-      }catch(e){
-        toast('API: 500 — ' + (e.message || 'server error'));
-      }
-    });
-    return el;
+async function loadTasks(){
+  tasksEl.innerHTML = '';
+  try{
+    const d = await api(`/api/tasks?list=${encodeURIComponent(currentList)}`);
+    const items = d?.items || [];
+    if(items.length === 0){
+      tasksEl.innerHTML = `<div class="meta" style="padding:8px 6px">Пока пусто. Добавьте задачу выше.</div>`;
+      return;
+    }
+    for(const t of items) tasksEl.appendChild(taskRow(t));
+  }catch(e){ toast('Не удалось загрузить задачи'); }
+}
+
+function taskRow(t){
+  const row = document.createElement('div');
+  row.className = 'task' + (t.done ? ' done' : '');
+  row.dataset.id = t.id;
+
+  const check = document.createElement('div');
+  check.className='check';
+  check.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="white"><path d="M5 13l4 4L19 7" stroke-width="3" stroke-linecap="round"/></svg>`;
+  check.addEventListener('click', ()=> toggleTask(row, !row.classList.contains('done')));
+
+  const title = document.createElement('div');
+  title.className='title';
+  title.textContent = t.title;
+
+  const right = document.createElement('div');
+  right.style.marginLeft='auto';
+  right.style.color='var(--text-2)';
+  right.textContent = '›';
+
+  row.append(check, title, right);
+  return row;
+}
+async function toggleTask(row, done){
+  const id = Number(row.dataset.id);
+  try{
+    await api(`/api/tasks/${id}`, { method:'PUT', body:{ done } });
+    row.classList.toggle('done', done);
+  }catch(e){
+    if(String(e.message).includes('TASK_NOT_FOUND')) toast('Задача принадлежит другому пользователю');
+    else toast('API: ' + e.message);
   }
+}
 
-  async function loadTasks(){
-    tasksList.textContent='';
-    try{
-      const r = await authFetch('/api/tasks?list=today');
-      const j = await r.json();
-      if (!r.ok) throw 0;
-      (j.items||[]).forEach(x=>tasksList.appendChild(taskNode(x)));
-    }catch(e){ toast('Не удалось загрузить задачи'); }
+function getHeaderList(){ return document.querySelector('#listSegment .active')?.dataset.list || 'today'; }
+
+async function onHeaderAdd(){
+  const date = document.getElementById('dateInput').value || '';
+  const time = document.getElementById('timeInput').value || '';
+  const title = prompt('Что добавить?') || '';
+  if(!title.trim()) return;
+
+  const list = getHeaderList();
+  const deadline = makeISO(date, time);
+  try{
+    await api('/api/tasks', { method:'POST', body:{ title, list, deadline } });
+    toast('Добавлено');
+    loadTasks();
+  }catch(e){ toast('API: ' + e.message); }
+}
+
+async function onQuickAdd(){
+  const title = quickTitle.value.trim();
+  if(!title) return toast('Введите название');
+  const list = currentQuickList();
+  const deadline = makeISO(quickDate.value, quickTime.value);
+  try{
+    await api('/api/tasks', { method:'POST', body:{ title, list, deadline } });
+    quickTitle.value=''; quickDate.value=''; quickTime.value='';
+    toast('Добавлено');
+    loadTasks();
+  }catch(e){ toast('API: ' + e.message); }
+}
+
+function makeISO(d, t){
+  if(!d && !t) return null;
+  try{
+    if(!d && t) {
+      // только время — считаем на сегодня
+      const today = new Date(); const y=today.getFullYear();
+      const m=(today.getMonth()+1).toString().padStart(2,'0');
+      const dd=today.getDate().toString().padStart(2,'0');
+      d = `${y}-${m}-${dd}`;
+    }
+    const iso = t ? `${d}T${t}:00` : `${d}T00:00:00`;
+    return new Date(iso).toISOString();
+  }catch(_){ return null }
+}
+
+/* ====== CHAT ====== */
+function msgEl(role, text){
+  const el = document.createElement('div');
+  el.className = 'msg ' + (role==='user'?'me':'ai');
+  el.textContent = text;
+  return el;
+}
+function renderChat(){
+  const box = document.getElementById('chat');
+  box.innerHTML = '';
+  for(const m of chatHistory) box.appendChild(msgEl(m.role, m.content));
+}
+function scrollChatToEnd(){ const b=document.getElementById('chat'); b.scrollTop = b.scrollHeight + 1000; }
+
+async function sendChat(){
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim(); if(!text) return;
+  chatHistory.push({role:'user', content:text});
+  input.value=''; renderChat(); scrollChatToEnd();
+
+  // заглушка-индикатор
+  chatHistory.push({role:'assistant', content:'…'});
+  renderChat(); scrollChatToEnd();
+
+  try{
+    const payload = { message:text, history: chatHistory.slice(-8) };
+    const d = await api('/api/chat', { method:'POST', body: payload });
+    // заменить «…» ответом
+    chatHistory.pop();
+    chatHistory.push({role:'assistant', content: d?.reply || '—'});
+  }catch(e){
+    chatHistory.pop();
+    chatHistory.push({role:'assistant', content:'Ошибка: ' + e.message});
   }
+  renderChat(); scrollChatToEnd();
+}
 
-  addBtn.addEventListener('click', async ()=>{
-    const title = titleIn.value.trim();
-    if (!title) return toast('Введите название задачи');
-    // примитивный парсер даты/времени → ISO
-    let deadline = null;
-    try{
-      if (dateIn.value.trim()) {
-        const [d,m,y] = dateIn.value.trim().split('.').map(n=>parseInt(n,10));
-        if (y && m && d) {
-          const [hh,mm] = (timeIn.value||'00:00').split(':').map(n=>parseInt(n,10));
-          const dt = new Date(Date.UTC(y, (m-1), d, hh||0, mm||0, 0));
-          deadline = dt.toISOString();
-        }
-      }
-    }catch(e){}
-    try{
-      const r = await authFetch('/api/tasks', {
-        method:'POST',
-        body: JSON.stringify({ title, list: currentList, deadline })
-      });
-      const j = await r.json().catch(()=>({}));
-      if (!r.ok) throw new Error(j.error||'ERR');
-      titleIn.value=''; dateIn.value=''; timeIn.value='';
-      tasksList.prepend(taskNode(j));
-    }catch(e){ toast('Ошибка сервера (task)'); }
-  });
-
-  // --- utils
-  function escapeHtml(s=''){ return s.replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
-
-  // --- Chat open (заглушка)
-  document.getElementById('chat-open').addEventListener('click', ()=> toast('Чат откроется позже ✨'));
-
-  // init
-  (async function init(){
-    // dev-проверка whoami (не мешает продакшену)
-    try{
-      const r = await authFetch('/api/whoami'); if (r.ok) { /* ok */ }
-    }catch(e){}
-    await loadFocus(); await loadTasks();
-  })();
+/* ====== INIT ====== */
+async function init(){
+  // профиль
+  try{
+    if(tg?.initDataUnsafe?.user){
+      me = tg.initDataUnsafe.user;
+      document.getElementById('meInfo').textContent = `ID: ${me.id}  @${me.username||'-'}`;
+    }
+  }catch(_){}
+  await loadFocus();
+  await loadTasks();
+}
+init();
 </script>
 </body>
 </html>
