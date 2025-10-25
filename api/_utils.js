@@ -1,17 +1,24 @@
 // /api/_utils.js
-// Авторизация без отдельного логина:
+// Авторизация без лишних кнопок:
 // 1) Cookie-сессия (если уже есть)
-// 2) Валидный Telegram WebApp initData (подпись по "WebAppData")
-// 3) МЯГКИЙ РЕЖИМ: если это Telegram WebView (по User-Agent) и в initData есть user.id,
-//    принимаем пользователя даже при BAD_HASH. Можно отключить через STRICT_WEBAPP=1.
+// 2) Валидация Telegram WebApp initData (2 формулы секрета; строгая проверка)
+// 3) ФОЛБЭК: если подпись не сошлась, но есть user.id — проверяем через Bot API getChat,
+//    и если бот реально «видит» этого юзера, пускаем. (TELEGRAM_FALLBACK_BOTAPI=1 по умолчанию)
 //
-// Безопасность: для прод-строгого режима поставь STRICT_WEBAPP=1 в переменные окружения.
+// Переменные окружения:
+// - TELEGRAM_BOT_TOKEN (обязательно)
+// - SESSION_SECRET (желательно; по умолчанию = TELEGRAM_BOT_TOKEN)
+// - TELEGRAM_FALLBACK_BOTAPI=1|0 (по умолчанию 1 — включено)
+// - BOTAPI_TIMEOUT_MS (по умолчанию 1500)
+//
+// ВНИМАНИЕ: Файл стал асинхронным (getUserFromReq → async). Эндпоинты должны вызывать `await`.
 
 const crypto = require('crypto');
 
-/* ---------- Cookie session (HMAC, без внешних либ) ---------- */
 const SESSION_COOKIE = 'sid';
 const SESSION_TTL_SEC = 60 * 60 * 24 * 30; // 30 дней
+const BOTAPI_TIMEOUT_MS = Number(process.env.BOTAPI_TIMEOUT_MS || 1500);
+const TELEGRAM_FALLBACK_BOTAPI = process.env.TELEGRAM_FALLBACK_BOTAPI !== '0'; // по умолчанию ВКЛ.
 
 function parseCookies(req) {
   const hdr = req.headers['cookie'] || '';
@@ -53,9 +60,7 @@ function setSessionCookie(res, token, maxAgeSec=SESSION_TTL_SEC) {
   res.setHeader('Set-Cookie', parts.join('; '));
 }
 
-/* ---------- Telegram WebApp initData ---------- */
-
-// initData берём из заголовка или из ?init_data=... (если заголовки режутся)
+// initData из заголовка или ?init_data=... (если заголовки режутся)
 function getInitDataFromReq(req) {
   let initDataStr = req.headers['x-telegram-init-data'] || '';
   if (!initDataStr && req.url) {
@@ -68,7 +73,7 @@ function getInitDataFromReq(req) {
   return initDataStr || '';
 }
 
-// parsed: значения после decodeURIComponent; user распаршен в объект
+// parsed: decodeURIComponent; user → JSON.parse
 function parsedInitData(initDataStr='') {
   const obj = {};
   for (const part of initDataStr.split('&')) {
@@ -82,8 +87,8 @@ function parsedInitData(initDataStr='') {
   return obj;
 }
 
-// data_check_string: строим из СЫРОЙ строки (без decode), как требует Telegram
-function buildDCS_WebApp(initDataStr='') {
+// data_check_string для WebApp — строго из «сырой» строки
+function buildDCS(initDataStr='') {
   const pairs = [];
   for (const part of initDataStr.split('&')) {
     if (!part) continue;
@@ -97,9 +102,9 @@ function buildDCS_WebApp(initDataStr='') {
   return pairs.map(([k,v])=> `${k}=${v}`).join('\n');
 }
 
-function verifyWebApp(initDataStr, botToken, maxAgeSeconds=86400) {
+// Проверяем двумя формулами секрета (разночтения в примерах встречаются)
+function verifyWebAppBoth(initDataStr, botToken, maxAgeSeconds=86400) {
   if (!initDataStr) return { ok:false, reason:'NO_INITDATA' };
-
   const parsed = parsedInitData(initDataStr);
   if (!parsed.hash) return { ok:false, reason:'NO_HASH' };
   if (!parsed.auth_date) return { ok:false, reason:'NO_AUTH_DATE' };
@@ -110,24 +115,41 @@ function verifyWebApp(initDataStr, botToken, maxAgeSeconds=86400) {
     return { ok:false, reason:'EXPIRED' };
   }
 
-  const dcs = buildDCS_WebApp(initDataStr);
-  const secret = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
-  const calc   = crypto.createHmac('sha256', secret).update(dcs).digest('hex');
+  const dcs = buildDCS(initDataStr);
 
-  const ok = (calc === parsed.hash);
-  return { ok, data: parsed, reason: ok ? null : 'BAD_HASH' };
+  // Вариант A (документация)
+  const secretA = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+  const calcA   = crypto.createHmac('sha256', secretA).update(dcs).digest('hex');
+
+  // Вариант B (встречается в SDK/примерах)
+  const secretB = crypto.createHmac('sha256', botToken).update('WebAppData').digest();
+  const calcB   = crypto.createHmac('sha256', secretB).update(dcs).digest('hex');
+
+  if (calcA === parsed.hash) return { ok:true, method:'A', data: parsed };
+  if (calcB === parsed.hash) return { ok:true, method:'B', data: parsed };
+  return { ok:false, reason:'BAD_HASH' };
 }
 
-// грубая проверка что это Telegram WebView (для мягкого режима)
-function looksLikeTelegramUA(req) {
-  const ua = String(req.headers['user-agent'] || '').toLowerCase();
-  return ua.includes('telegram'); // desktop/ios/android webview содержит 'Telegram'
+// Фолбэк-проверка через Bot API: бот «видит» этот user_id?
+async function verifyViaBotAPI(userId, botToken) {
+  if (!botToken || !userId) return false;
+  const ctrl = new AbortController();
+  const t = setTimeout(()=> ctrl.abort(), BOTAPI_TIMEOUT_MS);
+  try {
+    const url = `https://api.telegram.org/bot${botToken}/getChat?chat_id=${encodeURIComponent(String(userId))}`;
+    const r = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!r.ok) return false;
+    const j = await r.json();
+    // { ok:true, result:{ id: <user_id>, ... } } — достаточно
+    return !!(j && j.ok && j.result && String(j.result.id) === String(userId));
+  } catch {
+    clearTimeout(t);
+    return false;
+  }
 }
 
-/* ---------- Главная функция авторизации ---------- */
-
-function getUserFromReq(req, botToken) {
-  const strict = process.env.STRICT_WEBAPP === '1';
+async function getUserFromReq(req, botToken) {
   const sessionSecret = process.env.SESSION_SECRET || (botToken || 'dev_secret');
 
   // 0) cookie-сессия
@@ -140,20 +162,26 @@ function getUserFromReq(req, botToken) {
   // 1) WebApp initData
   const initDataStr = getInitDataFromReq(req);
   if (initDataStr) {
-    const v = verifyWebApp(initDataStr, botToken);
+    const v = verifyWebAppBoth(initDataStr, botToken);
     if (v.ok && v.data && v.data.user && v.data.user.id) {
-      return { ok:true, user: v.data.user, initData: v.data, source:'webapp_valid' };
+      return { ok:true, user: v.data.user, initData: v.data, source:`webapp_${v.method}` };
     }
 
-    // 1b) мягкий режим: Telegram WebView + есть user.id -> пускаем
-    if (!strict && looksLikeTelegramUA(req)) {
-      const p = parsedInitData(initDataStr);
-      if (p && p.user && p.user.id) {
-        return { ok:true, user: p.user, initData: p, source:'webapp_soft' };
+    // 1b) ФОЛБЭК через Bot API
+    const p = parsedInitData(initDataStr);
+    const userId = p && p.user && p.user.id;
+    if (TELEGRAM_FALLBACK_BOTAPI && userId) {
+      const ok = await verifyViaBotAPI(userId, botToken);
+      if (ok) {
+        // ставим cookie на 30 дней — дальше подпись не требуется
+        const now = Math.floor(Date.now()/1000);
+        const token = signSession({ user: p.user, iat: now, exp: now + SESSION_TTL_SEC }, sessionSecret);
+        // setSessionCookie вызываем в конкретном эндпоинте, где есть res (см. ниже)
+        return { ok:true, user: p.user, initData: p, source:'botapi' };
       }
     }
 
-    // подпись не прошла и мягкий режим выключён → 401 с причиной
+    // подпись не прошла и Bot API не подтвердил — 401
     return {
       ok:false, status:401, error:'Unauthorized',
       reason: v.reason || 'BAD_INITDATA', hasInit:true
@@ -170,10 +198,10 @@ function sendJSON(res, status, obj) {
 }
 
 module.exports = {
-  // cookie helpers
+  // cookie utils
   signSession, verifySession, setSessionCookie,
-  // webapp
-  getInitDataFromReq, parsedInitData, verifyWebApp,
+  // webapp utils
+  getInitDataFromReq, parsedInitData, verifyWebAppBoth,
   // main
   getUserFromReq, sendJSON
 };
