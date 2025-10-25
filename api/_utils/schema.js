@@ -2,11 +2,10 @@
 import { sql } from '@vercel/postgres';
 
 /**
- * Создаём/мигрируем структуру БД. Вызываем перед любыми запросами.
- * Повторные вызовы безопасны (IF NOT EXISTS/ALTER IF NOT EXISTS).
+ * Создаёт/мигрирует схему. Идempotентно.
  */
 export async function ensureSchema() {
-  // USERS
+  // users
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id         BIGINT PRIMARY KEY,
@@ -15,7 +14,7 @@ export async function ensureSchema() {
     );
   `;
 
-  // TASKS (могла быть создана старой версией — поэтому далее ALTER IF NOT EXISTS)
+  // tasks (могла быть создана старой версией)
   await sql`
     CREATE TABLE IF NOT EXISTS tasks (
       id         BIGSERIAL PRIMARY KEY,
@@ -29,11 +28,10 @@ export async function ensureSchema() {
       created_at TIMESTAMPTZ DEFAULT now()
     );
   `;
-  // миграции «добавить колонку, если её нет»
   await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ;`;
   await sql`CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id);`;
 
-  // FOCUS (фокус дня на пользователя — по одному)
+  // focus
   await sql`
     CREATE TABLE IF NOT EXISTS focus (
       user_id    BIGINT PRIMARY KEY,
@@ -43,5 +41,5 @@ export async function ensureSchema() {
   `;
 }
 
-// alias для обратной совместимости со старым импортом
+// alias для обратной совместимости
 export const ensureTables = ensureSchema;
