@@ -1,9 +1,5 @@
 {
   "functions": {
     "api/**/*.js": { "runtime": "nodejs20.x" }
-  },
-  "crons": [
-    { "path": "/api/cron/reminders", "schedule": "*/1 * * * *" },
-    { "path": "/api/cron/digest",    "schedule": "0 9 * * *" }
-  ]
+  }
 }
