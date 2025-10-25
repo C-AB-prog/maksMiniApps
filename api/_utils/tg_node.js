@@ -1,68 +1,72 @@
 // /api/_utils/tg_node.js
 import crypto from 'crypto';
+import { sql } from '@vercel/postgres';
+import { ensureTables } from './schema.js';
 
-/** Разбор initData, приходит строкой вида "user=...&chat_instance=...&hash=..." */
-function parseInitData(initData) {
-  const sp = new URLSearchParams(initData || '');
-  const hash = sp.get('hash');
-  sp.delete('hash');
-  const data = {};
-  for (const [k, v] of sp.entries()) data[k] = v;
-  return { hash, data };
-}
+const BOT_TOKEN = process.env.BOT_TOKEN;
 
-/** Верификация подписи по документации Telegram Web Apps */
-function checkSignature(initData, botToken) {
-  const { hash, data } = parseInitData(initData);
-  if (!hash || !botToken) return { ok: false, data };
+/**
+ * Проверка подписи Telegram WebApp.
+ * Возвращает объект user {id, username, ...} или null.
+ */
+function verifyInitData(initData) {
+  if (!initData || !BOT_TOKEN) return null;
 
-  const dataCheckString = Object.keys(data)
-    .sort()
-    .map((k) => `${k}=${data[k]}`)
-    .join('\n');
+  const url = new URLSearchParams(initData);
+  const hash = url.get('hash');
+  if (!hash) return null;
 
-  const secretKey = crypto.createHash('sha256').update(botToken).digest(); // HMAC key
-  const hmac = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
-
-  return { ok: hmac === hash, data };
-}
-
-function getUserIdFromData(data) {
-  try {
-    // поле user — JSON строка с объектом Telegram WebApp initData.user
-    const u = JSON.parse(data.user);
-    return u && typeof u.id === 'number' ? u.id : null;
-  } catch {
-    return null;
+  // формируем data_check_string
+  const pairs = [];
+  for (const [k, v] of url.entries()) {
+    if (k === 'hash') continue;
+    pairs.push(`${k}=${v}`);
   }
+  pairs.sort();
+  const dataCheckString = pairs.join('\n');
+
+  // секрет = HMAC-SHA256(SHA256("WebAppData"+BOT_TOKEN), data_check_string)
+  const secret = crypto.createHash('sha256')
+    .update('WebAppData' + BOT_TOKEN)
+    .digest();
+  const calc = crypto.createHmac('sha256', secret)
+    .update(dataCheckString)
+    .digest('hex');
+
+  if (calc !== hash) return null;
+
+  // парсим user
+  const userRaw = url.get('user');
+  if (!userRaw) return null;
+  const user = JSON.parse(userRaw);
+  if (!user?.id) return null;
+  return user;
 }
 
 /**
- * В dev-режиме (ALLOW_UNSIGNED=1) вернёт DEV_USER_ID.
- * В проде требует валидный x-telegram-init (+ BOT_TOKEN) — иначе ответ 401.
- * Возвращает объект { id, dev?: true } или null (если уже отправлен 401).
+ * Достаёт пользователя из заголовка X-Telegram-Init-Data.
+ * В DEV-режиме можно разрешить фолбэк (строго не в проде).
  */
 export async function requireUser(req, res) {
-  // DEV: позволяем работать без подписи
-  if (process.env.ALLOW_UNSIGNED === '1' && process.env.DEV_USER_ID) {
-    return { id: Number(process.env.DEV_USER_ID), dev: true };
-  }
+  const initHeader = req.headers['x-telegram-init-data'];
+  const user = verifyInitData(initHeader);
 
-  const init = req.headers['x-telegram-init'] || req.headers['x-telegram-init-data'] || '';
-  if (!init || !process.env.BOT_TOKEN) {
+  if (!user) {
+    // Разрешать без подписи ТОЛЬКО если явно включён превью/дев и переменная включена
+    if (process.env.VERCEL_ENV !== 'production' && process.env.ALLOW_UNSIGNED === '1') {
+      const devId = Number(process.env.DEV_USER_ID || 9999);
+      return { id: devId, username: 'dev' };
+    }
     res.status(401).json({ ok: false, error: 'UNAUTHORIZED' });
     return null;
   }
 
-  const { ok, data } = checkSignature(init, process.env.BOT_TOKEN);
-  if (!ok) {
-    res.status(401).json({ ok: false, error: 'BAD_SIGNATURE' });
-    return null;
-  }
-  const uid = getUserIdFromData(data);
-  if (!uid) {
-    res.status(401).json({ ok: false, error: 'NO_USER' });
-    return null;
-  }
-  return { id: Number(uid) };
+  // лениво регистрируем user в БД (таблица users)
+  await ensureTables();
+  await sql`
+    INSERT INTO users (id, username)
+    VALUES (${user.id}, ${user.username || null})
+    ON CONFLICT (id) DO UPDATE SET username = EXCLUDED.username
+  `;
+  return { id: user.id, username: user.username || null };
 }
