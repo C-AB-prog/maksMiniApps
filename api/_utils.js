@@ -1,82 +1,97 @@
 // /api/_utils.js
-// Валидация Telegram WebApp initData без повторного stringify значений.
-// data_check_string строится из сырых пар key=value (после decodeURIComponent).
+// Проверка Telegram WebApp initData:
+// - initData читаем из заголовка x-telegram-init-data ИЛИ из query ?init_data=...
+// - data_check_string строим из "сырой" строки (без decodeURIComponent)
 
 const crypto = require('crypto');
 
-// Разбор initData в два представления:
-// - raw: объект со строковыми значениями как в initData (после decodeURIComponent)
-// - parsed: то же, но user дополнительно распарсен в объект (для удобства)
-function splitInitData(initDataStr = '') {
-  const raw = {};
-  for (const pair of initDataStr.split('&')) {
-    if (!pair) continue;
-    const eq = pair.indexOf('=');
-    const k = eq >= 0 ? pair.slice(0, eq) : pair;
-    const v = eq >= 0 ? pair.slice(eq + 1) : '';
-    // decodeURIComponent — согласно докам Telegram
-    raw[decodeURIComponent(k)] = decodeURIComponent(v || '');
+function getInitDataFromReq(req) {
+  // 1) Из заголовка (обычный путь)
+  let initDataStr = req.headers['x-telegram-init-data'] || '';
+
+  // 2) Фолбэк: из query-параметра init_data (если заголовки режутся)
+  if (!initDataStr && req.url) {
+    try {
+      const u = new URL(req.url, 'http://localhost'); // базовый URL для парсинга
+      const q = u.searchParams.get('init_data');
+      if (q) initDataStr = q; // ВНИМАНИЕ: это уже "внешне" декодированная строка initData,
+                              // внутри нее проценты исходные (как выдаёт Telegram)
+    } catch (_) {}
   }
-  const parsed = { ...raw };
-  if (typeof parsed.user === 'string') {
-    try { parsed.user = JSON.parse(parsed.user); } catch { /* leave as string */ }
-  }
-  return { raw, parsed };
+  return initDataStr || '';
 }
 
-// data_check_string: сортировка по ключу, значения — ровно из raw
-function buildDataCheckStringFromRaw(raw) {
-  return Object.keys(raw)
-    .filter((k) => k !== 'hash')
-    .sort((a, b) => a.localeCompare(b))
-    .map((k) => `${k}=${raw[k]}`)
-    .join('\n');
+// parsed: значения декодированы, user распарсен для удобства
+function parsedInitData(initDataStr='') {
+  const obj = {};
+  for (const part of initDataStr.split('&')) {
+    if (!part) continue;
+    const i = part.indexOf('=');
+    const k = i>=0 ? part.slice(0,i) : part;
+    const v = i>=0 ? part.slice(i+1) : '';
+    obj[decodeURIComponent(k)] = decodeURIComponent(v || '');
+  }
+  if (typeof obj.user === 'string') {
+    try { obj.user = JSON.parse(obj.user); } catch {}
+  }
+  return obj;
 }
 
-// Основная проверка подписи. TTL по умолчанию 24 часа.
+// data_check_string: строго из "сырой" строки, без decode
+function buildDataCheckStringRaw(initDataStr='') {
+  const pairs = [];
+  for (const part of initDataStr.split('&')) {
+    if (!part) continue;
+    const i = part.indexOf('=');
+    const k = i>=0 ? part.slice(0,i) : part;
+    if (k === 'hash') continue;
+    const v = i>=0 ? part.slice(i+1) : '';
+    pairs.push([k, v]); // оба — как есть
+  }
+  pairs.sort((a,b)=> a[0].localeCompare(b[0]));
+  return pairs.map(([k,v])=> `${k}=${v}`).join('\n');
+}
+
 function verifyInitData(initDataStr, botToken, maxAgeSeconds = 86400) {
-  if (!initDataStr) return { ok: false, reason: 'NO_INITDATA' };
+  if (!initDataStr) return { ok:false, reason:'NO_INITDATA' };
 
-  const { raw, parsed } = splitInitData(initDataStr);
-  if (!raw.hash) return { ok: false, reason: 'NO_HASH' };
-  if (!raw.auth_date) return { ok: false, reason: 'NO_AUTH_DATE' };
-
-  const now = Math.floor(Date.now() / 1000);
-  const authDate = Number(raw.auth_date);
-  if (Number.isFinite(authDate) && now - authDate > maxAgeSeconds) {
-    return { ok: false, reason: 'EXPIRED' };
+  // TTL проверяем по "parsed"
+  const parsed = parsedInitData(initDataStr);
+  if (!parsed.hash) return { ok:false, reason:'NO_HASH' };
+  if (!parsed.auth_date) return { ok:false, reason:'NO_AUTH_DATE' };
+  const now = Math.floor(Date.now()/1000);
+  const authDate = Number(parsed.auth_date);
+  if (Number.isFinite(authDate) && (now - authDate) > maxAgeSeconds) {
+    return { ok:false, reason:'EXPIRED' };
   }
 
-  const dataCheckString = buildDataCheckStringFromRaw(raw);
-
-  // Официальная формула: secret_key = HMAC_SHA256(data=botToken, key="WebAppData")
-  // Затем hash = HMAC_SHA256(data_check_string, secret_key)
+  // Подпись — строго по сырой строке
+  const dataCheckString = buildDataCheckStringRaw(initDataStr);
   const secret = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
-  const calc = crypto.createHmac('sha256', secret).update(dataCheckString).digest('hex');
+  const calc   = crypto.createHmac('sha256', secret).update(dataCheckString).digest('hex');
 
-  const ok = calc === raw.hash;
+  const ok = (calc === parsed.hash);
   return { ok, data: parsed, reason: ok ? null : 'BAD_HASH' };
 }
 
 function getUserFromReq(req, botToken) {
-  const initDataStr = req.headers['x-telegram-init-data'] || '';
+  const initDataStr = getInitDataFromReq(req);
   const v = verifyInitData(initDataStr, botToken);
-
   if (!v.ok) {
-    const payload = { ok: false, status: 401, error: 'Unauthorized' };
-    if (process.env.DEBUG_INIT === '1') {
-      payload.reason = v.reason;
-      payload.hasInit = !!initDataStr;
-      payload.initLen = initDataStr.length || 0;
-    }
-    return payload;
+    return {
+      ok: false,
+      status: 401,
+      error: 'Unauthorized',
+      reason: v.reason,
+      hasInit: !!initDataStr,
+      initLen: initDataStr.length || 0
+    };
   }
-
   const user = v.data.user;
   if (!user || !user.id) {
-    return { ok: false, status: 401, error: 'Unauthorized', reason: 'NO_USER' };
+    return { ok:false, status:401, error:'Unauthorized', reason:'NO_USER' };
   }
-  return { ok: true, user, initData: v.data };
+  return { ok:true, user, initData: v.data };
 }
 
 function sendJSON(res, status, obj) {
@@ -85,8 +100,9 @@ function sendJSON(res, status, obj) {
 }
 
 module.exports = {
-  splitInitData,
-  buildDataCheckStringFromRaw,
+  getInitDataFromReq,
+  parsedInitData,
+  buildDataCheckStringRaw,
   verifyInitData,
   getUserFromReq,
   sendJSON
