@@ -14,23 +14,23 @@ export default async function handler(req, res) {
       const list = (req.query.list || 'today').toString();
       const { rows } = await sql`
         SELECT id, title, list, note, icon, done, deadline
-        FROM tasks
-        WHERE user_id=${user.id} AND list=${list}
-        ORDER BY created_at DESC
-        LIMIT 100
+          FROM tasks
+         WHERE user_id=${user.id} AND list=${list}
+         ORDER BY created_at DESC
+         LIMIT 200
       `;
       return res.status(200).json({ items: rows });
     }
 
     if (req.method === 'POST') {
-      const body = req.body || {};
-      const title = (body.title || '').toString().trim();
+      const b = req.body || {};
+      const title = (b.title || '').toString().trim();
       if (!title) return res.status(422).json({ ok: false, error: 'TITLE_REQUIRED' });
 
-      const list = (body.list || 'today').toString();
-      const note = (body.note || '').toString();
-      const icon = (body.icon || '🧩').toString();
-      const deadline = body.deadline ?? null;
+      const list = (b.list || 'today').toString();
+      const note = (b.note || '').toString();
+      const icon = (b.icon || '🧩').toString();
+      const deadline = b.deadline ?? null;
 
       const { rows } = await sql`
         INSERT INTO tasks (user_id, title, list, note, icon, deadline)
