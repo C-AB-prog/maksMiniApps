@@ -1,43 +1,50 @@
 // api/_utils/db.js
-import { sql } from '@vercel/postgres';
+import { Pool } from "pg";
 
-export function haveEnv() {
-  return {
-    has_POSTGRES_URL: !!process.env.POSTGRES_URL || !!process.env.DATABASE_URL,
-    POSTGRES_URL: process.env.POSTGRES_URL || process.env.DATABASE_URL || '',
-  };
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL
+});
+
+export async function q(text, params) {
+  const c = await pool.connect();
+  try { return await c.query(text, params) }
+  finally { c.release() }
 }
 
-export async function pingDb() {
-  try {
-    await sql`select 1 as ok`;
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e.message };
-  }
+export async function ensureTables() {
+  await q(`
+    create table if not exists users (
+      id text primary key,
+      created_at timestamp with time zone default now()
+    );
+  `);
+
+  await q(`
+    create table if not exists focus (
+      user_id text primary key references users(id) on delete cascade,
+      text text,
+      updated_at timestamp with time zone default now()
+    );
+  `);
+
+  await q(`
+    create table if not exists tasks (
+      id bigserial primary key,
+      user_id text references users(id) on delete cascade,
+      title text not null,
+      scope text default 'today',
+      due_at timestamp with time zone,
+      done boolean default false,
+      created_at timestamp with time zone default now(),
+      updated_at timestamp with time zone default now()
+    );
+  `);
+
+  // Добавим недостающие колонки (на случай старой схемы)
+  await q(`alter table tasks add column if not exists updated_at timestamp with time zone default now()`);
+  await q(`alter table tasks add column if not exists scope text default 'today'`);
 }
 
-// Упрощённый парсер userId.
-// В DEV разрешаем без подписи (ALLOW_UNSIGNED=1), берём DEV_USER_ID.
-// В prod берём userId из заголовка Telegram WebApp (initData) как plain-search.
-export function getUserId(req) {
-  const allowUnsigned = process.env.ALLOW_UNSIGNED === '1';
-  const devId = process.env.DEV_USER_ID || '12345';
-  const init = req.headers['x-telegram-init'] || '';
-
-  if (allowUnsigned) return devId;
-
-  // Пытаемся выцепить user.id из initData без верификации (минимально для MVP)
-  try {
-    const parts = decodeURIComponent(String(init));
-    const m = parts.match(/user=(%7B.*?%7D|\{.*?\})/);
-    if (m) {
-      const json = decodeURIComponent(m[1]);
-      const obj = JSON.parse(json);
-      if (obj && obj.id) return String(obj.id);
-    }
-  } catch {}
-  return null;
+export async function ensureUser(id){
+  await q(`insert into users(id) values($1) on conflict do nothing`, [id]);
 }
-
-export default sql;
