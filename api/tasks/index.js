@@ -1,48 +1,37 @@
-// /api/tasks/index.js
-import { sql } from '@vercel/postgres';
-import { requireUser } from '../_utils/tg_node.js';
-import { ensureTables } from '../_utils/schema.js';
+// api/tasks/index.js
+import { getUserFromRequest } from "../_utils/auth.js";
+import { q, ensureTables, ensureUser } from "../_utils/db.js";
 
-export default async function handler(req, res) {
-  const user = await requireUser(req, res);
-  if (!user) return;
+export default async function handler(req,res){
+  try{
+    await ensureTables();
+    const { user_id } = getUserFromRequest(req);
+    await ensureUser(user_id);
 
-  await ensureTables();
-
-  try {
-    if (req.method === 'GET') {
-      const list = (req.query.list || 'today').toString();
-      const { rows } = await sql`
-        SELECT id, title, list, note, icon, done, deadline
-          FROM tasks
-         WHERE user_id=${user.id} AND list=${list}
-         ORDER BY created_at DESC
-         LIMIT 200
-      `;
-      return res.status(200).json({ items: rows });
+    if(req.method === "GET"){
+      const r = await q(
+        `select id,title,scope,due_at,done,created_at,updated_at
+         from tasks
+         where user_id=$1
+         order by done asc, coalesce(due_at, now()+interval '100 years') asc, id desc`,
+        [user_id]
+      );
+      return res.status(200).json({tasks:r.rows});
     }
 
-    if (req.method === 'POST') {
-      const b = req.body || {};
-      const title = (b.title || '').toString().trim();
-      if (!title) return res.status(422).json({ ok: false, error: 'TITLE_REQUIRED' });
-
-      const list = (b.list || 'today').toString();
-      const note = (b.note || '').toString();
-      const icon = (b.icon || '🧩').toString();
-      const deadline = b.deadline ?? null;
-
-      const { rows } = await sql`
-        INSERT INTO tasks (user_id, title, list, note, icon, deadline)
-        VALUES (${user.id}, ${title}, ${list}, ${note}, ${icon}, ${deadline})
-        RETURNING id, title, list, note, icon, done, deadline
-      `;
-      return res.status(200).json(rows[0]);
+    if(req.method === "POST"){
+      const { title, due_at, scope } = JSON.parse(req.body||"{}");
+      if(!title) return res.status(400).json({error:"TITLE_REQUIRED"});
+      const r = await q(
+        `insert into tasks(user_id,title,scope,due_at)
+         values($1,$2,$3,$4) returning id`,
+        [user_id, title, scope||'today', due_at||null]
+      );
+      return res.status(200).json({id:r.rows[0].id});
     }
 
-    return res.status(405).end();
-  } catch (e) {
-    console.error('tasks/index error:', e);
-    return res.status(500).json({ ok: false, error: e?.message || String(e) });
+    res.status(405).json({error:"METHOD_NOT_ALLOWED"});
+  }catch(e){
+    res.status(e.status||500).json({error:e.message||"SERVER_ERROR"});
   }
 }
