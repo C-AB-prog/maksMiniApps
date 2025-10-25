@@ -2,19 +2,20 @@
 import { sql } from '@vercel/postgres';
 
 /**
- * Создаёт таблицы, если их ещё нет. Вызываем перед любыми запросами.
+ * Создаём/мигрируем структуру БД. Вызываем перед любыми запросами.
+ * Повторные вызовы безопасны (IF NOT EXISTS/ALTER IF NOT EXISTS).
  */
 export async function ensureSchema() {
-  // пользователи
+  // USERS
   await sql`
     CREATE TABLE IF NOT EXISTS users (
-      id        BIGINT PRIMARY KEY,
-      username  TEXT,
+      id         BIGINT PRIMARY KEY,
+      username   TEXT,
       created_at TIMESTAMPTZ DEFAULT now()
     );
   `;
 
-  // задачи
+  // TASKS (могла быть создана старой версией — поэтому далее ALTER IF NOT EXISTS)
   await sql`
     CREATE TABLE IF NOT EXISTS tasks (
       id         BIGSERIAL PRIMARY KEY,
@@ -25,13 +26,22 @@ export async function ensureSchema() {
       icon       TEXT,
       done       BOOLEAN NOT NULL DEFAULT FALSE,
       deadline   TIMESTAMPTZ,
-      created_at TIMESTAMPTZ DEFAULT now(),
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+  `;
+  // миграции «добавить колонку, если её нет»
+  await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ;`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id);`;
+
+  // FOCUS (фокус дня на пользователя — по одному)
+  await sql`
+    CREATE TABLE IF NOT EXISTS focus (
+      user_id    BIGINT PRIMARY KEY,
+      text       TEXT NOT NULL,
       updated_at TIMESTAMPTZ DEFAULT now()
     );
   `;
-
-  await sql`CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id);`;
 }
 
-/** alias для старого импорта */
+// alias для обратной совместимости со старым импортом
 export const ensureTables = ensureSchema;
