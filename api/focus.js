@@ -1,35 +1,30 @@
-// /api/focus.js
-import { sql } from '@vercel/postgres';
-import { requireUser } from './_utils/tg_node.js';
-import { ensureTables } from './_utils/schema.js';
+// api/focus.js
+import { getUserFromRequest } from "./_utils/auth.js";
+import { q, ensureTables, ensureUser } from "./_utils/db.js";
 
-export default async function handler(req, res) {
-  const user = await requireUser(req, res);
-  if (!user) return;
+export default async function handler(req, res){
+  try{
+    await ensureTables();
+    const { user_id } = getUserFromRequest(req);
+    await ensureUser(user_id);
 
-  await ensureTables();
-
-  try {
-    if (req.method === 'GET') {
-      const { rows } = await sql`SELECT text FROM focus WHERE user_id=${user.id}`;
-      return res.status(200).json({ text: rows[0]?.text || '' });
+    if(req.method === "GET"){
+      const r = await q(`select text, updated_at from focus where user_id=$1`, [user_id]);
+      return res.status(200).json(r.rows[0] || {});
     }
 
-    if (req.method === 'PUT') {
-      const text = ((req.body?.text) ?? '').toString();
-      const { rows } = await sql`
-        INSERT INTO focus (user_id, text, updated_at)
-        VALUES (${user.id}, ${text}, now())
-        ON CONFLICT (user_id) DO UPDATE
-          SET text = EXCLUDED.text, updated_at = now()
-        RETURNING text
-      `;
-      return res.status(200).json({ text: rows[0].text });
+    if(req.method === "PUT"){
+      const { text } = JSON.parse(req.body||"{}");
+      await q(`
+        insert into focus(user_id, text, updated_at)
+        values ($1,$2,now())
+        on conflict (user_id) do update set text=excluded.text, updated_at=now()
+      `,[user_id, text||null]);
+      return res.status(200).json({ok:true});
     }
 
-    return res.status(405).end();
-  } catch (e) {
-    console.error('focus error:', e);
-    return res.status(500).json({ ok: false, error: e?.message || String(e) });
+    res.status(405).json({error:"METHOD_NOT_ALLOWED"});
+  }catch(e){
+    res.status(e.status||500).json({error:e.message||"SERVER_ERROR"});
   }
 }
