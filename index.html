@@ -71,10 +71,8 @@
       </div>
     </div>
 
-    <!-- Главная -->
     <section id="view-home" class="view active">
       <h2>Сегодня</h2>
-
       <div class="card">
         <div class="row" style="margin-bottom:10px"><div class="chip">Фокус дня</div></div>
         <div class="row">
@@ -105,19 +103,16 @@
       <div id="tasks"></div>
     </section>
 
-    <!-- План -->
     <section id="view-plan" class="view">
       <h2>План</h2>
       <div class="card"><div class="muted">Скоро тут появится спринт-план и HADI-эксперименты.</div></div>
     </section>
 
-    <!-- Календарь -->
     <section id="view-calendar" class="view">
       <h2>Календарь</h2>
       <div class="card"><div class="muted">Календарь читает задачи и дедлайны — сейчас в режиме чтения.</div></div>
     </section>
 
-    <!-- Профиль -->
     <section id="view-profile" class="view">
       <h2>Профиль</h2>
       <div class="card"><div class="muted">Версия мини-аппа. Все данные сохраняются в облаке по вашему Telegram ID.</div></div>
@@ -133,7 +128,6 @@
     <div class="tab" data-view="profile">Профиль</div>
   </nav>
 
-  <!-- Chat Modal -->
   <div class="modal" id="chat">
     <div class="scrim" id="chat-close" aria-label="Закрыть чат"></div>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="chat-title">
@@ -152,19 +146,21 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    // ---------- Helpers ----------
     const tg = window.Telegram?.WebApp;
     if (tg?.expand) try{ tg.expand() }catch(e){}
     const tabs = [...document.querySelectorAll('.tab')];
 
+    // API: передаём initData и в заголовке, и в query (?init_data=...)
     const API = (path, opt={}) => {
       const base = window.location.origin;
       const initData = tg?.initData || '';
+      const qs = `${path.includes('?') ? '&' : '?'}init_data=${encodeURIComponent(initData)}`;
+      const url = `${base}/api${path}${qs}`;
       const headers = Object.assign({
         'Content-Type':'application/json',
         'x-telegram-init-data': initData
       }, (opt.headers || {}));
-      return fetch(`${base}/api${path}`, Object.assign({}, opt, {headers}))
+      return fetch(url, Object.assign({}, opt, {headers}))
         .then(async r=>{
           if(!r.ok){
             let msg = `${r.status}`;
@@ -208,18 +204,16 @@
       return new Date(y, (m-1), d, +hh, +mm, 0, 0);
     }
     function fmtDateTime(dt){
-      return dt.toLocaleString(undefined, {
-        year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit'
-      });
+      return dt.toLocaleString(undefined, { year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit' });
     }
 
-    // ---------- Focus ----------
+    // Focus
     async function loadFocus(){
       try{
         const data = await API('/focus');
         document.getElementById('focus-input').value = data?.text || '';
         document.getElementById('focus-hint').textContent = data?.updated_at ? `Обновлено: ${fmtDateTime(new Date(data.updated_at))}` : '';
-      }catch(e){ /* молчим */ }
+      }catch(e){ /* ни звука */ }
     }
     async function saveFocus(){
       const text = document.getElementById('focus-input').value.trim();
@@ -227,97 +221,73 @@
       const btn = document.getElementById('focus-save'); btn.disabled = true;
       try{
         await API('/focus', {method:'PUT', body:JSON.stringify({text})});
-        toast('Фокус сохранён ✅');
-        loadFocus();
-      }catch(e){
-        toast('Открой мини-приложение через кнопку бота в Telegram.');
-      }finally{ btn.disabled = false; }
+        toast('Фокус сохранён ✅'); loadFocus();
+      }catch(e){ toast('Нет авторизации Telegram WebApp. Открой через кнопку бота.'); }
+      finally{ btn.disabled=false; }
     }
     document.getElementById('focus-save').onclick = saveFocus;
     document.getElementById('focus-input').addEventListener('keydown', (e)=>{ if(e.key==='Enter') saveFocus(); });
-    document.getElementById('focus-edit').addEventListener('click', ()=>{
-      const el = document.getElementById('focus-input'); el.focus(); el.select();
-    });
+    document.getElementById('focus-edit').addEventListener('click', ()=>{ const el=document.getElementById('focus-input'); el.focus(); el.select(); });
 
-    // ---------- Tasks ----------
+    // Tasks
     const tasksEl = document.getElementById('tasks');
-    function renderEmpty(){
-      const d = document.createElement('div'); d.className='empty'; d.textContent='Пока задач нет — добавьте первую 👇'; tasksEl.appendChild(d);
-    }
+    function renderEmpty(){ const d=document.createElement('div'); d.className='empty'; d.textContent='Пока задач нет — добавьте первую 👇'; tasksEl.appendChild(d); }
     function taskRow(t){
-      const row = document.createElement('div'); row.className='task'+(t.done?' done':'');
-      const dot = document.createElement('div'); dot.className='dot'; dot.textContent='•';
-      const grow = document.createElement('div'); grow.className='grow';
-      const ttl = document.createElement('div'); ttl.className='title'; ttl.textContent = t.title || 'Без названия';
-      grow.appendChild(ttl);
-      if(t.due_at){ const sub = document.createElement('div'); sub.className='sub'; sub.textContent=`Дедлайн: ${fmtDateTime(new Date(t.due_at))}`; grow.appendChild(sub); }
-      const actions = document.createElement('div'); actions.className='actions';
-      const btnToggle = document.createElement('button'); btnToggle.className='toggle'; btnToggle.setAttribute('aria-label','Переключить готовность'); btnToggle.title='Готово'; btnToggle.textContent='✓';
-      const btnDel = document.createElement('button'); btnDel.className='toggle'; btnDel.setAttribute('aria-label','Удалить задачу'); btnDel.title='Удалить'; btnDel.textContent='✕';
-      btnToggle.onclick = ()=> toggleTask(t.id, !t.done);
-      btnDel.onclick = ()=> removeTask(t.id);
-      actions.append(btnToggle, btnDel);
-      row.append(dot, grow, actions); return row;
+      const row=document.createElement('div'); row.className='task'+(t.done?' done':'');
+      const dot=document.createElement('div'); dot.className='dot'; dot.textContent='•';
+      const grow=document.createElement('div'); grow.className='grow';
+      const ttl=document.createElement('div'); ttl.className='title'; ttl.textContent=t.title||'Без названия'; grow.appendChild(ttl);
+      if(t.due_at){ const sub=document.createElement('div'); sub.className='sub'; sub.textContent=`Дедлайн: ${fmtDateTime(new Date(t.due_at))}`; grow.appendChild(sub); }
+      const actions=document.createElement('div'); actions.className='actions';
+      const btnToggle=document.createElement('button'); btnToggle.className='toggle'; btnToggle.title='Готово'; btnToggle.textContent='✓';
+      const btnDel=document.createElement('button'); btnDel.className='toggle'; btnDel.title='Удалить'; btnDel.textContent='✕';
+      btnToggle.onclick=()=>toggleTask(t.id,!t.done); btnDel.onclick=()=>removeTask(t.id);
+      actions.append(btnToggle,btnDel); row.append(dot,grow,actions); return row;
     }
     async function loadTasks(){
-      tasksEl.innerHTML = '';
-      try{
-        const data = await API('/tasks');
-        const list = Array.isArray(data?.tasks) ? data.tasks : [];
-        if(!list.length){ renderEmpty(); return; }
-        list.forEach(t=> tasksEl.appendChild(taskRow(t)));
+      tasksEl.innerHTML=''; try{
+        const data=await API('/tasks'); const list=Array.isArray(data?.tasks)?data.tasks:[];
+        if(!list.length){ renderEmpty(); return; } list.forEach(t=>tasksEl.appendChild(taskRow(t)));
       }catch(e){ renderEmpty(); }
     }
     async function addTask(){
-      const titleEl = document.getElementById('task-title');
-      const date = document.getElementById('task-date').value;
-      const time = document.getElementById('task-time').value;
-      const title = titleEl.value.trim();
-      if(!title) return toast('Введите название задачи');
-      const due = buildLocalDate(date, time);
-      const payload = { title, scope: currentScope, due_at: due ? new Date(due.getTime() - due.getTimezoneOffset()*60000).toISOString() : null };
-      const btn = document.getElementById('task-add'); btn.disabled = true;
-      try{
-        await API('/tasks', {method:'POST', body:JSON.stringify(payload)});
-        titleEl.value=''; toast('Задача добавлена ✅'); await loadTasks();
-      }catch(e){ toast('Открой мини-приложение через кнопку бота в Telegram.'); }
+      const titleEl=document.getElementById('task-title');
+      const date=document.getElementById('task-date').value;
+      const time=document.getElementById('task-time').value;
+      const title=titleEl.value.trim(); if(!title) return toast('Введите название задачи');
+      const due=buildLocalDate(date,time);
+      const payload={ title, scope: currentScope, due_at: due ? new Date(due.getTime()-due.getTimezoneOffset()*60000).toISOString() : null };
+      const btn=document.getElementById('task-add'); btn.disabled=true;
+      try{ await API('/tasks',{method:'POST', body:JSON.stringify(payload)}); titleEl.value=''; toast('Задача добавлена ✅'); await loadTasks(); }
+      catch(e){ toast('Нет авторизации Telegram WebApp. Открой через кнопку бота.'); }
       finally{ btn.disabled=false; }
     }
-    document.getElementById('task-add').onclick = addTask;
-    document.getElementById('task-title').addEventListener('keydown', (e)=>{ if(e.key==='Enter') addTask(); });
-    async function toggleTask(id, done){ try{ await API(`/tasks/${id}`, {method:'PUT', body:JSON.stringify({done})}); await loadTasks(); }catch(e){ toast('Не удалось изменить статус (открой через кнопку бота)'); } }
-    async function removeTask(id){ if(!confirm('Удалить задачу?')) return; try{ await API(`/tasks/${id}`, {method:'DELETE'}); await loadTasks(); }catch(e){ toast('Не удалось удалить (открой через кнопку бота)'); } }
+    document.getElementById('task-add').onclick=addTask;
+    document.getElementById('task-title').addEventListener('keydown',(e)=>{ if(e.key==='Enter') addTask(); });
+    async function toggleTask(id,done){ try{ await API(`/tasks/${id}`,{method:'PUT', body:JSON.stringify({done})}); await loadTasks(); }catch(e){ toast('Не удалось изменить статус (нужен запуск из бота)'); } }
+    async function removeTask(id){ if(!confirm('Удалить задачу?')) return; try{ await API(`/tasks/${id}`,{method:'DELETE'}); await loadTasks(); }catch(e){ toast('Не удалось удалить (нужен запуск из бота)'); } }
 
-    // ---------- Chat ----------
-    const chat = { modal: document.getElementById('chat'), openBtn: document.getElementById('chat-open'), closeBtn: document.getElementById('chat-x'), scrim: document.getElementById('chat-close'), list: document.getElementById('messages'), input: document.getElementById('chat-input'), send: document.getElementById('chat-send') };
-    const openChat = ()=> { chat.modal.classList.add('open'); setTimeout(()=> chat.input?.focus(), 10); };
-    const closeChat = ()=> chat.modal.classList.remove('open');
-    chat.openBtn.onclick = openChat; chat.closeBtn.onclick = closeChat; chat.scrim.onclick = closeChat;
-    function pushBubble(text, me=false){ const b = document.createElement('div'); b.className='bubble '+(me?'me':'ai'); b.textContent=text; chat.list.appendChild(b); chat.list.scrollTop = chat.list.scrollHeight; }
-    async function sendChat(){
-      const q = chat.input.value.trim(); if(!q) return;
-      pushBubble(q, true); chat.input.value='';
-      try{ const r = await API('/chat', {method:'POST', body:JSON.stringify({q})}); pushBubble(r?.a || '…'); }
-      catch(e){ pushBubble('Открой мини-приложение через кнопку бота, чтобы чат работал.'); }
-    }
-    chat.send.onclick = sendChat; chat.input.onkeydown = (e)=> (e.key==='Enter') && sendChat();
+    // Chat
+    const chat={ modal:document.getElementById('chat'), openBtn:document.getElementById('chat-open'), closeBtn:document.getElementById('chat-x'), scrim:document.getElementById('chat-close'), list:document.getElementById('messages'), input:document.getElementById('chat-input'), send:document.getElementById('chat-send') };
+    const openChat=()=>{ chat.modal.classList.add('open'); setTimeout(()=>chat.input?.focus(),10); };
+    const closeChat=()=> chat.modal.classList.remove('open');
+    chat.openBtn.onclick=openChat; chat.closeBtn.onclick=closeChat; chat.scrim.onclick=closeChat;
+    function pushBubble(text,me=false){ const b=document.createElement('div'); b.className='bubble '+(me?'me':'ai'); b.textContent=text; chat.list.appendChild(b); chat.list.scrollTop=chat.list.scrollHeight; }
+    async function sendChat(){ const q=chat.input.value.trim(); if(!q) return; pushBubble(q,true); chat.input.value='';
+      try{ const r=await API('/chat',{method:'POST', body:JSON.stringify({q})}); pushBubble(r?.a||'…'); }
+      catch(e){ pushBubble('Открой мини-приложение через кнопку бота, чтобы чат работал.'); } }
+    chat.send.onclick=sendChat; chat.input.onkeydown=(e)=> (e.key==='Enter') && sendChat();
 
-    // ---------- Tabs ----------
-    function showView(id){ document.querySelectorAll('.view').forEach(v=> v.classList.remove('active')); document.getElementById('view-'+id).classList.add('active'); tabs.forEach(t=> t.classList.toggle('active', t.dataset.view===id)); }
+    // Tabs
+    function showView(id){ document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); document.getElementById('view-'+id).classList.add('active'); tabs.forEach(t=>t.classList.toggle('active', t.dataset.view===id)); }
     tabs.forEach(t=> t.addEventListener('click', ()=> showView(t.dataset.view)));
 
-    // ---------- Init ----------
-    async function waitInitData(retries=5){
-      for (let i=0; i<retries; i++){ if (window.Telegram?.WebApp?.initData) return true; await new Promise(r=> setTimeout(r, 200)); }
+    // Init
+    async function waitInitData(retries=10){
+      for (let i=0;i<retries;i++){ if (window.Telegram?.WebApp?.initData) return true; await new Promise(r=>setTimeout(r,150)); }
       return !!(window.Telegram?.WebApp?.initData);
     }
-    async function probeAPI(){
-      if (!navigator.onLine) return false;
-      const hasInit = await waitInitData(); if (!hasInit) return false;
-      try{ const ctrl = new AbortController(); const t = setTimeout(()=> ctrl.abort(), 1500); const r = await fetch(`${location.origin}/api/health`, { signal: ctrl.signal }); clearTimeout(t); return r.ok; }
-      catch(_){ return false; }
-    }
-    async function init(){ const ok = await probeAPI(); if (!ok) { toast('Открой мини-приложение через кнопку бота в Telegram.'); } await Promise.all([loadFocus(), loadTasks()]); }
+    async function init(){ await waitInitData(); await Promise.all([loadFocus(), loadTasks()]); }
     init();
   </script>
 </body>
