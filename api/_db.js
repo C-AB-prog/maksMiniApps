@@ -7,11 +7,13 @@ const { Pool } = require('pg');
 // Берём строку подключения прежде всего из POSTGRES_URL.
 // Остальные ключи оставлены как резервные, если ты их уже настроил.
 const cn =
+  process.env.MANUAL_POSTGRES_URL ||   // читаем в приоритете
   process.env.POSTGRES_URL ||
   process.env.DATABASE_URL ||
   process.env.POSTGRES_PRISMA_URL ||
   process.env.DATABASE_URL_UNPOOLED ||
   process.env.POSTGRES_URL_NON_POOLING;
+
 
 if (!cn) {
   // Не падаем синхронно — чтобы обработчик мог вернуть понятную ошибку JSON.
