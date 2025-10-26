@@ -1,44 +1,77 @@
-const { getOrCreateUser, readJSON, sendJSON } = require('../_utils');
+// /api/tasks/[id].js
+exports.config = { runtime: 'nodejs20.x' };
+
+const { sendJSON, readJSON, getOrCreateUser } = require('../_utils');
 const { pool, ensureSchema, upsertUser } = require('../_db');
 
-module.exports = async (req,res)=>{
-  try{
-    const idFromUrl = (req.url||'').split('?')[0].split('/').pop();
-    const taskId = Number(idFromUrl); if(!taskId) return sendJSON(res,400,{error:'BAD_ID'});
-    if(!['PUT','DELETE'].includes(req.method)){ res.setHeader('Allow','PUT, DELETE'); return sendJSON(res,405,{error:'Method Not Allowed'}); }
-    const qs = (()=>{ try{ return new URL(req.url,'http://x').searchParams }catch{ return new URLSearchParams() } })();
-    const tz = qs.get('tz') || null;
+function getIdFromUrl(url) {
+  const u = new URL(url, 'http://x');
+  const parts = u.pathname.split('/'); // /api/tasks/123
+  const raw = parts[parts.length - 1];
+  const id = Number(raw);
+  return Number.isFinite(id) ? id : null;
+}
 
-    const { user } = getOrCreateUser(req,res);
-    await ensureSchema(); await upsertUser(user, tz);
+function parseISOorNull(v) {
+  if (!v) return null;
+  const d = new Date(v);
+  if (isNaN(d)) return null;
+  return d.toISOString();
+}
 
-    if(req.method==='PUT'){
+module.exports = async (req, res) => {
+  try {
+    const id = getIdFromUrl(req.url);
+    if (!id) return sendJSON(res, 400, { error: 'BAD_ID' });
+
+    const { user } = getOrCreateUser(req, res);
+    const tz = (new URL(req.url, 'http://x').searchParams.get('tz')) || 'UTC';
+
+    await ensureSchema();
+    await upsertUser(user, tz);
+
+    if (req.method === 'PUT') {
       const b = await readJSON(req);
-      const fields=[]; const params=[]; let p=1;
-      if(typeof b.done==='boolean'){ fields.push(`done=$${p++}`); params.push(b.done); }
-      if(typeof b.title==='string'){ fields.push(`title=$${p++}`); params.push(String(b.title).slice(0,500)); }
-      if(typeof b.notes==='string'){ fields.push(`notes=$${p++}`); params.push(String(b.notes).slice(0,4000)); }
-      if(typeof b.scope==='string' && ['today','week','backlog'].includes(b.scope)){ fields.push(`scope=$${p++}`); params.push(b.scope); }
-      if(Number.isFinite(b.priority)){ fields.push(`priority=$${p++}`); params.push(Math.max(-999, Math.min(999, Number(b.priority)))); }
-      if(b.parent_id!==undefined){ fields.push(`parent_id=$${p++}`); params.push(b.parent_id? Number(b.parent_id): null); }
-      if(b.due_at!==undefined){ fields.push(`due_at=$${p++}`); params.push(b.due_at? new Date(b.due_at): null); }
-      if(b.remind_at!==undefined){ fields.push(`remind_at=$${p++}`); params.push(b.remind_at? new Date(b.remind_at): null); }
-      if(!fields.length) return sendJSON(res,400,{error:'NO_FIELDS'});
 
-      fields.push(`updated_at=now()`);
-      params.push(user.id); params.push(taskId);
+      // поддержка простого тога done
+      if (typeof b.done === 'boolean') {
+        await pool.query(
+          `update tasks set done=$1 where id=$2 and user_id=$3`,
+          [b.done, id, user.id]
+        );
+        return sendJSON(res, 200, { ok: true });
+      }
 
-      const { rows } = await pool.query(
-        `UPDATE tasks SET ${fields.join(', ')} WHERE user_id=$${p++} AND id=$${p}
-         RETURNING id,user_id,parent_id,title,notes,scope,priority,done,due_at,remind_at,created_at,updated_at`,
-        params
+      // поддержка обновления полей (если понадобится из UI позже)
+      const title = b.title != null ? String(b.title).trim() : null;
+      const scope = b.scope && ['today','week','backlog'].includes(b.scope) ? b.scope : null;
+      const due_at = parseISOorNull(b.due_at);
+      const remind_at = parseISOorNull(b.remind_at);
+      const priority = Number.isFinite(+b.priority) ? +b.priority : null;
+      const notes = b.notes != null ? String(b.notes).slice(0,2000) : null;
+
+      await pool.query(
+        `update tasks set
+           title = coalesce($1, title),
+           scope = coalesce($2, scope),
+           due_at = coalesce($3, due_at),
+           remind_at = coalesce($4, remind_at),
+           priority = coalesce($5, priority),
+           notes = coalesce($6, notes)
+         where id=$7 and user_id=$8`,
+        [title, scope, due_at, remind_at, priority, notes, id, user.id]
       );
-      if(!rows[0]) return sendJSON(res,404,{error:'NOT_FOUND'});
-      return sendJSON(res,200, rows[0]);
+      return sendJSON(res, 200, { ok: true });
     }
 
-    const { rowCount } = await pool.query(`DELETE FROM tasks WHERE user_id=$1 AND id=$2`, [user.id, taskId]);
-    if(!rowCount) return sendJSON(res,404,{error:'NOT_FOUND'});
-    res.statusCode = 204; res.end();
-  }catch(e){ return sendJSON(res,500,{error:e.message}); }
+    if (req.method === 'DELETE') {
+      await pool.query(`delete from tasks where id=$1 and user_id=$2`, [id, user.id]);
+      return sendJSON(res, 200, { ok: true });
+    }
+
+    res.setHeader('Allow', 'PUT, DELETE');
+    return sendJSON(res, 405, { error: 'Method Not Allowed' });
+  } catch (e) {
+    return sendJSON(res, 500, { error: e.message || String(e) });
+  }
 };
