@@ -1,131 +1,71 @@
+// /api/_db.js
 const { Pool } = require('pg');
 
-const connStr =
-  process.env.DATABASE_URL ||
-  process.env.POSTGRES_URL ||
-  process.env.POSTGRES_URL_NON_POOLING ||
-  process.env.POSTGRES_PRISMA_URL || '';
-
-if (!connStr) throw new Error('DB connection string is missing.');
-
-let pool;
-if (globalThis.__ga_pg_pool) {
-  pool = globalThis.__ga_pg_pool;
-} else {
-  pool = new Pool({
-    connectionString: connStr,
-    ssl: { rejectUnauthorized: false },
-    max: 3,
-    connectionTimeoutMillis: 5000,
-    idleTimeoutMillis: 10000
-  });
-  globalThis.__ga_pg_pool = pool;
+const DATABASE_URL = process.env.DATABASE_URL || '';
+if (!DATABASE_URL) {
+  throw new Error('DATABASE_URL is not set');
 }
 
-let _ready;
+// Для Neon и большинства managed PG нужен SSL.
+// Если в строке уже есть ?sslmode=require — ok; на всякий случай включим SSL явно.
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+// Создание таблиц, если их нет
 async function ensureSchema() {
-  if (_ready) return _ready;
-  _ready = (async () => {
-    const c = await pool.connect();
-    try {
-      await c.query('BEGIN');
-
-      await c.query(`
-        CREATE TABLE IF NOT EXISTS users (
-          id         BIGINT PRIMARY KEY,           -- Telegram user_id или анонимный
-          username   TEXT,
-          first_name TEXT,
-          last_name  TEXT,
-          tz         TEXT,                         -- IANA TZ
-          created_at TIMESTAMPTZ DEFAULT now()
-        );
-      `);
-
-      await c.query(`
-        CREATE TABLE IF NOT EXISTS focus (
-          user_id    BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-          text       TEXT NOT NULL DEFAULT '',
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-          updated_by TEXT
-        );
-      `);
-
-      await c.query(`
-        CREATE TABLE IF NOT EXISTS tasks (
-          id         BIGSERIAL PRIMARY KEY,
-          user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-          parent_id  BIGINT REFERENCES tasks(id) ON DELETE CASCADE, -- подзадачи
-          title      TEXT NOT NULL,
-          notes      TEXT,
-          scope      TEXT NOT NULL DEFAULT 'today',
-          priority   INT NOT NULL DEFAULT 0,
-          done       BOOLEAN NOT NULL DEFAULT FALSE,
-          due_at     TIMESTAMPTZ,
-          remind_at  TIMESTAMPTZ,
-          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        );
-      `);
-      await c.query(`CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id, created_at DESC);`);
-      await c.query(`CREATE INDEX IF NOT EXISTS idx_tasks_due ON tasks(user_id, due_at);`);
-      await c.query(`CREATE INDEX IF NOT EXISTS idx_tasks_parent ON tasks(user_id, parent_id);`);
-      await c.query(`CREATE INDEX IF NOT EXISTS idx_tasks_remind ON tasks(user_id, remind_at);`);
-
-      await c.query(`
-        CREATE TABLE IF NOT EXISTS notifications (
-          id        BIGSERIAL PRIMARY KEY,
-          user_id   BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-          task_id   BIGINT REFERENCES tasks(id) ON DELETE CASCADE,
-          type      TEXT NOT NULL,            -- 'reminder' | 'digest'
-          run_at    TIMESTAMPTZ NOT NULL,
-          payload   JSONB,
-          sent_at   TIMESTAMPTZ,
-          error     TEXT
-        );
-      `);
-      await c.query(`CREATE INDEX IF NOT EXISTS idx_notifications_run ON notifications(user_id, run_at) WHERE sent_at IS NULL;`);
-
-      await c.query(`
-        CREATE TABLE IF NOT EXISTS experiments (
-          id         BIGSERIAL PRIMARY KEY,
-          user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-          title      TEXT NOT NULL,
-          hypothesis TEXT,
-          action     TEXT,
-          metric     TEXT,
-          target     TEXT,
-          status     TEXT NOT NULL DEFAULT 'planned', -- planned|running|done|canceled
-          start_at   TIMESTAMPTZ,
-          end_at     TIMESTAMPTZ,
-          result     TEXT,
-          next_step  TEXT,
-          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        );
-      `);
-
-      await c.query('COMMIT');
-    } catch (e) {
-      await c.query('ROLLBACK'); _ready = undefined; throw e;
-    } finally {
-      c.release();
-    }
-  })();
-  return _ready;
+  await pool.query(`
+    create table if not exists users(
+      id bigint primary key,
+      username text,
+      first_name text,
+      last_name text,
+      tz text default 'UTC',
+      created_at timestamptz default now(),
+      updated_at timestamptz default now()
+    );
+    create table if not exists focus(
+      user_id bigint primary key references users(id) on delete cascade,
+      text text not null,
+      updated_at timestamptz default now()
+    );
+    create table if not exists tasks(
+      id bigserial primary key,
+      user_id bigint not null references users(id) on delete cascade,
+      title text not null,
+      scope text default 'today',
+      done boolean default false,
+      priority int default 0,
+      due_at timestamptz,
+      remind_at timestamptz,
+      notes text,
+      created_at timestamptz default now()
+    );
+    create table if not exists notifications(
+      id bigserial primary key,
+      user_id bigint not null,
+      task_id bigint,
+      type text not null,  -- 'reminder' | 'digest'
+      run_at timestamptz default now(),
+      payload jsonb,
+      sent_at timestamptz,
+      error text
+    );
+  `);
 }
 
-async function upsertUser(u, tz) {
-  await ensureSchema();
-  const { id, username=null, first_name=null, last_name=null } = u || {};
+async function upsertUser(u, tz='UTC') {
   await pool.query(
-    `INSERT INTO users (id, username, first_name, last_name, tz)
-     VALUES ($1,$2,$3,$4,$5)
-     ON CONFLICT (id) DO UPDATE
-       SET username=EXCLUDED.username,
-           first_name=EXCLUDED.first_name,
-           last_name=EXCLUDED.last_name,
-           tz=COALESCE(EXCLUDED.tz, users.tz)`,
-    [id, username, first_name, last_name, tz || null]
+    `insert into users (id, username, first_name, last_name, tz)
+     values ($1,$2,$3,$4,$5)
+     on conflict (id) do update set
+       username = excluded.username,
+       first_name = excluded.first_name,
+       last_name  = excluded.last_name,
+       tz = coalesce(excluded.tz, users.tz),
+       updated_at = now()`,
+    [u.id, u.username || null, u.first_name || null, u.last_name || null, tz || 'UTC']
   );
 }
 
