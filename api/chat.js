@@ -1,25 +1,41 @@
-const { getOrCreateUser, readJSON, sendJSON } = require('./_utils');
-const { ensureSchema, upsertUser } = require('./_db');
+// /api/chat.js
+exports.config = { runtime: 'nodejs20.x' };
 
-module.exports = async (req,res)=>{
-  try{
-    if(req.method!=='POST'){ res.setHeader('Allow','POST'); return sendJSON(res,405,{error:'Method Not Allowed'}); }
-    const qs = (()=>{ try{ return new URL(req.url,'http://x').searchParams }catch{ return new URLSearchParams() } })();
-    const tz = qs.get('tz') || null;
+const { sendJSON, readJSON, getOrCreateUser } = require('./_utils');
 
-    const { user } = getOrCreateUser(req,res);
-    await ensureSchema(); await upsertUser(user, tz);
+module.exports = async (req, res) => {
+  try {
+    if (req.method !== 'POST') {
+      res.setHeader('Allow', 'POST');
+      return sendJSON(res, 405, { error: 'Method Not Allowed' });
+    }
 
+    const { user } = getOrCreateUser(req, res);
     const body = await readJSON(req);
-    const q = String(body.q||'').trim();
+    const q = String(body.q || '').trim();
+    if (!q) return sendJSON(res, 400, { error: 'EMPTY' });
 
-    // мини-подсказки до подключения LLM
-    let a = 'Я могу: сформировать фокус, разбить задачу на подзадачи, расставить приоритеты, составить план, поставить напоминания.';
-    if (/фокус/i.test(q)) a = 'Ок, давай сформируем фокус. Напиши главную цель на сегодня/неделю — предложу формулировку и чек-лист.';
-    if (/подзадач/i.test(q)) a = 'Скинь задачу — разложу на подзадачи и приоритеты.';
-    if (/план/i.test(q)) a = 'Сделаю план на неделю: цели → задачи → дедлайны. Напиши, что важно достигнуть.';
-    if (/напомин/i.test(q)) a = 'Готов поставить напоминание: укажи задачу и время (напр. «напомни завтра в 10:00»).';
+    const key = process.env.OPENAI_API_KEY || '';
+    if (!key) {
+      // мягкий фолбэк без ключа, чтобы UI не «молчал»
+      return sendJSON(res, 200, { a: 'LLM пока не подключён. Добавь OPENAI_API_KEY в Vercel → Settings → Environment Variables.' });
+    }
 
-    return sendJSON(res,200,{ a });
-  }catch(e){ return sendJSON(res,500,{error:e.message}); }
+    const OpenAI = require('openai');
+    const openai = new OpenAI({ apiKey: key });
+
+    const r = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: 'Ты помогаешь ставить фокус дня, раскладывать задачи и приоритизировать. Отвечай кратко и по делу.' },
+        { role: 'user', content: q }
+      ],
+      temperature: 0.5
+    });
+
+    const text = r.choices?.[0]?.message?.content?.trim() || '…';
+    return sendJSON(res, 200, { a: text });
+  } catch (e) {
+    return sendJSON(res, 500, { error: e.message || String(e) });
+  }
 };
