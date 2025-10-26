@@ -3,11 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "type": "commonjs",
-  "scripts": {
-    "vercel-build": "echo \"no build\""
-  },
+  "scripts": { "vercel-build": "echo \"no build\"" },
   "dependencies": {
-    "cookie": "^0.6.0",
     "openai": "^4.56.0",
     "pg": "^8.11.3"
   }
