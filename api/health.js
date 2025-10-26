@@ -1,3 +1,4 @@
+// /api/health.js
 exports.config = { runtime: 'nodejs20.x' };
 
 const { pool, ensureSchema } = require('./_db');
