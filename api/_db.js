@@ -1,19 +1,16 @@
 // /api/_db.js
+exports.config = { runtime: 'nodejs20.x' };
+
 const { Pool } = require('pg');
 
 const DATABASE_URL = process.env.DATABASE_URL || '';
-if (!DATABASE_URL) {
-  throw new Error('DATABASE_URL is not set');
-}
+if (!DATABASE_URL) throw new Error('DATABASE_URL is not set');
 
-// Для Neon и большинства managed PG нужен SSL.
-// Если в строке уже есть ?sslmode=require — ok; на всякий случай включим SSL явно.
 const pool = new Pool({
   connectionString: DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false }, // безопасно для Neon/managed PG
 });
 
-// Создание таблиц, если их нет
 async function ensureSchema() {
   await pool.query(`
     create table if not exists users(
@@ -46,7 +43,7 @@ async function ensureSchema() {
       id bigserial primary key,
       user_id bigint not null,
       task_id bigint,
-      type text not null,  -- 'reminder' | 'digest'
+      type text not null,
       run_at timestamptz default now(),
       payload jsonb,
       sent_at timestamptz,
@@ -55,16 +52,16 @@ async function ensureSchema() {
   `);
 }
 
-async function upsertUser(u, tz='UTC') {
+async function upsertUser(u, tz = 'UTC') {
   await pool.query(
     `insert into users (id, username, first_name, last_name, tz)
      values ($1,$2,$3,$4,$5)
      on conflict (id) do update set
-       username = excluded.username,
-       first_name = excluded.first_name,
-       last_name  = excluded.last_name,
-       tz = coalesce(excluded.tz, users.tz),
-       updated_at = now()`,
+       username=excluded.username,
+       first_name=excluded.first_name,
+       last_name=excluded.last_name,
+       tz=coalesce(excluded.tz, users.tz),
+       updated_at=now()`,
     [u.id, u.username || null, u.first_name || null, u.last_name || null, tz || 'UTC']
   );
 }
