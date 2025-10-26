@@ -3,12 +3,20 @@ exports.config = { runtime: 'nodejs20.x' };
 
 const { Pool } = require('pg');
 
-const DATABASE_URL = process.env.DATABASE_URL || '';
-if (!DATABASE_URL) throw new Error('DATABASE_URL is not set');
+const DATABASE_URL =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.POSTGRES_URL ||
+  '';
+
+if (!DATABASE_URL) throw new Error('DATABASE_URL is not set (and no POSTGRES_* fallback)');
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // безопасно для Neon/managed PG
+  ssl: { rejectUnauthorized: false }, // Neon / managed PG
+  max: 1,
+  idleTimeoutMillis: 5000,
+  connectionTimeoutMillis: 10000,
 });
 
 async function ensureSchema() {
@@ -57,11 +65,11 @@ async function upsertUser(u, tz = 'UTC') {
     `insert into users (id, username, first_name, last_name, tz)
      values ($1,$2,$3,$4,$5)
      on conflict (id) do update set
-       username=excluded.username,
-       first_name=excluded.first_name,
-       last_name=excluded.last_name,
-       tz=coalesce(excluded.tz, users.tz),
-       updated_at=now()`,
+       username = excluded.username,
+       first_name = excluded.first_name,
+       last_name  = excluded.last_name,
+       tz = coalesce(excluded.tz, users.tz),
+       updated_at = now()`,
     [u.id, u.username || null, u.first_name || null, u.last_name || null, tz || 'UTC']
   );
 }
