@@ -2,7 +2,7 @@
   "name": "maks-mini-apps",
   "private": true,
   "version": "1.2.1",
-  "description": "Growth Assistant mini-app: focus, tasks, exports, cron endpoints, LLM chat.",
+  "description": "Growth Assistant mini-app",
   "dependencies": {
     "pg": "8.12.0",
     "openai": "^4.0.0"
