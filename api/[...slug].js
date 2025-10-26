@@ -6,7 +6,7 @@ const { sendJSON, readJSON, getOrCreateUser } = require('./_utils');
 
 function pathOf(req) {
   const u = new URL(req.url, 'http://x');
-  return u.pathname.replace(/^\/api\//, ''); // 'tasks', 'tasks/123', 'focus', ...
+  return u.pathname.replace(/^\/api\//, ''); // 'tasks', 'tasks/12', 'focus', 'health', ...
 }
 function idFromPath(p) {
   const parts = p.split('/');
@@ -20,25 +20,54 @@ function parseISOorNull(v) {
   return isNaN(d) ? null : d.toISOString();
 }
 
+/* ---------------- DEBUG ---------------- */
+async function handleDebug(req, res) {
+  try {
+    // ?what=conn | schema
+    const u = new URL(req.url, 'http://x');
+    const what = u.searchParams.get('what') || 'schema';
+
+    if (what === 'conn') {
+      const r = await pool.query('select current_user as user, current_database() as db, version()');
+      return sendJSON(res, 200, { ok: true, info: r.rows[0] });
+    }
+
+    await ensureSchema();
+    const q = await pool.query(`
+      select
+        to_regclass('public.users')     as users,
+        to_regclass('public.tasks')     as tasks,
+        to_regclass('public.focus')     as focus
+    `);
+    return sendJSON(res, 200, { ok: true, tables: q.rows[0] });
+  } catch (e) {
+    console.error('DEBUG ERROR:', e);
+    return sendJSON(res, 500, { ok: false, error: e.stack || e.message || String(e) });
+  }
+}
+
+/* ---------------- HEALTH / WHOAMI ---------------- */
 async function handleHealth(_req, res) {
   try {
     await ensureSchema();
     await pool.query('select 1');
     return sendJSON(res, 200, { ok: true, db: 'ok' });
   } catch (e) {
-    return sendJSON(res, 500, { ok: false, error: e.message || String(e) });
+    console.error('HEALTH ERROR:', e);
+    return sendJSON(res, 500, { ok: false, error: e.stack || e.message || String(e) });
   }
 }
-
 async function handleWhoami(req, res) {
   try {
     const { user, source } = getOrCreateUser(req, res);
     return sendJSON(res, 200, { source, user });
   } catch (e) {
-    return sendJSON(res, e.status || 500, { error: e.message });
+    console.error('WHOAMI ERROR:', e);
+    return sendJSON(res, e.status || 500, { error: e.message || String(e) });
   }
 }
 
+/* ---------------- FOCUS ---------------- */
 async function handleFocus(req, res) {
   try {
     const { user } = getOrCreateUser(req, res);
@@ -46,10 +75,8 @@ async function handleFocus(req, res) {
 
     if (req.method === 'GET') {
       const r = await pool.query('select text, updated_at from focus where user_id=$1', [user.id]);
-      const row = r.rows[0] || null;
-      return sendJSON(res, 200, row || {});
+      return sendJSON(res, 200, r.rows[0] || {});
     }
-
     if (req.method === 'PUT') {
       const b = await readJSON(req);
       const text = String(b.text || '').trim();
@@ -68,10 +95,12 @@ async function handleFocus(req, res) {
     res.setHeader('Allow', 'GET, PUT');
     return sendJSON(res, 405, { error: 'Method Not Allowed' });
   } catch (e) {
-    return sendJSON(res, 500, { error: e.message || String(e) });
+    console.error('FOCUS ERROR:', e);
+    return sendJSON(res, 500, { error: e.stack || e.message || String(e) });
   }
 }
 
+/* ---------------- TASKS ---------------- */
 async function handleTasksCollection(req, res) {
   try {
     const { user } = getOrCreateUser(req, res);
@@ -107,10 +136,10 @@ async function handleTasksCollection(req, res) {
     res.setHeader('Allow', 'GET, POST');
     return sendJSON(res, 405, { error: 'Method Not Allowed' });
   } catch (e) {
-    return sendJSON(res, 500, { error: e.message || String(e) });
+    console.error('TASKS (collection) ERROR:', e);
+    return sendJSON(res, 500, { error: e.stack || e.message || String(e) });
   }
 }
-
 async function handleTaskItem(req, res, id) {
   try {
     const { user } = getOrCreateUser(req, res);
@@ -151,10 +180,12 @@ async function handleTaskItem(req, res, id) {
     res.setHeader('Allow', 'PUT, DELETE');
     return sendJSON(res, 405, { error: 'Method Not Allowed' });
   } catch (e) {
-    return sendJSON(res, 500, { error: e.message || String(e) });
+    console.error('TASKS (item) ERROR:', e);
+    return sendJSON(res, 500, { error: e.stack || e.message || String(e) });
   }
 }
 
+/* ---------------- CHAT ---------------- */
 async function handleChat(req, res) {
   try {
     if (req.method !== 'POST') {
@@ -188,26 +219,30 @@ async function handleChat(req, res) {
     const text = r.choices?.[0]?.message?.content?.trim() || '…';
     return sendJSON(res, 200, { a: text });
   } catch (e) {
-    return sendJSON(res, 500, { error: e.message || String(e) });
+    console.error('CHAT ERROR:', e);
+    return sendJSON(res, 500, { error: e.stack || e.message || String(e) });
   }
 }
 
+/* ---------------- ROUTER ---------------- */
 module.exports = async (req, res) => {
-  const p = pathOf(req);            // e.g. 'tasks', 'tasks/123', 'focus'
   try {
-    if (p === 'health')   return handleHealth(req, res);
-    if (p === 'whoami')   return handleWhoami(req, res);
-    if (p === 'focus')    return handleFocus(req, res);
-    if (p === 'tasks')    return handleTasksCollection(req, res);
+    const p = pathOf(req);
+    if (p === 'debug')   return handleDebug(req, res);
+    if (p === 'health')  return handleHealth(req, res);
+    if (p === 'whoami')  return handleWhoami(req, res);
+    if (p === 'focus')   return handleFocus(req, res);
+    if (p === 'tasks')   return handleTasksCollection(req, res);
     if (p.startsWith('tasks/')) {
       const id = idFromPath(p);
       if (!id) return sendJSON(res, 400, { error: 'BAD_ID' });
       return handleTaskItem(req, res, id);
     }
-    if (p === 'chat')     return handleChat(req, res);
+    if (p === 'chat')    return handleChat(req, res);
 
     return sendJSON(res, 404, { error: 'Not Found', path: p });
   } catch (e) {
-    return sendJSON(res, 500, { error: e.message || String(e) });
+    console.error('ROUTER FATAL:', e);
+    return sendJSON(res, 500, { error: e.stack || e.message || String(e) });
   }
 };
