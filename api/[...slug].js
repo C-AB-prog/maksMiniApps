@@ -1,62 +1,76 @@
 // /api/[...slug].js
 const { json, readBody, getUser } = require('./_utils');
-const db = require('./_db');
 
-// один хэндлер на всё
+// ленивый доступ к _db.js — чтобы /api/debug?what=ping работал даже без 'pg'
+let _db;
+function DB() { if (!_db) _db = require('./_db'); return _db; }
+
 module.exports = async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const parts = url.pathname.replace(/^\/api\/?/, '').split('/').filter(Boolean);
 
   try {
-    const me = getUser(req, res); // кука пользователю (без БД)
+    const me = getUser(req, res); // user-id из куки, без БД
 
-    // --- DEBUG --------------------------------------------------------------
+    // ---------- DEBUG ----------
     if (parts[0] === 'debug') {
       const what = url.searchParams.get('what') || 'ping';
-      if (what === 'ping') return json(res, { ok: true, now: new Date().toISOString() });
+
+      if (what === 'ping') {
+        return json(res, { ok: true, now: new Date().toISOString() });
+      }
 
       if (what === 'conn') {
-        const p = db.pool; // ленивое создание пула
-        const r = await p.query('select current_user, current_database(), version()');
+        const db = DB();
+        const r = await db.pool.query('select current_user, current_database(), version()');
         return json(res, {
           ok: true,
-          info: { user: r.rows[0].current_user, db: r.rows[0].current_database, version: r.rows[0].version }
+          info: {
+            user: r.rows[0].current_user,
+            db: r.rows[0].current_database,
+            version: r.rows[0].version
+          }
         });
       }
 
       if (what === 'schema') {
+        const db = DB();
         await db.ensureSchema();
-        const p = db.pool;
-        const tables = await p.query(`
-          select table_schema||'.'||table_name as tbl
+        const q = await db.pool.query(`
+          select table_name
           from information_schema.tables
           where table_schema='public' and table_name in ('users','tasks','focus')
           order by table_name`);
-        return json(res, { ok: true, tables: tables.rows.map(r => r.tbl) });
+        return json(res, { ok: true, tables: q.rows.map(r => r.table_name) });
       }
 
       return json(res, { ok: false, msg: 'debug: unknown what' }, 400);
     }
 
-    // --- HEALTH -------------------------------------------------------------
+    // ---------- HEALTH ----------
     if (parts[0] === 'health') {
+      const db = DB();
       await db.ensureSchema();
       await db.pool.query('select 1');
       return json(res, { ok: true, db: 'ok' });
     }
 
-    // --- FOCUS --------------------------------------------------------------
+    // ---------- FOCUS ----------
     if (parts[0] === 'focus') {
+      const db = DB();
       const p = db.pool;
       await db.upsertUser(me);
+
       if (req.method === 'GET') {
         const r = await p.query('select text, updated_at from focus where user_id=$1', [me.id]);
         return json(res, r.rows[0] || {});
       }
+
       if (req.method === 'PUT') {
         const body = await readBody(req);
         const text = String(body.text || '').trim();
         if (!text) return json(res, { error: 'empty text' }, 400);
+
         await p.query(
           `insert into focus(user_id, text, updated_at) values($1,$2,now())
            on conflict (user_id) do update set text=excluded.text, updated_at=now()`,
@@ -64,16 +78,21 @@ module.exports = async (req, res) => {
         );
         return json(res, { ok: true });
       }
+
       return json(res, { error: 'method not allowed' }, 405);
     }
 
-    // --- TASKS --------------------------------------------------------------
+    // ---------- TASKS ----------
     if (parts[0] === 'tasks') {
+      const db = DB();
       const p = db.pool;
       await db.upsertUser(me);
 
       if (req.method === 'GET') {
-        const r = await p.query('select * from tasks where user_id=$1 order by created_at desc limit 200', [me.id]);
+        const r = await p.query(
+          'select * from tasks where user_id=$1 order by created_at desc limit 200',
+          [me.id]
+        );
         return json(res, { tasks: r.rows });
       }
 
@@ -81,8 +100,10 @@ module.exports = async (req, res) => {
         const body = await readBody(req);
         const title = String(body.title || '').trim();
         if (!title) return json(res, { error: 'empty title' }, 400);
+
         const scope = body.scope || 'today';
         const due_at = body.due_at ? new Date(body.due_at) : null;
+
         await p.query(
           `insert into tasks(user_id, title, scope, due_at) values($1,$2,$3,$4)`,
           [me.id, title, scope, due_at]
@@ -91,8 +112,9 @@ module.exports = async (req, res) => {
       }
 
       if (req.method === 'PUT' && parts[1]) {
-        const body = await readBody(req);
         const id = Number(parts[1]);
+        const body = await readBody(req);
+
         if ('done' in body) {
           await p.query(`update tasks set done=$1 where id=$2 and user_id=$3`, [!!body.done, id, me.id]);
           return json(res, { ok: true });
@@ -113,14 +135,13 @@ module.exports = async (req, res) => {
       return json(res, { error: 'method not allowed' }, 405);
     }
 
-    // --- CHAT (ленивый import openai) --------------------------------------
+    // ---------- CHAT (ленивый импорт OpenAI) ----------
     if (parts[0] === 'chat' && req.method === 'POST') {
       const body = await readBody(req);
       const q = String(body.q || '').trim();
       if (!q) return json(res, { error: 'empty question' }, 400);
 
-      // чтобы модуль openai не ломал всё, если его нет
-      const { OpenAI } = require('openai');
+      const { OpenAI } = require('openai'); // импорт только тут
       const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
       const r = await client.chat.completions.create({
         model: 'gpt-4o-mini',
@@ -129,14 +150,10 @@ module.exports = async (req, res) => {
       return json(res, { a: r.choices[0].message.content.trim() });
     }
 
-    // --- not found ----------------------------------------------------------
+    // ---------- 404 ----------
     return json(res, { error: 'not found' }, 404);
   } catch (e) {
-    // ВАЖНО: всегда отдаём JSON с текстом и стеком — увидим истинную причину
-    return json(res, {
-      ok: false,
-      error: String(e && e.message || e),
-      stack: e && e.stack
-    }, 500);
+    // важно: всегда отдаём JSON, чтобы видеть реальную причину
+    return json(res, { ok: false, error: String(e?.message || e), stack: e?.stack }, 500);
   }
 };
