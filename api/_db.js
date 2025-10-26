@@ -1,77 +1,118 @@
 // /api/_db.js
-exports.config = { runtime: 'nodejs20.x' };
+// Надёжное подключение к Postgres (Neon) + авто-схема.
+// Зависимости: "pg" (в package.json), Node.js 20.x.
 
 const { Pool } = require('pg');
 
-const DATABASE_URL =
-  process.env.DATABASE_URL ||
-  process.env.POSTGRES_URL_NON_POOLING ||
+// Берём строку подключения прежде всего из POSTGRES_URL.
+// Остальные ключи оставлены как резервные, если ты их уже настроил.
+const cn =
   process.env.POSTGRES_URL ||
-  '';
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_PRISMA_URL ||
+  process.env.DATABASE_URL_UNPOOLED ||
+  process.env.POSTGRES_URL_NON_POOLING;
 
-if (!DATABASE_URL) throw new Error('DATABASE_URL is not set (and no POSTGRES_* fallback)');
-
-const pool = new Pool({
-  connectionString: DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // для Neon/managed PG
-  max: 1,
-  idleTimeoutMillis: 5000,
-  connectionTimeoutMillis: 10000,
-});
-
-async function ensureSchema() {
-  await pool.query(`
-    create table if not exists users(
-      id bigint primary key,
-      username text,
-      first_name text,
-      last_name text,
-      tz text default 'UTC',
-      created_at timestamptz default now(),
-      updated_at timestamptz default now()
-    );
-    create table if not exists focus(
-      user_id bigint primary key references users(id) on delete cascade,
-      text text not null,
-      updated_at timestamptz default now()
-    );
-    create table if not exists tasks(
-      id bigserial primary key,
-      user_id bigint not null references users(id) on delete cascade,
-      title text not null,
-      scope text default 'today',
-      done boolean default false,
-      priority int default 0,
-      due_at timestamptz,
-      remind_at timestamptz,
-      notes text,
-      created_at timestamptz default now()
-    );
-    create table if not exists notifications(
-      id bigserial primary key,
-      user_id bigint not null,
-      task_id bigint,
-      type text not null,
-      run_at timestamptz default now(),
-      payload jsonb,
-      sent_at timestamptz,
-      error text
-    );
-  `);
+if (!cn) {
+  // Не падаем синхронно — чтобы обработчик мог вернуть понятную ошибку JSON.
+  console.warn('[DB] WARNING: no Postgres connection string in env (set POSTGRES_URL)');
 }
 
-async function upsertUser(u, tz='UTC') {
-  await pool.query(
-    `insert into users (id, username, first_name, last_name, tz)
-     values ($1,$2,$3,$4,$5)
-     on conflict (id) do update set
-       username = excluded.username,
-       first_name = excluded.first_name,
-       last_name  = excluded.last_name,
-       tz = coalesce(excluded.tz, users.tz),
-       updated_at = now()`,
-    [u.id, u.username || null, u.first_name || null, u.last_name || null, tz || 'UTC']
+let pool;
+
+/** Ленивое создание пула. Бросит понятную ошибку, если нет строки подключения. */
+function getPool() {
+  if (pool) return pool;
+  if (!cn) throw new Error('No Postgres connection string: set POSTGRES_URL in Vercel → Settings → Environment Variables');
+
+  pool = new Pool({
+    connectionString: cn,
+    max: 5,                         // достаточно для serverless
+    idleTimeoutMillis: 10_000,
+    connectionTimeoutMillis: 10_000,
+    ssl: { rejectUnauthorized: false } // для Neon (sslmode=require)
+  });
+
+  // Лёгкая самопроверка соединения — не обязательна
+  pool
+    .query('select 1')
+    .then(() => console.log('[DB] connected'))
+    .catch((e) => console.error('[DB] initial connect error:', e));
+
+  return pool;
+}
+
+/** Создаёт таблицы и индексы, если их ещё нет. Вызывать перед работой с БД. */
+async function ensureSchema() {
+  const p = getPool();
+
+  // users: хранит уникальный app_user_id (из куки), опционально tg_id
+  await p.query(`
+    create table if not exists users (
+      id        text primary key,
+      tg_id     text,
+      created_at timestamptz default now()
+    )
+  `);
+
+  // tasks: задачи пользователя
+  await p.query(`
+    create table if not exists tasks (
+      id         bigserial primary key,
+      user_id    text not null references users(id) on delete cascade,
+      title      text not null,
+      scope      text not null default 'today',   -- today | week | backlog
+      done       boolean not null default false,
+      due_at     timestamptz null,
+      remind_at  timestamptz null,
+      priority   int not null default 0,
+      notes      text,
+      created_at timestamptz default now()
+    )
+  `);
+
+  // focus: один фокус на пользователя
+  await p.query(`
+    create table if not exists focus (
+      user_id    text primary key references users(id) on delete cascade,
+      text       text not null,
+      updated_at timestamptz default now()
+    )
+  `);
+
+  // Индексы
+  await p.query(`create index if not exists idx_tasks_user_id on tasks(user_id)`);
+  await p.query(`create index if not exists idx_tasks_due_at on tasks(due_at)`);
+  await p.query(`create index if not exists idx_tasks_user_done on tasks(user_id, done)`);
+}
+
+/** Гарантирует, что пользователь есть в таблице. */
+async function upsertUser(user) {
+  const p = getPool();
+  await ensureSchema();
+  await p.query(
+    `insert into users(id, tg_id) values($1,$2)
+     on conflict (id) do nothing`,
+    [user.id, user.tg_id || null]
   );
 }
 
-module.exports = { pool, ensureSchema, upsertUser };
+// Аккуратно закрываем пул при выгрузке функции (не обязательно, но полезно)
+function _gracefulShutdown() {
+  if (pool) {
+    pool.end().catch(() => {});
+    pool = undefined;
+  }
+}
+process.on?.('beforeExit', _gracefulShutdown);
+process.on?.('SIGTERM', _gracefulShutdown);
+process.on?.('SIGINT', _gracefulShutdown);
+
+module.exports = {
+  // Экспортируем как геттер, чтобы пул создавался лениво
+  get pool() {
+    return getPool();
+  },
+  ensureSchema,
+  upsertUser,
+};
