@@ -13,7 +13,7 @@ if (!DATABASE_URL) throw new Error('DATABASE_URL is not set (and no POSTGRES_* f
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // Neon / managed PG
+  ssl: { rejectUnauthorized: false }, // для Neon/managed PG
   max: 1,
   idleTimeoutMillis: 5000,
   connectionTimeoutMillis: 10000,
@@ -60,7 +60,7 @@ async function ensureSchema() {
   `);
 }
 
-async function upsertUser(u, tz = 'UTC') {
+async function upsertUser(u, tz='UTC') {
   await pool.query(
     `insert into users (id, username, first_name, last_name, tz)
      values ($1,$2,$3,$4,$5)
