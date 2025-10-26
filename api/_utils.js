@@ -1,9 +1,9 @@
 // /api/_utils.js
 exports.config = { runtime: 'nodejs20.x' };
 
-const crypto = require('crypto');
+const REQUIRE_TELEGRAM = process.env.REQUIRE_TELEGRAM === '1';
 
-// ---------- helpers ----------
+// --------- helpers ----------
 function sendJSON(res, code, obj) {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.status(code).end(JSON.stringify(obj));
@@ -14,20 +14,17 @@ function readJSON(req) {
     let body = '';
     req.on('data', (c) => (body += c));
     req.on('end', () => {
-      try {
-        resolve(body ? JSON.parse(body) : {});
-      } catch (e) {
-        reject(e);
-      }
+      try { resolve(body ? JSON.parse(body) : {}); }
+      catch(e) { reject(e); }
     });
   });
 }
 
-// Парсим Telegram WebApp initData (без подписи — для минимального запуска)
+// --------- Telegram initData parser ----------
 function parseTelegramInitData(str) {
   if (!str) return null;
   try {
-    // initData — это querystring вида: "query_id=...&user=%7B...%7D&..."
+    // initData — querystring: "query_id=...&user=%7B...%7D&..."
     const params = new URLSearchParams(str);
     const rawUser = params.get('user');
     if (!rawUser) return null;
@@ -44,10 +41,10 @@ function parseTelegramInitData(str) {
   }
 }
 
-// Простаья cookie-сессия для fallback
+// --------- simple cookie utils ----------
 function getCookie(req, name) {
   const hdr = req.headers.cookie || '';
-  const m = hdr.match(new RegExp('(?:^|; )' + name.replace(/([$?*|{}()\]\\/+^])/g, '\\$1') + '=([^;]*)'));
+  const m = hdr.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\\[\\]\\/\\+^])/g, '\\$1') + '=([^;]*)'));
   return m ? decodeURIComponent(m[1]) : null;
 }
 function setCookie(res, name, value, days = 365) {
@@ -55,26 +52,36 @@ function setCookie(res, name, value, days = 365) {
   res.setHeader('Set-Cookie', `${name}=${encodeURIComponent(value)}; Path=/; Expires=${expires}; SameSite=Lax`);
 }
 
-// Единый способ получить пользователя.
-// 1) Пытаемся взять из Telegram initData (заголовок 'x-telegram-init-data')
-// 2) Если нет — используем "временного" (cookie 'uid'), чтобы хоть что-то работало и не падало 500.
+// --------- main: getOrCreateUser ----------
 function getOrCreateUser(req, res) {
+  // 1) полноценное initData
   const initData = req.headers['x-telegram-init-data'] || '';
   const tgUser = parseTelegramInitData(initData);
+  if (tgUser?.id) return { user: tgUser, source: 'telegram' };
 
-  if (tgUser?.id) {
-    return { user: tgUser, source: 'telegram' };
+  // 2) явный UID (на случай Telegram Desktop без initData)
+  const hdrUid = req.headers['x-telegram-user-id'] || '';
+  if (hdrUid && /^\d+$/.test(String(hdrUid))) {
+    return { user: { id: Number(hdrUid) }, source: 'telegram' };
   }
 
-  // fallback — эпемерный пользователь через cookie (НЕ для прод-логина, но не даёт 500)
+  // 3) строгий режим — требуем Telegram
+  if (REQUIRE_TELEGRAM) {
+    const err = new Error('TELEGRAM_REQUIRED');
+    err.status = 401;
+    throw err;
+  }
+
+  // 4) fallback — эпемерный пользователь через cookie
   let uid = getCookie(req, 'uid');
   if (!uid) {
-    uid = String(10_000_000_000 + Math.floor(Math.random() * 10_000_000_000)); // псевдо-числовой id
+    uid = String(10_000_000_000 + Math.floor(Math.random() * 10_000_000_000));
     setCookie(res, 'uid', uid);
   }
   return { user: { id: Number(uid) }, source: 'ephemeral' };
 }
 
+// --------- telegram send message (optional) ----------
 async function tgSendMessage(chatId, text, parse_mode = 'HTML') {
   const token = process.env.TELEGRAM_BOT_TOKEN || '';
   if (!token) return { ok: false, description: 'TELEGRAM_BOT_TOKEN not set' };
