@@ -1,8 +1,8 @@
 // /api/[...slug].js
 const { pool, ensureSchema, upsertUser } = require('./_db');
-const { json, getUser, readBody } = require('./_utils');
+const { json, readBody, getUser } = require('./_utils');
 
-const schemaReady = ensureSchema(); // поднимаем схему на холодном старте
+const schemaReady = ensureSchema();
 
 module.exports = async (req, res) => {
   try {
@@ -10,17 +10,16 @@ module.exports = async (req, res) => {
 
     const me = getUser(req, res);
     const url = new URL(req.url, `http://${req.headers.host}`);
-    const pathname = url.pathname.replace(/^\/api\/?/, '');
-    const parts = pathname.split('/').filter(Boolean);
+    const parts = url.pathname.replace(/^\/api\/?/, '').split('/').filter(Boolean);
 
-    /* ---------------- HEALTH / DEBUG ---------------- */
+    /* ---- HEALTH / DEBUG ---- */
     if (parts[0] === 'health') {
       try { await pool.query('select 1'); return json(res, { ok: true, db: 'ok' }); }
       catch (e) { return json(res, { ok: false, error: String(e.message || e) }, 500); }
     }
     if (parts[0] === 'debug') {
       const what = url.searchParams.get('what') || 'ping';
-      if (what === 'ping') return json(res, { ok: true, pong: Date.now() });
+      if (what === 'ping') return json(res, { ok: true, now: new Date().toISOString() });
       if (what === 'conn') {
         try { await pool.query('select 1'); return json(res, { ok: true }); }
         catch (e) { return json(res, { ok: false, error: String(e.message || e) }, 500); }
@@ -37,7 +36,7 @@ module.exports = async (req, res) => {
       return json(res, { ok: true, note: 'ping|conn|schema' });
     }
 
-    /* ---------------- FOCUS ---------------- */
+    /* ---- FOCUS ---- */
     if (parts[0] === 'focus') {
       await upsertUser(me);
 
@@ -51,7 +50,7 @@ module.exports = async (req, res) => {
         if (!text) return json(res, { error: 'EMPTY' }, 400);
         await pool.query(
           `insert into focus(user_id, text, updated_at)
-             values($1,$2, now())
+           values($1,$2, now())
            on conflict (user_id) do update
              set text=excluded.text, updated_at=now()`,
           [me.id, text]
@@ -61,7 +60,7 @@ module.exports = async (req, res) => {
       return json(res, { error: 'Method Not Allowed' }, 405);
     }
 
-    /* ---------------- TASKS ---------------- */
+    /* ---- TASKS ---- */
     if (parts[0] === 'tasks') {
       await upsertUser(me);
 
@@ -81,13 +80,10 @@ module.exports = async (req, res) => {
         const body = await readBody(req);
         const title = String(body.title || '').trim();
         if (!title) return json(res, { error: 'EMPTY' }, 400);
-
         const scope = ['today','week','backlog'].includes(body.scope) ? body.scope : 'today';
         const due_at = body.due_at ? new Date(body.due_at) : null;
-
         await pool.query(
-          `insert into tasks(user_id, title, scope, due_at)
-           values($1,$2,$3,$4)`,
+          `insert into tasks(user_id, title, scope, due_at) values($1,$2,$3,$4)`,
           [me.id, title, scope, due_at]
         );
         return json(res, { ok: true });
@@ -131,14 +127,15 @@ module.exports = async (req, res) => {
       return json(res, { error: 'Method Not Allowed' }, 405);
     }
 
-    /* ---------------- CHAT (умный) ---------------- */
+    /* ---- CHAT (умный) ---- */
     if (parts[0] === 'chat' && req.method === 'POST') {
       await upsertUser(me);
       const body = await readBody(req);
       const q = (body.q || '').toString().trim();
-      if (!q) return json(res, { error: 'EMPTY' }, 400);
+      const timezone = (req.headers['x-timezone'] || 'UTC').toString();
 
-      // контекст
+      if (!q) return json(res, { a: 'Задайте вопрос или команду.' });
+
       const focus = await pool.query(`select text from focus where user_id=$1`, [me.id]);
       const tasks = await pool.query(
         `select id, title, scope, done, due_at
@@ -149,52 +146,64 @@ module.exports = async (req, res) => {
         [me.id]
       );
 
-      // если нет OPENAI_API_KEY — лёгкий локальный разбор
       if (!process.env.OPENAI_API_KEY) {
-        const reply = await ruleBasedReply(q, focus.rows[0]?.text || null, tasks.rows, me.id);
+        const reply = await ruleBasedReply(q, focus.rows[0]?.text || null, tasks.rows, me.id, timezone);
         return json(res, { a: reply });
       }
 
-      // 1) зовём LLM за структурированным ответом
       const opsPayload = await llmPlanOps({
         q,
         focus: focus.rows[0]?.text || null,
-        tasks: tasks.rows
+        tasks: tasks.rows,
+        timezone
       });
 
-      // 2) применяем операции к БД
-      const applied = await applyOps(me.id, opsPayload.ops || []);
+      if (!opsPayload.ops?.length && (!opsPayload.reply || opsPayload.reply.length > 300)) {
+        const reply = await ruleBasedReply(q, focus.rows[0]?.text || null, tasks.rows, me.id, timezone);
+        return json(res, { a: reply });
+      }
 
-      // 3) отдаём ответ пользователю
-      const finalText = opsPayload.reply || applied.summary || 'Готово.';
+      const applied = await applyOps(me.id, opsPayload.ops || []);
+      const finalText = short(opsPayload.reply || applied.summary || 'Готово.');
       return json(res, { a: finalText });
     }
 
-    /* ---------------- 404 ---------------- */
+    /* ---- 404 ---- */
     return json(res, { error: 'not found', path: parts }, 404);
   } catch (e) {
     return json(res, { ok: false, error: String(e.message || e) }, 500);
   }
 };
 
-/* ---------------- helpers for CHAT ---------------- */
+/* ===== Helpers for chat ===== */
+function short(str) { return (str || '').toString().slice(0, 250); }
 
-// Простой локальный разбор на русском, если нет OPENAI_API_KEY
-async function ruleBasedReply(q, focusText, tasks, userId) {
+// Локальный разбор на русском (когда нет ключа или LLM ушёл в сторону)
+async function ruleBasedReply(q, focusText, tasks, userId, timezone='UTC') {
   const low = q.toLowerCase();
 
-  // добавить задачу
-  if (low.startsWith('добавь') || low.includes('добавь задачу') || low.includes('создай задачу')) {
-    const title = q.replace(/^(добавь( мне)?( пожалуйста)?( задачу)?|создай( мне)?( задачу)?)/i, '').trim() || 'Без названия';
+  // "добавь задачу ... к/до/в 21:00" / "максимум в 21:00"
+  const timeMatch = low.match(/(?:к|до|в|максимум\sв)\s*(\d{1,2})[:\.](\d{2})/);
+  const addLike = /^(добавь|добавь задачу|создай|создай задачу)/i.test(low);
+  const titleAfter = q.replace(/^добав(ь|и)\s(мне\s)?(пожалуйста\s)?(задачу\s)?/i, '').trim();
+
+  if (addLike && titleAfter) {
+    let dueAt = null;
+    if (timeMatch) {
+      const hh = Number(timeMatch[1]), mm = Number(timeMatch[2]);
+      const now = new Date();
+      now.setHours(hh, mm, 0, 0);
+      dueAt = now.toISOString();
+    }
     await pool.query(
-      `insert into tasks(user_id, title, scope) values($1,$2,'today')`,
-      [userId, title]
+      `insert into tasks(user_id, title, scope, due_at) values($1,$2,'today',$3)`,
+      [userId, titleAfter, dueAt]
     );
-    return `Добавил задачу: “${title}” в «Сегодня».`;
+    return `Добавил задачу «${titleAfter}»${dueAt ? ' до ' + new Date(dueAt).toLocaleTimeString().slice(0,5) : ''}.`;
   }
 
-  // поставить фокус
-  if ((low.includes('фокус') || low.includes('фокус дня')) && (low.includes('постав') || low.includes('сделай') || low.includes('обнови'))) {
+  // фокус
+  if ((low.includes('фокус') || low.includes('фокус дня')) && /(постав|обнов|сделай)/.test(low)) {
     const text = q.replace(/.*(фокус дня|фокус)\:?/i, '').trim() || q.trim();
     await pool.query(
       `insert into focus(user_id, text, updated_at)
@@ -202,160 +211,137 @@ async function ruleBasedReply(q, focusText, tasks, userId) {
        on conflict (user_id) do update set text=excluded.text, updated_at=now()`,
       [userId, text]
     );
-    return `Фокус дня обновлён: “${text}”.`;
+    return `Фокус дня: «${text}».`;
   }
 
-  // показать список
+  // показать
   if (low.includes('покажи') && (low.includes('задач') || low.includes('список'))) {
-    if (!tasks.length) return 'Пока задач нет. Могу добавить — скажи “добавь задачу …”.';
-    const lines = tasks.slice(0,8).map(t => `• ${t.done ? '✅' : '⬜️'} ${t.title}${t.due_at ? ` (дедлайн: ${new Date(t.due_at).toLocaleDateString()})` : ''}`);
-    return `Ваши задачи:\n${lines.join('\n')}`;
+    if (!tasks.length) return 'Пока задач нет. Скажи: «добавь задачу …».';
+    const lines = tasks.slice(0,7).map(t => `${t.done ? '✅' : '⬜️'} ${t.title}`);
+    return `Ваши задачи:\n` + lines.join('\n');
   }
 
-  // общее
   return focusText
-    ? `Текущий фокус: “${focusText}”. Могу обновить фокус, добавить задачи или составить список на сегодня.`
-    : `Готов помочь: добавлю задачи, поставлю фокус дня, соберу план. Скажи, что важно сейчас.`;
+    ? `Фокус: «${focusText}». Могу добавить задачи или собрать план.`
+    : `Готов помочь: добавлю задачи, поставлю фокус, отмечу выполненные.`;
 }
 
-// Вызов LLM: просим вернуть строгий JSON-план
+// LLM → строгий JSON-план
 async function llmPlanOps(ctx) {
   const { OpenAI } = require('openai');
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
   const sys = `
-Ты — ассистент продуктивности для мини-приложения. У тебя есть контекст пользователя (фокус и задачи).
-Твоя задача: понять запрос и СФОРМИРОВАТЬ ОПЕРАЦИИ в строгом JSON, чтобы сервер их выполнил.
-
-Всегда отвечай ТОЛЬКО JSON объектом со схемой:
+Ты ассистент продуктивности. Отвечай ТОЛЬКО валидным JSON строго по схеме:
 {
-  "reply": "короткий человеко-понятный ответ",
+  "reply": "короткий ответ (1-2 предложения, без списков)",
   "ops": [
-    // ноль или больше операций
     { "type": "add_task", "title": "string", "scope": "today|week|backlog", "due_at": "ISO8601|null" },
     { "type": "set_focus", "text": "string" },
-    { "type": "toggle_task", "id": 123, "title": "часть названия или полное", "done": true },
-    { "type": "delete_task", "id": 123, "title": "часть названия или полное" }
+    { "type": "toggle_task", "id": 123, "title": "подстрока", "done": true },
+    { "type": "delete_task", "id": 123, "title": "подстрока" }
   ]
 }
-
-Правила:
-- Если пользователь просит «добавь/создай задачу», сделай add_task (scope по умолчанию today).
-- Извлекай даты и приводи к ISO8601 (UTC) или оставляй null, если нет даты.
-- Если просит «поставь/обнови фокус», делай set_focus.
-- Если просит отметить/удалить конкретную задачу, укажи id если он известен из контекста; иначе добавь "title" для поиска по подстроке на сервере.
-- Формируй понятный "reply" (1–3 коротких предложения). Не повторяй JSON в тексте.
-- Не придумывай несущ. id. Если не знаешь id — оставь только "title".
-
-Верни СТРОГО валидный JSON без комментариев и подсказок.
-  `.trim();
+Если просят «добавь/создай задачу … к/до/в HH:MM|21:00|9:30», заполни due_at в ISO8601 (сегодня, локальная зона).
+Если просят «поставь фокус», делай set_focus.
+Если не знаешь id задачи — оставь только "title" (поиск по подстроке на сервере).
+Без Markdown, без пояснений — только JSON.
+`.trim();
 
   const user = `
-Запрос пользователя: ${ctx.q}
-
+Запрос: ${ctx.q}
 Текущий фокус: ${ctx.focus ? ctx.focus : '(нет)'}
-Задачи (${ctx.tasks.length}): ${ctx.tasks.map(t => `[${t.id}] ${t.done ? '✅' : '⬜️'} ${t.title}${t.due_at ? ' (due '+new Date(t.due_at).toISOString()+')' : ''}`).join('; ').slice(0, 4000)}
-  `.trim();
+Задачи (${ctx.tasks.length}): ${ctx.tasks.map(t => `[${t.id}] ${t.done ? '✅' : '⬜️'} ${t.title}`).join('; ').slice(0, 3000)}
+Таймзона: ${ctx.timezone || 'UTC'}
+Сегодня: ${new Date().toISOString()}
+`.trim();
 
-  let content = '';
+  let content = '{}';
   try {
     const r = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      // попросим строго JSON
       response_format: { type: 'json_object' },
-      temperature: 0.4,
+      temperature: 0.2,
       messages: [
         { role: 'system', content: sys },
         { role: 'user', content: user }
       ]
     });
     content = r.choices?.[0]?.message?.content || '{}';
-  } catch (e) {
-    // если модель не поддерживает response_format — повторим без него
-    const r = await openai.chat.completions.create({
+  } catch {
+    const r2 = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      temperature: 0.4,
+      temperature: 0.2,
       messages: [
-        { role: 'system', content: sys },
+        { role: 'system', content: sys + '\nВерни строго JSON.' },
         { role: 'user', content: user }
       ]
     });
-    content = r.choices?.[0]?.message?.content || '{}';
+    content = r2.choices?.[0]?.message?.content || '{}';
   }
 
   try { return JSON.parse(content); }
-  catch { return { reply: 'Сформировал ответ, но не смог распарсить план. Давайте конкретнее?', ops: [] }; }
+  catch { return { reply: '', ops: [] }; }
 }
 
-// Применяем операции к БД; допускаем поиск по части названия
-async function applyOps(userId, ops) {
-  const results = [];
+async function applyOps(userId, ops=[]) {
+  const out = { added:0, toggled:0, deleted:0, focus:false };
   for (const op of ops) {
-    try {
-      switch (op.type) {
-        case 'add_task': {
-          const title = String(op.title || '').trim();
-          if (!title) break;
-          const scope = ['today','week','backlog'].includes(op.scope) ? op.scope : 'today';
-          const due_at = op.due_at ? new Date(op.due_at) : null;
-          await pool.query(
-            `insert into tasks(user_id, title, scope, due_at) values($1,$2,$3,$4)`,
-            [userId, title, scope, due_at]
-          );
-          results.push({ ok: true, type: op.type, title });
-          break;
-        }
-        case 'set_focus': {
-          const text = String(op.text || '').trim();
-          if (!text) break;
-          await pool.query(
-            `insert into focus(user_id, text, updated_at)
-             values($1,$2, now())
-             on conflict (user_id) do update set text=excluded.text, updated_at=now()`,
-            [userId, text]
-          );
-          results.push({ ok: true, type: op.type });
-          break;
-        }
-        case 'toggle_task': {
-          const id = await findTaskId(userId, op);
-          if (!id) { results.push({ ok: false, type: op.type, reason: 'not_found' }); break; }
-          await pool.query(`update tasks set done=$1 where id=$2 and user_id=$3`, [!!op.done, id, userId]);
-          results.push({ ok: true, type: op.type, id });
-          break;
-        }
-        case 'delete_task': {
-          const id = await findTaskId(userId, op);
-          if (!id) { results.push({ ok: false, type: op.type, reason: 'not_found' }); break; }
-          await pool.query(`delete from tasks where id=$1 and user_id=$2`, [id, userId]);
-          results.push({ ok: true, type: op.type, id });
-          break;
-        }
+    if (!op || !op.type) continue;
+
+    if (op.type === 'add_task' && op.title) {
+      await pool.query(
+        `insert into tasks(user_id, title, scope, due_at) values($1,$2,$3,$4)`,
+        [userId, short(op.title), op.scope || 'today', op.due_at || null]
+      );
+      out.added++;
+    }
+
+    if (op.type === 'set_focus' && op.text) {
+      await pool.query(
+        `insert into focus(user_id, text, updated_at)
+         values($1,$2, now())
+         on conflict (user_id) do update set text=excluded.text, updated_at=now()`,
+        [userId, short(op.text)]
+      );
+      out.focus = true;
+    }
+
+    if (op.type === 'toggle_task') {
+      let id = op.id;
+      if (!id && op.title) {
+        const r = await pool.query(
+          `select id from tasks where user_id=$1 and title ilike $2 order by done asc, id desc limit 1`,
+          [userId, `%${op.title}%`]
+        );
+        id = r.rows[0]?.id;
       }
-    } catch (e) {
-      results.push({ ok: false, type: op.type, error: String(e.message || e) });
+      if (id) {
+        await pool.query(`update tasks set done=$1 where user_id=$2 and id=$3`, [!!op.done, userId, id]);
+        out.toggled++;
+      }
+    }
+
+    if (op.type === 'delete_task') {
+      let id = op.id;
+      if (!id && op.title) {
+        const r = await pool.query(
+          `select id from tasks where user_id=$1 and title ilike $2 order by id desc limit 1`,
+          [userId, `%${op.title}%`]
+        );
+        id = r.rows[0]?.id;
+      }
+      if (id) {
+        await pool.query(`delete from tasks where user_id=$1 and id=$2`, [userId, id]);
+        out.deleted++;
+      }
     }
   }
 
-  return {
-    results,
-    summary: results.length
-      ? 'Готово: ' + results.map(r => r.ok ? r.type : `${r.type} (ошибка)`).join(', ')
-      : ''
-  };
-}
-
-async function findTaskId(userId, op) {
-  if (op.id) return Number(op.id);
-  const title = String(op.title || '').trim();
-  if (!title) return null;
-  // ищем по подстроке, приоритет невыполненных
-  const r = await pool.query(
-    `select id from tasks
-      where user_id=$1 and title ilike '%'||$2||'%'
-      order by done asc, created_at desc
-      limit 1`,
-    [userId, title]
-  );
-  return r.rows[0]?.id || null;
+  let summary = '';
+  if (out.added) summary += `Добавил ${out.added} задач(и). `;
+  if (out.toggled) summary += `Обновил статус ${out.toggled}. `;
+  if (out.deleted) summary += `Удалил ${out.deleted}. `;
+  if (out.focus) summary += `Фокус обновлён.`;
+  return { summary: summary.trim() };
 }
