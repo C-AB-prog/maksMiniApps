@@ -1,50 +1,47 @@
-// /api/_db.js
-const { Pool } = require('pg');
-
-const CONN = process.env.POSTGRES_URL || process.env.DATABASE_URL || '';
-if (!CONN) console.warn('[DB] POSTGRES_URL is not set.');
-
-const pool = new Pool({
-  connectionString: CONN,
-  ssl: /sslmode=require/i.test(CONN) ? { rejectUnauthorized: false } : undefined,
-});
-
-async function ensureSchema() {
-  await pool.query(`
-    create table if not exists users (
-      id text primary key,
-      tg_id bigint,
-      created_at timestamptz default now()
-    );
-    create unique index if not exists users_tg_idx on users(tg_id);
-
-    create table if not exists focus (
-      user_id text primary key references users(id) on delete cascade,
-      text text not null,
-      updated_at timestamptz default now()
-    );
-
-    create table if not exists tasks (
-      id bigserial primary key,
-      user_id text not null references users(id) on delete cascade,
-      title text not null,
-      scope text not null default 'today',
-      done boolean not null default false,
-      due_at timestamptz null,
-      created_at timestamptz default now()
-    );
-    create index if not exists tasks_user_done_idx on tasks(user_id, done);
-    create index if not exists tasks_due_idx on tasks(due_at);
-  `);
+// api/_utils.js
+function json(res, data, status = 200) {
+  res.statusCode = status;
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.end(JSON.stringify(data));
 }
 
-async function upsertUser(me) {
-  if (!me?.id) return;
-  await pool.query(
-    `insert into users(id, tg_id) values($1,$2)
-     on conflict (id) do update set tg_id = coalesce(excluded.tg_id, users.tg_id)`,
-    [me.id, me.tg_id || null]
+async function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try { resolve(body ? JSON.parse(body) : {}); }
+      catch (e) { resolve({}); }
+    });
+    req.on('error', reject);
+  });
+}
+
+// Единая идентификация пользователя:
+// 1) x-telegram-id (число) -> id = tg_XXXX
+// 2) x-stable-id (строка)   -> как есть
+// 3) запасной cookie/fallback
+function getUser(req, res) {
+  const tg = (req.headers['x-telegram-id'] || '').toString().trim();
+  const stable = (req.headers['x-stable-id'] || '').toString().trim();
+
+  if (tg) return { id: `tg_${tg}`, tg_id: Number(tg) || null };
+  if (stable) return { id: stable, tg_id: null };
+
+  // старый запасной путь (если вдруг вызывают без хедеров)
+  const cookies = Object.fromEntries(
+    (req.headers.cookie || '')
+      .split(';')
+      .map(s => s.trim())
+      .filter(Boolean)
+      .map(s => s.split('=').map(decodeURIComponent))
   );
+  let cid = cookies.cid;
+  if (!cid) {
+    cid = 'anon_' + Math.random().toString(36).slice(2);
+    res.setHeader('Set-Cookie', `cid=${encodeURIComponent(cid)}; Path=/; Max-Age=31536000; SameSite=Lax`);
+  }
+  return { id: cid, tg_id: null };
 }
 
-module.exports = { pool, ensureSchema, upsertUser };
+module.exports = { json, readBody, getUser };
