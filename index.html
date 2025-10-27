@@ -3,239 +3,108 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Growth Assistant</title>
+  <title>maksTest — Growth Assistant</title>
   <style>
-    :root { --bg:#0e1320; --card:#11182a; --muted:#8ea2c0; --accent:#6ea8ff; --ok:#2ad37f; --danger:#ff6b6b; }
+    :root {
+      --bg: #0d1321;
+      --card: #131a2a;
+      --muted: #9fb3c8;
+      --text: #e6edf6;
+      --accent: #6ca8ff;
+      --accent-2: #587fff;
+      --danger: #ff6565;
+      --ok: #4ade80;
+      --shadow: 0 8px 24px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
     * { box-sizing: border-box; }
-    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue"; background:var(--bg); color:#e6eefc; }
-    .wrap{ max-width:560px; margin:0 auto; padding:18px 16px 120px; }
-    .card{ background:var(--card); border:1px solid #162139; border-radius:16px; padding:16px; box-shadow: 0 10px 40px rgba(0,0,0,.35);}
-    h1{ margin:8px 0 14px; font-size:28px }
-    .row{ display:flex; gap:10px; align-items:center }
-    input,button,select{ font:inherit }
-    input[type=text]{ width:100%; background:#0b1120; color:#eaf2ff; border:1px solid #1b2745; border-radius:12px; padding:12px 14px; outline:none }
-    input[type=text]::placeholder{ color:#6b84a8 }
-    button{ background:linear-gradient(135deg,#4c8dff,#7ea8ff); color:#061022; border:0; border-radius:12px; padding:12px 16px; cursor:pointer; }
-    button.ghost{ background:#0b1120; color:#cfe1ff; border:1px solid #1b2745 }
-    button.ok{ background:#1fdd86; }
-    .muted{ color:var(--muted) }
-    .grid{ display:grid; gap:12px }
-    .pill{ padding:8px 10px; background:#0b1120; border:1px solid #1b2745; border-radius:999px; }
-    .tasks{ display:grid; gap:8px }
-    .task{ display:flex; align-items:center; gap:10px; padding:12px; background:#0b1120; border:1px solid #1b2745; border-radius:12px }
-    .task.done .title{ text-decoration:line-through; color:#7fa3c8 }
-    .title{ flex:1 }
-    .toast{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:#0b1120; border:1px solid #233155; color:#cfe1ff; padding:10px 12px; border-radius:12px; display:none }
-    .tabs{ display:flex; gap:8px }
-    .tabs button{ flex:1 }
-    textarea{ width:100%; background:#0b1120; color:#eaf2ff; border:1px solid #1b2745; border-radius:12px; padding:12px 14px; outline:none; min-height:110px }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    .wrap { max-width: 840px; margin: 24px auto; padding: 0 16px; }
+    h1 { margin: 0 0 20px; letter-spacing: .5px; }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .row > * { flex: 1; }
+    .label { color: var(--muted); font-size: 14px; margin-bottom: 8px; }
+    input[type="text"], input[type="datetime-local"] {
+      width: 100%; border: 1px solid #22304b; background: #0b1120;
+      color: var(--text); padding: 12px 14px; border-radius: 12px; outline: 0;
+    }
+    .btn {
+      border: 0; padding: 12px 16px; border-radius: 12px; background: var(--accent);
+      color: #061028; font-weight: 700; cursor: pointer; box-shadow: var(--shadow);
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn.ghost { background: #0b1120; color: var(--text); border: 1px solid #22304b; }
+    .btn.danger { background: var(--danger); color: #200; }
+    .tabs { display: flex; gap: 8px; margin-top: 8px; margin-bottom: 12px; }
+    .tab { padding: 8px 12px; border-radius: 999px; border: 1px solid #22304b; color: var(--text); cursor: pointer; }
+    .tab.active { background: var(--accent-2); border-color: var(--accent-2); color: #e6f1ff; }
+    .list { display: grid; gap: 8px; }
+    .item {
+      background: #0b1120; border: 1px solid #22304b; border-radius: 12px; padding: 12px;
+      display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center;
+    }
+    .muted { color: var(--muted); font-size: 13px; }
+    .toast {
+      position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+      background: #111827; color: #e5e7eb; border: 1px solid #374151; border-radius: 12px;
+      padding: 10px 14px; box-shadow: var(--shadow); z-index: 9999; display: none;
+    }
+    .footer { text-align: center; margin: 18px 0; color: var(--muted); font-size: 13px; }
   </style>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-  <div class="wrap grid">
+  <div class="wrap">
     <h1>Сегодня</h1>
 
-    <!-- Фокус дня -->
-    <div class="card grid" id="focusCard">
-      <div class="muted">Фокус дня</div>
+    <!-- Focus -->
+    <div class="card">
+      <div class="label">Фокус дня</div>
       <div class="row">
-        <input id="focusInput" type="text" placeholder="Самое главное сегодня…" />
-        <button id="focusSave">Сохранить</button>
+        <input id="focusText" type="text" placeholder="Самое главное сегодня…" />
+        <button id="btnSaveFocus" class="btn">Сохранить</button>
       </div>
     </div>
 
-    <!-- Быстрое добавление -->
-    <div class="card grid">
-      <div class="muted">Быстрое добавление</div>
-      <input id="quickTitle" type="text" placeholder="Название задачи" />
+    <!-- Quick add -->
+    <div class="card">
+      <div class="label">Быстрое добавление</div>
+      <input id="taskTitle" type="text" placeholder="Название задачи" />
       <div class="tabs">
-        <button class="pill ghost" data-scope="today">Сегодня</button>
-        <button class="pill ghost" data-scope="week">Неделя</button>
-        <button class="pill ghost" data-scope="backlog">Бэклог</button>
+        <div class="tab active" data-range="today">Сегодня</div>
+        <div class="tab" data-range="week">Неделя</div>
+        <div class="tab" data-range="backlog">Бэклог</div>
       </div>
       <div class="row">
-        <input id="dueInput" type="text" placeholder="дд.мм.гггг чч:мм (необязательно)" />
-        <button id="quickAdd">Добавить</button>
+        <input id="taskDue" type="datetime-local" />
+        <button id="btnAddTask" class="btn">Добавить</button>
       </div>
     </div>
 
-    <!-- Задачи -->
-    <div class="card grid">
-      <div class="muted">Задачи</div>
-      <div id="tasks" class="tasks"></div>
+    <!-- List -->
+    <div class="card">
+      <div class="label">Задачи</div>
+      <div id="tasksList" class="list"></div>
     </div>
 
-    <!-- Чат -->
-    <div class="card grid">
-      <div class="muted">Чат с ассистентом</div>
-      <textarea id="chatText" placeholder="Спросите про план, HADI или задачу"></textarea>
-      <button id="chatSend" class="ok">Отправить</button>
-      <div id="chatOut" class="muted"></div>
-    </div>
+    <div class="footer">@test3aks_bot</div>
   </div>
 
   <div id="toast" class="toast"></div>
 
-<script>
-/* ========= helpers ========= */
-const API = '/api';
-const uid = getOrMakeUid();
-function getOrMakeUid(){
-  const k='ga_uid';
-  let v=localStorage.getItem(k);
-  if(!v){ v=crypto.randomUUID(); localStorage.setItem(k,v); }
-  return v;
-}
-async function jfetch(path, opt={}){
-  const o = Object.assign({ headers: {} }, opt);
-  o.headers['Content-Type'] = 'application/json';
-  o.headers['X-User-Id'] = uid;
-  const r = await fetch(path, o);
-  let data = null;
-  try { data = await r.json(); } catch(e){}
-  if (!r.ok) throw new Error(data?.error || ('HTTP '+r.status));
-  return data;
-}
-function toast(msg, ms=2000){
-  const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block';
-  clearTimeout(t.__to); t.__to=setTimeout(()=>t.style.display='none', ms);
-}
-
-/* ========= Focus ========= */
-const focusInput = document.getElementById('focusInput');
-const focusSave  = document.getElementById('focusSave');
-
-async function loadFocus(){
-  try{
-    const { text } = await jfetch(API+'/focus');
-    focusInput.value = text || '';
-  }catch(e){ toast('focus: '+e.message); }
-}
-focusSave.onclick = async ()=>{
-  const prev = focusInput.value;
-  try{
-    await jfetch(API+'/focus', { method:'POST', body: JSON.stringify({ text: focusInput.value })});
-    toast('Сохранено');
-  }catch(e){
-    toast('Ошибка сервера (focus)');
-    // видимость "сохранено" откатывать некуда — просто подсветим
-    focusInput.value = prev;
-  }
-};
-
-/* ========= Tasks ========= */
-const tasksEl = document.getElementById('tasks');
-let currentScope='today';
-document.querySelectorAll('[data-scope]').forEach(btn=>{
-  btn.onclick = ()=>{ currentScope = btn.dataset.scope; document.querySelectorAll('[data-scope]').forEach(b=>b.classList.remove('pill')); btn.classList.add('pill'); };
-});
-const quickAdd  = document.getElementById('quickAdd');
-const quickTitle= document.getElementById('quickTitle');
-const dueInput  = document.getElementById('dueInput');
-
-function parseDue(s){
-  s = (s||'').trim();
-  if(!s) return null;
-  // формат "дд.мм.гггг чч:мм" или только "дд.мм.гггг"
-  const m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{2}))?$/);
-  if(!m) return null;
-  const [_,d,mo,y,h='12',mi='00'] = m;
-  const dt = new Date(Number(y), Number(mo)-1, Number(d), Number(h), Number(mi));
-  return isNaN(+dt) ? null : dt.toISOString();
-}
-
-async function loadTasks(){
-  tasksEl.innerHTML = '';
-  try{
-    const { tasks } = await jfetch(API+'/tasks');
-    for(const t of tasks) renderTask(t);
-  }catch(e){ toast('tasks: '+e.message); }
-}
-
-function renderTask(t){
-  const row = document.createElement('div');
-  row.className = 'task'+(t.status==='done'?' done':'');
-  row.dataset.id = t.id;
-
-  const cb = document.createElement('input');
-  cb.type='checkbox'; cb.checked = t.status==='done';
-  cb.onchange = async ()=>{
-    const prev = cb.checked;
-    row.classList.toggle('done', cb.checked); // мгновенная видимость
-    try{
-      await jfetch(API+'/tasks',{ method:'PUT', body: JSON.stringify({ id:t.id, done: cb.checked }) });
-    }catch(e){
-      cb.checked = !prev; // откат
-      row.classList.toggle('done', cb.checked);
-      toast('Ошибка сервера (toggle): 404/500');
-    }
-  };
-
-  const title = document.createElement('div');
-  title.className='title';
-  title.textContent = t.title;
-
-  const del = document.createElement('button');
-  del.className='ghost';
-  del.textContent='✕';
-  del.onclick = async ()=>{
-    const keep = row.parentNode && row.parentNode.removeChild(row); // видимость удаления
-    try{
-      await jfetch(API+'/tasks?id='+encodeURIComponent(t.id), { method:'DELETE' });
-    }catch(e){
-      // вернуть элемент назад при ошибке
-      if (keep) tasksEl.insertAdjacentElement('afterbegin', row);
-      toast('Ошибка сервера (delete): 404/500');
-    }
-  };
-
-  row.append(cb, title, del);
-  tasksEl.appendChild(row);
-}
-
-quickAdd.onclick = async ()=>{
-  const title = (quickTitle.value||'').trim();
-  if (!title) return toast('Введите название');
-  const due = parseDue(dueInput.value);
-  // мгновенная видимость
-  const fake = { id:Math.floor(Math.random()*1e9), title, scope: currentScope, status:'open' };
-  renderTask(fake);
-  quickTitle.value=''; dueInput.value='';
-
-  try{
-    const { task } = await jfetch(API+'/tasks', { method:'POST', body: JSON.stringify({ title, scope: currentScope, dueDate: due }) });
-    // заменить фейковый id на реальный
-    const el = [...document.querySelectorAll('.task')].find(x=>Number(x.dataset.id)===fake.id);
-    if(el) el.dataset.id = task.id;
-  }catch(e){
-    // откат
-    const el = [...document.querySelectorAll('.task')].find(x=>Number(x.dataset.id)===fake.id);
-    el && el.remove();
-    toast('Ошибка сервера (tasks)');
-  }
-};
-
-/* ========= Chat (просто заглушка UI, ввод НЕ блокируем) ========= */
-const chatText = document.getElementById('chatText');
-const chatSend = document.getElementById('chatSend');
-const chatOut  = document.getElementById('chatOut');
-
-chatSend.onclick = async ()=>{
-  const q = (chatText.value||'').trim();
-  if(!q) return;
-  // Временно просто оформим красивый ответ (LLM подключим позже)
-  chatOut.innerHTML =
-    `<div class="muted">Ваш запрос:</div><div class="pill" style="display:inline-block">${escapeHtml(q)}</div>
-     <div style="height:8px"></div>
-     <div>Идея: превратить в задачу. <b>Готово:</b> открой «Быстрое добавление», введи формулировку и срок. 
-     Я подскажу приоритизацию после сохранения.</div>`;
-  chatText.value='';
-};
-function escapeHtml(s){ return s.replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
-
-/* ========= init ========= */
-loadFocus();
-loadTasks();
-</script>
+  <script type="module" src="./main.js"></script>
 </body>
 </html>
