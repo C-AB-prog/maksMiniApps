@@ -1,46 +1,59 @@
 // /api/_utils.js
-function json(res, data, status = 200) {
-  res.statusCode = status;
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.end(JSON.stringify(data));
+import { q } from "./_db.js";
+
+// Telegram initData находится в хедере 'x-telegram-init-data' (так делает твой фронт)
+export function parseTelegramInitData(req) {
+  const raw = req.headers.get("x-telegram-init-data") || "";
+  // initData — это querystring. Ищем параметр user
+  const userPart = raw.split("&").find(p => p.startsWith("user="));
+  if (!userPart) return null;
+  try {
+    const json = decodeURIComponent(userPart.split("=", 2)[1]);
+    const u = JSON.parse(json);
+    return {
+      tg_id: Number(u.id),
+      username: u.username || null,
+      first_name: u.first_name || null,
+      last_name: u.last_name || null,
+    };
+  } catch {
+    return null;
+  }
 }
 
-async function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', c => (body += c));
-    req.on('end', () => {
-      try { resolve(body ? JSON.parse(body) : {}); }
-      catch { resolve({}); }
-    });
-    req.on('error', reject);
+export async function ensureUser(req) {
+  const tgu = parseTelegramInitData(req);
+  if (!tgu || !tgu.tg_id) {
+    // можно вернуть null — фронт покажет тост «Открой через Telegram»
+    return null;
+  }
+
+  // upsert по tg_id
+  const r = await q(
+    `
+      INSERT INTO users (tg_id, username, first_name, last_name)
+      VALUES ($1,$2,$3,$4)
+      ON CONFLICT (tg_id) DO UPDATE
+      SET username = EXCLUDED.username,
+          first_name = EXCLUDED.first_name,
+          last_name = EXCLUDED.last_name
+      RETURNING id, tg_id, username, first_name, last_name;
+    `,
+    [tgu.tg_id, tgu.username, tgu.first_name, tgu.last_name]
+  );
+  return r.rows[0];
+}
+
+// обычный json-ответ
+export function json(data, init = 200) {
+  const status = typeof init === "number" ? init : init?.status || 200;
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "content-type": "application/json; charset=utf-8" },
   });
 }
 
-// 1) x-telegram-id -> id = tg_XXXX
-// 2) x-stable-id   -> как есть
-// 3) fallback cookie
-function getUser(req, res) {
-  const tg = (req.headers['x-telegram-id'] || '').toString().trim();
-  const stable = (req.headers['x-stable-id'] || '').toString().trim();
-
-  if (tg) return { id: `tg_${tg}`, tg_id: Number(tg) || null };
-  if (stable) return { id: stable, tg_id: null };
-
-  // кука-фоллбек
-  const cookies = Object.fromEntries(
-    (req.headers.cookie || '')
-      .split(';')
-      .map(s => s.trim())
-      .filter(Boolean)
-      .map(s => s.split('=').map(decodeURIComponent))
-  );
-  let cid = cookies.cid;
-  if (!cid) {
-    cid = 'anon_' + Math.random().toString(36).slice(2);
-    res.setHeader('Set-Cookie', `cid=${encodeURIComponent(cid)}; Path=/; Max-Age=31536000; SameSite=Lax`);
-  }
-  return { id: cid, tg_id: null };
+// разбор URL
+export function parseUrl(req) {
+  return new URL(req.url, "http://x");
 }
-
-module.exports = { json, readBody, getUser };
