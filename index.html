@@ -6,10 +6,16 @@
   <title>Growth Assistant</title>
   <style>
     :root{
-      --bg:#f6f8fc; --card:#ffffff; --ink:#0f172a;
-      --ink-2:#475569; --ink-3:#64748b;
-      --brand:#3b82f6; --brand-2:#6366f1;
-      --ok:#10b981; --warn:#f59e0b; --danger:#ef4444;
+      --bg:#f6f8fc;
+      --card:#ffffff;
+      --ink:#0f172a;
+      --ink-2:#475569;
+      --ink-3:#64748b;
+      --brand:#3b82f6;
+      --brand-2:#6366f1;
+      --ok:#10b981;
+      --warn:#f59e0b;
+      --danger:#ef4444;
       --ring: rgba(59,130,246,.25);
       --shadow: 0 6px 16px rgba(15,23,42,.06), 0 1px 0 rgba(15,23,42,.04) inset;
       --radius: 16px;
@@ -26,20 +32,16 @@
       font:16px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
     .container{max-width:980px;margin-inline:auto;padding:16px env(safe-area-inset-right) 110px env(safe-area-inset-left)}
-    /* header */
     .brand{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:14px;background:linear-gradient(135deg,#eef5ff,#fff);box-shadow:var(--shadow);margin-bottom:16px}
     .brand .logo{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(135deg,#6ea8ff,#7c6cff);color:#fff;font-weight:700;box-shadow:0 8px 20px rgba(99,102,241,.25)}
     .brand .title{font-weight:800;letter-spacing:.2px}
     .brand .subtitle{color:var(--ink-3);font-size:13px;margin-top:-2px}
-    /* sections */
     h2{margin:18px 6px 8px;font-size:22px;letter-spacing:.2px}
     .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin:10px 0 16px}
     .row{display:flex;gap:12px;align-items:center}
     .grow{flex:1}
     .chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;background:#f1f5ff;color:#1e3a8a;font-weight:600;font-size:13px}
-    input[type="text"],input[type="date"],input[type="time"]{
-      width:100%;background:#f8fafc;color:var(--ink);border:1px solid #e5e7eb;padding:12px 14px;border-radius:12px;outline:none;transition:border-color .2s,box-shadow .2s
-    }
+    input[type="text"],input[type="date"],input[type="time"]{width:100%;background:#f8fafc;color:var(--ink);border:1px solid #e5e7eb;padding:12px 14px;border-radius:12px;outline:none;transition:border-color .2s,box-shadow .2s}
     input:focus{border-color:var(--brand);box-shadow:0 0 0 4px var(--ring)}
     .btn{appearance:none;border:0;cursor:pointer;user-select:none;padding:12px 16px;border-radius:12px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand-2));box-shadow:0 6px 16px rgba(59,130,246,.28);transition:transform .05s ease,box-shadow .2s ease,opacity .2s ease}
     .btn:active{transform:translateY(1px)}
@@ -47,7 +49,6 @@
     .btn.ok{background:linear-gradient(135deg,#34d399,#10b981)}
     .muted{color:var(--ink-3);font-size:13px}
     .hint{font-size:12px;color:var(--ink-3)}
-    /* tasks */
     .task{background:#fff;border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);margin:10px 0}
     .task .dot{width:26px;height:26px;border-radius:999px;background:linear-gradient(135deg,#89cffb,#6da8ff);display:grid;place-items:center;color:#fff;font-size:14px;font-weight:800;flex:0 0 26px}
     .task.done{opacity:.6}
@@ -55,15 +56,12 @@
     .task .sub{font-size:13px;color:var(--ink-3)}
     .task .actions{margin-left:auto;display:flex;gap:8px}
     .toggle{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:10px;background:#ecfeff;color:#0891b2;border:1px solid #cffafe;cursor:pointer}
-    /* chat button */
     .chat-cta{position:fixed;left:16px;right:16px;bottom:86px;border-radius:18px;padding:14px 18px;font-weight:800;color:#fff;background:linear-gradient(135deg,#5aa3ff,#4f46e5);display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 16px 40px rgba(59,130,246,.35);z-index:20}
-    /* bottom nav */
     nav{position:fixed;left:0;right:0;bottom:0;background:#fff;box-shadow:0 -6px 20px rgba(15,23,42,.08);border-top-left-radius:16px;border-top-right-radius:16px;padding:8px calc(12px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));display:flex;gap:8px;justify-content:space-between;z-index:30}
     .tab{flex:1;border-radius:12px;padding:10px 6px;text-align:center;color:var(--ink-3);font-weight:700;cursor:pointer;user-select:none}
     .tab.active{background:linear-gradient(135deg,#eef4ff,#ffffff);color:var(--ink);box-shadow:var(--shadow)}
-    /* views */
-    .view{display:none}.view.active{display:block}
-    /* modal chat */
+    .view{display:none}
+    .view.active{display:block}
     .modal{position:fixed;inset:0;display:none;z-index:40}
     .modal.open{display:block}
     .scrim{position:absolute;inset:0;background:rgba(2,6,23,.48);backdrop-filter:blur(8px)}
@@ -94,7 +92,9 @@
       <h2>Сегодня</h2>
 
       <div class="card">
-        <div class="row" style="margin-bottom:10px"><div class="chip">Фокус дня</div></div>
+        <div class="row" style="margin-bottom:10px">
+          <div class="chip">Фокус дня</div>
+        </div>
         <div class="row">
           <input class="grow" id="focus-input" type="text" placeholder="Самое главное сегодня…">
           <button class="btn" id="focus-save">Сохранить</button>
@@ -103,7 +103,9 @@
       </div>
 
       <div class="card">
-        <div class="row" style="margin-bottom:10px"><div class="chip">Быстрое добавление</div></div>
+        <div class="row" style="margin-bottom:10px">
+          <div class="chip">Быстрое добавление</div>
+        </div>
         <input id="task-title" type="text" placeholder="Название задачи">
         <div class="row" style="margin-top:10px">
           <button class="btn secondary" data-scope="today" id="scope-today">Сегодня</button>
@@ -125,19 +127,25 @@
     <!-- План -->
     <section id="view-plan" class="view">
       <h2>План</h2>
-      <div class="card"><div class="muted">Скоро тут появится спринт-план и HADI-эксперименты.</div></div>
+      <div class="card">
+        <div class="muted">Скоро тут появится спринт-план и HADI-эксперименты.</div>
+      </div>
     </section>
 
     <!-- Календарь -->
     <section id="view-calendar" class="view">
       <h2>Календарь</h2>
-      <div class="card"><div class="muted">Календарь читает задачи и дедлайны — сейчас в режиме чтения.</div></div>
+      <div class="card">
+        <div class="muted">Календарь читает задачи и дедлайны — сейчас в режиме чтения.</div>
+      </div>
     </section>
 
     <!-- Профиль -->
     <section id="view-profile" class="view">
       <h2>Профиль</h2>
-      <div class="card"><div class="muted">Всё локально и приватно.</div></div>
+      <div class="card">
+        <div class="muted">Версия мини-аппа. Всё локально, приватно и без лишних кнопок.</div>
+      </div>
     </section>
   </div>
 
@@ -201,6 +209,7 @@
       setTimeout(()=> t.classList.remove('show'), ms);
     };
 
+    const viewIds = ["home","plan","calendar","profile"];
     const tabs = [...document.querySelectorAll('.tab')];
 
     const scopeButtons = {
@@ -247,41 +256,24 @@
       row.innerHTML = `
         <div class="dot">•</div>
         <div class="grow">
-          <div class="title">${escapeHtml(t.title || 'Без названия')}</div>
+          <div class="title">${t.title || 'Без названия'}</div>
           ${t.due_at ? `<div class="sub">Дедлайн: ${new Date(t.due_at).toLocaleString()}</div>`:''}
         </div>
         <div class="actions">
           <button class="toggle" data-action="toggle" title="Готово">✓</button>
           <button class="toggle" data-action="delete" title="Удалить">✕</button>
         </div>`;
-      row.querySelector('[data-action="toggle"]').onclick = ()=> toggleTaskUI(t.id, !t.done, row);
-      row.querySelector('[data-action="delete"]').onclick = ()=> removeTaskUI(t.id, row);
+      row.querySelector('[data-action="toggle"]').onclick = ()=> toggleTask(t.id, !t.done, row);
+      row.querySelector('[data-action="delete"]').onclick = ()=> removeTask(t.id, row);
       return row;
     }
-    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])) }
 
     async function loadTasks(){
       tasksEl.innerHTML = '';
       try{
         const data = await api('tasks');
         (data.tasks || []).forEach(t=> tasksEl.appendChild(taskRow(t)));
-      }catch(e){ /* ignore */ }
-    }
-
-    // Оптимистичное переключение
-    async function toggleTaskUI(id, done, row){
-      if (row) row.classList.toggle('done', done);
-      try{
-        await api('tasks', { method:'PUT', body: JSON.stringify({ id, done }) });
-      }catch(e){ toast(`Ошибка сервера (toggle)`) }
-    }
-
-    // Оптимистичное удаление
-    async function removeTaskUI(id, row){
-      if (row) row.remove();
-      try{
-        await api('tasks', { method:'DELETE', body: JSON.stringify({ id }) });
-      }catch(e){ toast(`Ошибка сервера (delete)`) }
+      }catch(e){ /* show nothing if unauthorized */ }
     }
 
     async function addTask(){
@@ -301,6 +293,25 @@
     }
     document.getElementById('task-add').onclick = addTask;
 
+    // оптимистично, чтобы не ждать 404 при /api/tasks/:id
+    async function toggleTask(id, done, row){
+      // опт. UI
+      if (row) row.classList.toggle('done', done);
+      try{
+        // если у тебя есть api/tasks/[id].js — можно вызывать так:
+        // await api(`tasks/${id}`, { method:'PUT', body: JSON.stringify({ done }) });
+        // а пока — fallback на базовый эндпоинт:
+        await api('tasks', { method:'PUT', body: JSON.stringify({ id, done }) });
+      }catch(e){ toast(`Ошибка сервера (toggle): ${e.message||e}`) }
+    }
+    async function removeTask(id, row){
+      if (row) row.remove(); // оптимистично скрыли
+      try{
+        // await api(`tasks/${id}`, { method:'DELETE' });
+        await api('tasks', { method:'DELETE', body: JSON.stringify({ id }) });
+      }catch(e){ toast(`Ошибка сервера (delete): ${e.message||e}`) }
+    }
+
     // ---------- Chat ----------
     const chat = {
       modal: document.getElementById('chat'),
@@ -311,7 +322,7 @@
       input: document.getElementById('chat-input'),
       send: document.getElementById('chat-send'),
     };
-    const openChat = ()=> { chat.modal.classList.add('open'); setTimeout(()=> chat.input?.focus(), 60); };
+    const openChat = ()=> chat.modal.classList.add('open');
     const closeChat = ()=> chat.modal.classList.remove('open');
     chat.openBtn.onclick = openChat; chat.closeBtn.onclick = closeChat; chat.scrim.onclick = closeChat;
 
@@ -328,6 +339,7 @@
       try{
         const r = await api('chat', { method:'POST', body: JSON.stringify({ q }) });
         pushBubble(r?.a || '…');
+        // обновим данные, вдруг ассистент что-то поменял
         loadFocus(); loadTasks();
       }catch(e){
         pushBubble(`Ошибка: ${String(e.message||e)}`);
