@@ -1,79 +1,72 @@
 // /api/[...slug].js
-const { json, readBody, getUser } = require('./_utils');
+const { pool, ensureSchema, upsertUser } = require('./_db');
+const { json, getUser, readBody } = require('./_utils');
 
-// ленивый доступ к _db.js — чтобы /api/debug?what=ping работал даже без 'pg'
-let _db;
-function DB() { if (!_db) _db = require('./_db'); return _db; }
+const schemaReady = ensureSchema(); // выполняем один раз на холодном старте
 
 module.exports = async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  const parts = url.pathname.replace(/^\/api\/?/, '').split('/').filter(Boolean);
-
   try {
-    const me = getUser(req, res); // user-id из куки, без БД
+    await schemaReady;
 
-    // ---------- DEBUG ----------
+    const me = getUser(req, res);
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const pathname = url.pathname.replace(/^\/api\/?/, '');
+    const parts = pathname.split('/').filter(Boolean);
+
+    // ---------- health ----------
+    if (parts[0] === 'health') {
+      try {
+        await pool.query('select 1');
+        return json(res, { ok: true, db: 'ok' });
+      } catch (e) {
+        return json(res, { ok: false, error: String(e.message || e) }, 500);
+      }
+    }
+
+    // ---------- debug ----------
     if (parts[0] === 'debug') {
       const what = url.searchParams.get('what') || 'ping';
-
-      if (what === 'ping') {
-        return json(res, { ok: true, now: new Date().toISOString() });
-      }
-
+      if (what === 'ping') return json(res, { ok: true, pong: Date.now() });
       if (what === 'conn') {
-        const db = DB();
-        const r = await db.pool.query('select current_user, current_database(), version()');
-        return json(res, {
-          ok: true,
-          info: {
-            user: r.rows[0].current_user,
-            db: r.rows[0].current_database,
-            version: r.rows[0].version
-          }
-        });
+        try {
+          await pool.query('select 1');
+          return json(res, { ok: true });
+        } catch (e) {
+          return json(res, { ok: false, error: String(e.message || e) }, 500);
+        }
       }
-
       if (what === 'schema') {
-        const db = DB();
-        await db.ensureSchema();
-        const q = await db.pool.query(`
-          select table_name
-          from information_schema.tables
-          where table_schema='public' and table_name in ('users','tasks','focus')
-          order by table_name`);
-        return json(res, { ok: true, tables: q.rows.map(r => r.table_name) });
+        const r1 = await pool.query(`
+          select table_name, column_name, data_type
+          from information_schema.columns
+          where table_schema='public'
+          order by table_name, ordinal_position
+        `);
+        return json(res, { ok: true, columns: r1.rows });
       }
-
-      return json(res, { ok: false, msg: 'debug: unknown what' }, 400);
+      return json(res, { ok: true, note: 'ping|conn|schema' });
     }
 
-    // ---------- HEALTH ----------
-    if (parts[0] === 'health') {
-      const db = DB();
-      await db.ensureSchema();
-      await db.pool.query('select 1');
-      return json(res, { ok: true, db: 'ok' });
-    }
-
-    // ---------- FOCUS ----------
+    // ---------- focus ----------
     if (parts[0] === 'focus') {
-      const db = DB();
-      const p = db.pool;
-      await db.upsertUser(me);
+      await upsertUser(me);
 
       if (req.method === 'GET') {
-        const r = await p.query('select text, updated_at from focus where user_id=$1', [me.id]);
-        return json(res, r.rows[0] || {});
+        const r = await pool.query(
+          `select text, updated_at from focus where user_id=$1`,
+          [me.id]
+        );
+        return json(res, r.rowCount ? r.rows[0] : {});
       }
 
       if (req.method === 'PUT') {
         const body = await readBody(req);
-        const text = String(body.text || '').trim();
-        if (!text) return json(res, { error: 'empty text' }, 400);
-
-        await p.query(
-          `insert into focus(user_id, text, updated_at) values($1,$2,now())
-           on conflict (user_id) do update set text=excluded.text, updated_at=now()`,
+        const text = (body.text || '').toString();
+        await pool.query(
+          `insert into focus(user_id, text, updated_at)
+             values($1,$2, now())
+           on conflict (user_id) do update
+             set text=excluded.text, updated_at=now()`,
           [me.id, text]
         );
         return json(res, { ok: true });
@@ -82,14 +75,12 @@ module.exports = async (req, res) => {
       return json(res, { error: 'method not allowed' }, 405);
     }
 
-    // ---------- TASKS ----------
+    // ---------- tasks ----------
     if (parts[0] === 'tasks') {
-      const db = DB();
-      const p = db.pool;
-      await db.upsertUser(me);
+      await upsertUser(me);
 
       if (req.method === 'GET') {
-        const r = await p.query(
+        const r = await pool.query(
           'select * from tasks where user_id=$1 order by created_at desc limit 200',
           [me.id]
         );
@@ -104,56 +95,66 @@ module.exports = async (req, res) => {
         const scope = body.scope || 'today';
         const due_at = body.due_at ? new Date(body.due_at) : null;
 
-        await p.query(
-          `insert into tasks(user_id, title, scope, due_at) values($1,$2,$3,$4)`,
+        await pool.query(
+          `insert into tasks(user_id, title, scope, due_at)
+             values($1,$2,$3,$4)`,
           [me.id, title, scope, due_at]
         );
         return json(res, { ok: true });
       }
 
-      if (req.method === 'PUT' && parts[1]) {
-        const id = Number(parts[1]);
+      // ✅ id может прийти: /tasks/:id ИЛИ ?id= ИЛИ в body.id
+      if (req.method === 'PUT') {
+        let id = parts[1] || url.searchParams.get('id');
         const body = await readBody(req);
+        if (!id) id = body.id;
+        id = Number(id);
+        if (!id) return json(res, { error: 'missing id' }, 400);
 
         if ('done' in body) {
-          await p.query(`update tasks set done=$1 where id=$2 and user_id=$3`, [!!body.done, id, me.id]);
+          await pool.query(
+            `update tasks set done=$1 where id=$2 and user_id=$3`,
+            [!!body.done, id, me.id]
+          );
           return json(res, { ok: true });
         }
         if ('title' in body) {
-          await p.query(`update tasks set title=$1 where id=$2 and user_id=$3`, [String(body.title), id, me.id]);
+          await pool.query(
+            `update tasks set title=$1 where id=$2 and user_id=$3`,
+            [String(body.title), id, me.id]
+          );
           return json(res, { ok: true });
         }
         return json(res, { error: 'nothing to update' }, 400);
       }
 
-      if (req.method === 'DELETE' && parts[1]) {
-        const id = Number(parts[1]);
-        await p.query(`delete from tasks where id=$1 and user_id=$2`, [id, me.id]);
+      if (req.method === 'DELETE') {
+        let id = parts[1] || url.searchParams.get('id');
+        if (!id) {
+          const body = await readBody(req);
+          id = body.id;
+        }
+        id = Number(id);
+        if (!id) return json(res, { error: 'missing id' }, 400);
+
+        await pool.query(`delete from tasks where id=$1 and user_id=$2`, [id, me.id]);
         return json(res, { ok: true });
       }
 
       return json(res, { error: 'method not allowed' }, 405);
     }
 
-    // ---------- CHAT (ленивый импорт OpenAI) ----------
-    if (parts[0] === 'chat' && req.method === 'POST') {
+    // ---------- chat (простая заглушка; если нужен OpenAI — добавим позже) ----------
+    if (parts[0] === 'chat') {
       const body = await readBody(req);
-      const q = String(body.q || '').trim();
-      if (!q) return json(res, { error: 'empty question' }, 400);
-
-      const { OpenAI } = require('openai'); // импорт только тут
-      const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-      const r = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: q }]
-      });
-      return json(res, { a: r.choices[0].message.content.trim() });
+      const q = (body.q || '').toString().trim();
+      const a = q ? `Вы спросили: «${q}». Пока даю базовый ответ 🙂` : 'Спросите что-нибудь.';
+      return json(res, { a });
     }
 
-    // ---------- 404 ----------
-    return json(res, { error: 'not found' }, 404);
+    // fallback
+    return json(res, { error: 'not found', path: parts }, 404);
   } catch (e) {
-    // важно: всегда отдаём JSON, чтобы видеть реальную причину
-    return json(res, { ok: false, error: String(e?.message || e), stack: e?.stack }, 500);
+    return json(res, { ok: false, error: String(e.message || e) }, 500);
   }
 };
