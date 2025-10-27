@@ -1,103 +1,52 @@
-// /api/tasks.js
-import { ensureSchema, q } from "./_db.js";
-import { ensureUser, json, parseUrl } from "./_utils.js";
+// api/tasks.js
+import { addTask, deleteTask, getOrCreateUser, listTasks, toggleTask } from './_db.js';
+import { getUserId, json } from './_utils.js';
 
-function pickIdFromPath(url) {
-  // /api/tasks/123 -> 123; /api/tasks -> null
-  const parts = url.pathname.split("/").filter(Boolean);
-  const last = parts[parts.length - 1];
-  return parts.length >= 3 && parts[parts.length - 2] === "tasks" ? Number(last) : null;
-}
-
-export async function GET(req) {
+export default async function handler(req, res) {
   try {
-    await ensureSchema();
-    const user = await ensureUser(req);
-    if (!user) return json({ error: "open_via_telegram" }, 401);
+    const uid = getUserId(req);
+    if (!uid) return json(res, 400, { ok:false, error:'no user id' });
 
-    const r = await q(
-      `SELECT id, title, scope, due_at, done
-       FROM tasks
-       WHERE user_id=$1
-       ORDER BY done ASC, due_at NULLS LAST, created_at DESC`,
-      [user.id]
-    );
-    return json({ tasks: r.rows });
-  } catch (e) {
-    return json({ error: String(e.message || e) }, 500);
-  }
-}
+    await getOrCreateUser(uid);
 
-export async function POST(req) {
-  try {
-    await ensureSchema();
-    const user = await ensureUser(req);
-    if (!user) return json({ error: "open_via_telegram" }, 401);
-
-    const body = await req.json().catch(() => ({}));
-    const title = String(body.title || "").trim();
-    if (!title) return json({ error: "empty" }, 400);
-
-    const scope = ["today", "week", "backlog"].includes(body.scope) ? body.scope : "today";
-    const due_at = body.due_at ? new Date(body.due_at) : null;
-
-    const r = await q(
-      `INSERT INTO tasks (user_id, title, scope, due_at)
-       VALUES ($1,$2,$3,$4)
-       RETURNING id, title, scope, due_at, done`,
-      [user.id, title, scope, due_at]
-    );
-    return json({ task: r.rows[0] });
-  } catch (e) {
-    return json({ error: String(e.message || e) }, 500);
-  }
-}
-
-export async function PUT(req) {
-  try {
-    await ensureSchema();
-    const user = await ensureUser(req);
-    if (!user) return json({ error: "open_via_telegram" }, 401);
-
-    const url = parseUrl(req);
-    const id = pickIdFromPath(url);
-    const body = await req.json().catch(() => ({}));
-
-    if (!id) {
-      // массовые обновления здесь не делаем
-      return json({ error: "no_id" }, 400);
+    if (req.method === 'GET') {
+      const tasks = await listTasks(uid);
+      return json(res, 200, { ok:true, tasks });
     }
 
-    // разрешаем обновлять только поле done
-    const done = body.done === true;
+    if (req.method === 'POST') {
+      const body = await readBody(req);
+      if (!body?.title) return json(res, 400, { ok:false, error:'title is required' });
+      const t = await addTask(uid, { title: body.title, scope: body.scope, dueDate: body.dueDate });
+      return json(res, 200, { ok:true, task: t });
+    }
 
-    const r = await q(
-      `UPDATE tasks SET done=$1 WHERE id=$2 AND user_id=$3 RETURNING id`,
-      [done, id, user.id]
-    );
-    if (r.rowCount === 0) return json({ error: "not_found" }, 404);
+    if (req.method === 'PUT') {
+      const body = await readBody(req);
+      if (!body?.id) return json(res, 400, { ok:false, error:'id is required' });
+      const t = await toggleTask(uid, { id: Number(body.id), done: !!body.done });
+      if (!t) return json(res, 404, { ok:false, error:'not found' });
+      return json(res, 200, { ok:true, task: t });
+    }
 
-    return json({ ok: true });
+    if (req.method === 'DELETE') {
+      const id = Number(req.query.id || 0);
+      if (!id) return json(res, 400, { ok:false, error:'id is required' });
+      await deleteTask(uid, id);
+      return json(res, 200, { ok:true });
+    }
+
+    res.setHeader('Allow', 'GET, POST, PUT, DELETE');
+    return json(res, 405, { ok:false, error:`Method ${req.method} not allowed` });
   } catch (e) {
-    return json({ error: String(e.message || e) }, 500);
+    return json(res, 500, { ok:false, error:e.message });
   }
 }
 
-export async function DELETE(req) {
-  try {
-    await ensureSchema();
-    const user = await ensureUser(req);
-    if (!user) return json({ error: "open_via_telegram" }, 401);
-
-    const url = parseUrl(req);
-    const id = pickIdFromPath(url);
-    if (!id) return json({ error: "no_id" }, 400);
-
-    const r = await q(`DELETE FROM tasks WHERE id=$1 AND user_id=$2`, [id, user.id]);
-    if (r.rowCount === 0) return json({ error: "not_found" }, 404);
-
-    return json({ ok: true });
-  } catch (e) {
-    return json({ error: String(e.message || e) }, 500);
-  }
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let data=''; req.on('data', c => data += c);
+    req.on('end', () => { try{ resolve(data?JSON.parse(data):{}); } catch(e){ reject(e); } });
+    req.on('error', reject);
+  });
 }
