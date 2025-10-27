@@ -6,16 +6,10 @@
   <title>Growth Assistant</title>
   <style>
     :root{
-      --bg:#f6f8fc;
-      --card:#ffffff;
-      --ink:#0f172a;
-      --ink-2:#475569;
-      --ink-3:#64748b;
-      --brand:#3b82f6;
-      --brand-2:#6366f1;
-      --ok:#10b981;
-      --warn:#f59e0b;
-      --danger:#ef4444;
+      --bg:#f6f8fc; --card:#ffffff; --ink:#0f172a;
+      --ink-2:#475569; --ink-3:#64748b;
+      --brand:#3b82f6; --brand-2:#6366f1;
+      --ok:#10b981; --warn:#f59e0b; --danger:#ef4444;
       --ring: rgba(59,130,246,.25);
       --shadow: 0 6px 16px rgba(15,23,42,.06), 0 1px 0 rgba(15,23,42,.04) inset;
       --radius: 16px;
@@ -31,75 +25,58 @@
       color:var(--ink);
       font:16px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
-    .container{ max-width: 980px; margin-inline:auto; padding: 16px env(safe-area-inset-right) 110px env(safe-area-inset-left); }
-
-    .brand{ display:flex; align-items:center; gap:12px; padding:8px 12px; border-radius:14px; background:linear-gradient(135deg,#eef5ff,#fff); box-shadow: var(--shadow); margin-bottom: 16px; }
-    .brand .logo{ width:40px;height:40px; display:grid; place-items:center; border-radius:12px; background:linear-gradient(135deg,#6ea8ff,#7c6cff); color:#fff; font-weight:700; box-shadow: 0 8px 20px rgba(99,102,241,.25); }
-    .brand .title{ font-weight:800; letter-spacing:.2px; }
-    .brand .subtitle{ color:var(--ink-3); font-size:13px; margin-top:-2px; }
-
-    h2{ margin:18px 6px 8px; font-size:22px; letter-spacing:.2px; }
-    .card{ background:var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding:16px; margin:10px 0 16px; }
-
-    .row{display:flex; gap:12px; align-items:center}
+    .container{max-width:980px;margin-inline:auto;padding:16px env(safe-area-inset-right) 110px env(safe-area-inset-left)}
+    /* header */
+    .brand{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:14px;background:linear-gradient(135deg,#eef5ff,#fff);box-shadow:var(--shadow);margin-bottom:16px}
+    .brand .logo{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(135deg,#6ea8ff,#7c6cff);color:#fff;font-weight:700;box-shadow:0 8px 20px rgba(99,102,241,.25)}
+    .brand .title{font-weight:800;letter-spacing:.2px}
+    .brand .subtitle{color:var(--ink-3);font-size:13px;margin-top:-2px}
+    /* sections */
+    h2{margin:18px 6px 8px;font-size:22px;letter-spacing:.2px}
+    .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin:10px 0 16px}
+    .row{display:flex;gap:12px;align-items:center}
     .grow{flex:1}
-    .chip{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:12px; background:#f1f5ff; color:#1e3a8a; font-weight:600; font-size:13px; }
-
-    input[type="text"], input[type="date"], input[type="time"]{
-      width:100%; background:#f8fafc; color:var(--ink);
-      border:1px solid #e5e7eb; padding:12px 14px; border-radius:12px;
-      outline:none; transition:border-color .2s, box-shadow .2s;
+    .chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;background:#f1f5ff;color:#1e3a8a;font-weight:600;font-size:13px}
+    input[type="text"],input[type="date"],input[type="time"]{
+      width:100%;background:#f8fafc;color:var(--ink);border:1px solid #e5e7eb;padding:12px 14px;border-radius:12px;outline:none;transition:border-color .2s,box-shadow .2s
     }
-    input:focus{ border-color: var(--brand); box-shadow: 0 0 0 4px var(--ring); }
-
-    .btn{ appearance:none; border:0; cursor:pointer; user-select:none; padding:12px 16px; border-radius:12px; font-weight:700; color:#fff;
-      background:linear-gradient(135deg,var(--brand),var(--brand-2)); box-shadow: 0 6px 16px rgba(59,130,246,.28);
-      transition: transform .05s ease, box-shadow .2s ease, opacity .2s ease; }
-    .btn:active{transform: translateY(1px)}
-    .btn.secondary{ background:#e2e8f0; color:#0f172a; box-shadow:none }
-    .btn.ok{ background: linear-gradient(135deg,#34d399,#10b981) }
-
-    .muted{color:var(--ink-3); font-size:13px}
-    .hint{font-size:12px; color:var(--ink-3)}
-
+    input:focus{border-color:var(--brand);box-shadow:0 0 0 4px var(--ring)}
+    .btn{appearance:none;border:0;cursor:pointer;user-select:none;padding:12px 16px;border-radius:12px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand-2));box-shadow:0 6px 16px rgba(59,130,246,.28);transition:transform .05s ease,box-shadow .2s ease,opacity .2s ease}
+    .btn:active{transform:translateY(1px)}
+    .btn.secondary{background:#e2e8f0;color:#0f172a;box-shadow:none}
+    .btn.ok{background:linear-gradient(135deg,#34d399,#10b981)}
+    .muted{color:var(--ink-3);font-size:13px}
+    .hint{font-size:12px;color:var(--ink-3)}
     /* tasks */
-    .task{ background:#fff; border-radius:14px; padding:14px 12px; display:flex; align-items:center; gap:12px; box-shadow: var(--shadow); margin:10px 0; }
-    .task .dot{ width:26px;height:26px; border-radius:999px; background:linear-gradient(135deg,#89cffb,#6da8ff); display:grid; place-items:center; color:#fff; font-size:14px; font-weight:800; flex:0 0 26px; }
-    .task.done{ opacity:.6 }
-    .task .title{ font-weight:700 }
-    .task .sub{ font-size:13px; color:var(--ink-3) }
-    .task .actions{ margin-left:auto; display:flex; gap:8px }
-    .toggle{ display:inline-grid; place-items:center; width:36px;height:36px; border-radius:10px; background:#ecfeff; color:#0891b2; border:1px solid #cffafe; cursor:pointer; }
-    .toggle.ok{ background:#ecfdf5; color:#047857; border-color:#bbf7d0 }
-    .toggle.danger{ background:#fff1f2; color:#be123c; border-color:#fecdd3 }
-
-    .chat-cta{ position:fixed; left:16px; right:16px; bottom:86px; border-radius:18px; padding:14px 18px; font-weight:800; color:#fff;
-      background:linear-gradient(135deg,#5aa3ff,#4f46e5); display:flex; align-items:center; justify-content:center; gap:8px; box-shadow: 0 16px 40px rgba(59,130,246,.35); z-index: 20; }
-
-    nav{ position:fixed; left:0; right:0; bottom:0; background:#fff; box-shadow: 0 -6px 20px rgba(15,23,42,.08); border-top-left-radius: 16px; border-top-right-radius: 16px;
-      padding: 8px calc(12px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
-      display:flex; gap:8px; justify-content:space-between; z-index:30; }
-    .tab{ flex:1; border-radius:12px; padding:10px 6px; text-align:center; color:var(--ink-3); font-weight:700; cursor:pointer; user-select:none; }
-    .tab.active{ background:linear-gradient(135deg,#eef4ff,#ffffff); color:var(--ink); box-shadow: var(--shadow); }
-
-    .view{ display:none } .view.active{ display:block }
-
-    .modal{ position:fixed; inset:0; display:none; z-index:40; }
-    .modal.open{ display:block }
-    .scrim{ position:absolute; inset:0; background:rgba(2,6,23,.48); backdrop-filter: blur(8px); }
-    .sheet{ position:absolute; left:0; right:0; bottom:0; background:#fff; border-top-left-radius:20px; border-top-right-radius:20px; box-shadow: 0 -20px 40px rgba(2,6,23,.35);
-      max-height: 78vh; display:flex; flex-direction:column; padding-bottom: env(safe-area-inset-bottom); }
-    .sheet .hdr{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #eef2f7; }
-    .messages{ padding:12px 16px; overflow:auto; min-height:180px; }
-    .bubble{ max-width:86%; margin:10px 0; padding:10px 12px; border-radius:14px; box-shadow: var(--shadow); }
-    .bubble.me{ background:#ecfeff; color:#042f2e; margin-left:auto }
-    .bubble.ai{ background:#f8fafc }
-    .composer{ display:flex; gap:8px; padding:12px 16px; border-top:1px solid #eef2f7 }
-    .composer input{ flex:1 }
-    .toast{ position:fixed; left:50%; transform:translateX(-50%); bottom: calc(86px + 62px); background:#0f172a; color:#fff; border-radius:12px; padding:10px 14px; font-weight:700; z-index:50; display:none; }
-    .toast.show{ display:block }
-
-    .pill{ font-size:12px; color:var(--ink-3); margin-left:8px }
+    .task{background:#fff;border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);margin:10px 0}
+    .task .dot{width:26px;height:26px;border-radius:999px;background:linear-gradient(135deg,#89cffb,#6da8ff);display:grid;place-items:center;color:#fff;font-size:14px;font-weight:800;flex:0 0 26px}
+    .task.done{opacity:.6}
+    .task .title{font-weight:700}
+    .task .sub{font-size:13px;color:var(--ink-3)}
+    .task .actions{margin-left:auto;display:flex;gap:8px}
+    .toggle{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:10px;background:#ecfeff;color:#0891b2;border:1px solid #cffafe;cursor:pointer}
+    /* chat button */
+    .chat-cta{position:fixed;left:16px;right:16px;bottom:86px;border-radius:18px;padding:14px 18px;font-weight:800;color:#fff;background:linear-gradient(135deg,#5aa3ff,#4f46e5);display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 16px 40px rgba(59,130,246,.35);z-index:20}
+    /* bottom nav */
+    nav{position:fixed;left:0;right:0;bottom:0;background:#fff;box-shadow:0 -6px 20px rgba(15,23,42,.08);border-top-left-radius:16px;border-top-right-radius:16px;padding:8px calc(12px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));display:flex;gap:8px;justify-content:space-between;z-index:30}
+    .tab{flex:1;border-radius:12px;padding:10px 6px;text-align:center;color:var(--ink-3);font-weight:700;cursor:pointer;user-select:none}
+    .tab.active{background:linear-gradient(135deg,#eef4ff,#ffffff);color:var(--ink);box-shadow:var(--shadow)}
+    /* views */
+    .view{display:none}.view.active{display:block}
+    /* modal chat */
+    .modal{position:fixed;inset:0;display:none;z-index:40}
+    .modal.open{display:block}
+    .scrim{position:absolute;inset:0;background:rgba(2,6,23,.48);backdrop-filter:blur(8px)}
+    .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top-left-radius:20px;border-top-right-radius:20px;box-shadow:0 -20px 40px rgba(2,6,23,.35);max-height:78vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
+    .sheet .hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #eef2f7}
+    .messages{padding:12px 16px;overflow:auto;min-height:180px}
+    .bubble{max-width:86%;margin:10px 0;padding:10px 12px;border-radius:14px;box-shadow:var(--shadow)}
+    .bubble.me{background:#ecfeff;color:#042f2e;margin-left:auto}
+    .bubble.ai{background:#f8fafc}
+    .composer{display:flex;gap:8px;padding:12px 16px;border-top:1px solid #eef2f7}
+    .composer input{flex:1}
+    .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + 62px);background:#0f172a;color:#fff;border-radius:12px;padding:10px 14px;font-weight:700;z-index:50;display:none}
+    .toast.show{display:block}
   </style>
 </head>
 <body>
@@ -141,7 +118,7 @@
         </div>
       </div>
 
-      <h2>Задачи <span class="pill" id="sync-pill"></span></h2>
+      <h2>Задачи</h2>
       <div id="tasks"></div>
     </section>
 
@@ -192,45 +169,39 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    // ---------- Helpers ----------
+    // ---------- Helpers & unified API wrapper ----------
     const tg = window.Telegram?.WebApp;
-    if (tg?.expand) { try{ tg.expand() }catch(e){} }
+    if (tg?.expand) try{ tg.expand() }catch(e){}
 
-    const tabs = [...document.querySelectorAll('.tab')];
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const tgId = tg?.initDataUnsafe?.user?.id || null;
+    let anonId = localStorage.getItem('anon_id');
+    if (!anonId) { anonId = 'anon_' + Math.random().toString(36).slice(2); localStorage.setItem('anon_id', anonId); }
+    const stableId = tgId ? `tg_${tgId}` : anonId;
+
+    async function api(path, opt={}) {
+      const headers = Object.assign({
+        'Content-Type': 'application/json',
+        'x-telegram-id': tgId ? String(tgId) : '',
+        'x-stable-id': stableId,
+        'x-timezone': tz
+      }, (opt.headers || {}));
+      const res = await fetch(`/api/${path}`, Object.assign({}, opt, { headers }));
+      if (!res.ok) {
+        let msg = res.status + '';
+        try { const j = await res.json(); msg = j.error || msg } catch {}
+        throw new Error(msg);
+      }
+      try { return await res.json(); } catch { return {}; }
+    }
+
     const toast = (msg, ms=2400)=>{
       const t = document.getElementById('toast');
       t.textContent = msg; t.classList.add('show');
       setTimeout(()=> t.classList.remove('show'), ms);
     };
 
-    // Универсальный API: добавляем initData, пробуем парочку маршрутов при 404
-    const API = async (path, opt={})=>{
-      const base = window.location.origin;
-      const initData = tg?.initData || '';
-      const headers = Object.assign({ 'Content-Type':'application/json', 'x-telegram-init-data': initData }, (opt.headers || {}));
-      const doFetch = (p) => fetch(`${base}/api${p}`, Object.assign({}, opt, {headers}));
-      const r1 = await doFetch(path);
-      if (r1.status !== 404) {
-        if (!r1.ok) { let m = `${r1.status}`; try{ m = (await r1.json()).error || m }catch{}; throw new Error(m); }
-        return r1.json().catch(()=> ({}));
-      }
-      // fallback: если /tasks?id= не найдено — попробуем /tasks/:id
-      if (/^\/tasks\?id=/.test(path)) {
-        const id = new URLSearchParams(path.split('?')[1]).get('id');
-        const r2 = await doFetch(`/tasks/${id}${opt.method==='DELETE'?'':' '}`.trim());
-        if (r2.ok) return r2.json().catch(()=> ({}));
-      }
-      // второй fallback: шлём в body id
-      try{
-        const body = opt.body ? JSON.parse(opt.body) : {};
-        if (body.id) {
-          const r3 = await doFetch(`/tasks`);
-          if (r3.ok) return r3.json().catch(()=> ({}));
-        }
-      }catch{}
-      // если прям совсем 404 — вернём ответ как есть
-      throw new Error('404');
-    };
+    const tabs = [...document.querySelectorAll('.tab')];
 
     const scopeButtons = {
       today: document.getElementById('scope-today'),
@@ -250,18 +221,18 @@
     // ---------- Focus ----------
     async function loadFocus(){
       try{
-        const data = await API('/focus');
+        const data = await api('focus');
         const input = document.getElementById('focus-input');
         const hint  = document.getElementById('focus-hint');
         input.value = data?.text || '';
         hint.textContent = data?.updated_at ? `Обновлено: ${new Date(data.updated_at).toLocaleString()}` : '';
-      }catch(e){ /* ignore */ }
+      }catch(e){ /* silent */ }
     }
     async function saveFocus(){
       const text = document.getElementById('focus-input').value.trim();
       if(!text) return toast('Введите фокус дня');
       try{
-        await API('/focus', {method:'PUT', body:JSON.stringify({text})});
+        await api('focus', { method:'PUT', body: JSON.stringify({ text }) });
         toast('Фокус сохранён ✅');
         loadFocus();
       }catch(e){ toast('Ошибка сервера (focus)') }
@@ -270,7 +241,6 @@
 
     // ---------- Tasks ----------
     const tasksEl = document.getElementById('tasks');
-    const syncPill = document.getElementById('sync-pill');
 
     function taskRow(t){
       const row = document.createElement('div'); row.className='task'+(t.done?' done':''); row.dataset.id = t.id;
@@ -281,59 +251,37 @@
           ${t.due_at ? `<div class="sub">Дедлайн: ${new Date(t.due_at).toLocaleString()}</div>`:''}
         </div>
         <div class="actions">
-          <button class="toggle ok" data-action="toggle" title="Готово">✓</button>
-          <button class="toggle danger" data-action="delete" title="Удалить">✕</button>
+          <button class="toggle" data-action="toggle" title="Готово">✓</button>
+          <button class="toggle" data-action="delete" title="Удалить">✕</button>
         </div>`;
       row.querySelector('[data-action="toggle"]').onclick = ()=> toggleTaskUI(t.id, !t.done, row);
       row.querySelector('[data-action="delete"]').onclick = ()=> removeTaskUI(t.id, row);
       return row;
     }
-
-    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])) }
 
     async function loadTasks(){
       tasksEl.innerHTML = '';
       try{
-        const data = await API('/tasks');
+        const data = await api('tasks');
         (data.tasks || []).forEach(t=> tasksEl.appendChild(taskRow(t)));
-      }catch(e){}
+      }catch(e){ /* ignore */ }
     }
 
     // Оптимистичное переключение
     async function toggleTaskUI(id, done, row){
-      // 1) оптимистично меняем UI
+      if (row) row.classList.toggle('done', done);
       try{
-        if (row) row.classList.toggle('done', done);
-        syncPill.textContent = 'синхронизируем…';
-
-        // 2) шлём на сервер — сначала query, затем fallback
-        try{
-          await API(`/tasks?id=${id}`, {method:'PUT', body: JSON.stringify({done})});
-          syncPill.textContent = '';
-        }catch(err){
-          // не откатываем UI; просто показываем тост
-          toast(`Ошибка сервера (toggle): ${err.message||err}`);
-          syncPill.textContent = '';
-        }
-      }catch(e){ /* ignore */ }
+        await api('tasks', { method:'PUT', body: JSON.stringify({ id, done }) });
+      }catch(e){ toast(`Ошибка сервера (toggle)`) }
     }
 
     // Оптимистичное удаление
     async function removeTaskUI(id, row){
-      // 1) оптимистично скрываем
-      if (row){
-        row.style.transition='opacity .2s, transform .2s';
-        row.style.opacity='0'; row.style.transform='translateY(4px)';
-        setTimeout(()=> row.remove(), 220);
-      }
-      syncPill.textContent = 'синхронизируем…';
+      if (row) row.remove();
       try{
-        await API(`/tasks?id=${id}`, {method:'DELETE'});
-        syncPill.textContent = '';
-      }catch(err){
-        toast(`Ошибка сервера (delete): ${err.message||err}`);
-        syncPill.textContent = '';
-      }
+        await api('tasks', { method:'DELETE', body: JSON.stringify({ id }) });
+      }catch(e){ toast(`Ошибка сервера (delete)`) }
     }
 
     async function addTask(){
@@ -343,13 +291,13 @@
       if(!title) return toast('Введите название задачи');
       const due_at = (date || time) ? new Date(`${date||''} ${time||'00:00'}`) : null;
       try{
-        await API('/tasks',{method:'POST', body:JSON.stringify({
+        await api('tasks', { method:'POST', body: JSON.stringify({
           title, scope: currentScope, due_at: due_at? due_at.toISOString(): null
         })});
         document.getElementById('task-title').value='';
         toast('Задача добавлена ✅');
         loadTasks();
-      }catch(e){ toast(`API: ${String(e.message||e).toUpperCase()}`) }
+      }catch(e){ toast(`Ошибка сервера (tasks)`) }
     }
     document.getElementById('task-add').onclick = addTask;
 
@@ -363,7 +311,7 @@
       input: document.getElementById('chat-input'),
       send: document.getElementById('chat-send'),
     };
-    const openChat = ()=> { chat.modal.classList.add('open'); setTimeout(()=> chat.input?.focus(), 80); };
+    const openChat = ()=> { chat.modal.classList.add('open'); setTimeout(()=> chat.input?.focus(), 60); };
     const closeChat = ()=> chat.modal.classList.remove('open');
     chat.openBtn.onclick = openChat; chat.closeBtn.onclick = closeChat; chat.scrim.onclick = closeChat;
 
@@ -373,13 +321,17 @@
       b.textContent = text; chat.list.appendChild(b);
       chat.list.scrollTop = chat.list.scrollHeight;
     }
+
     async function sendChat(){
       const q = chat.input.value.trim(); if(!q) return;
       pushBubble(q, true); chat.input.value='';
       try{
-        const r = await API('/chat', {method:'POST', body:JSON.stringify({q})});
+        const r = await api('chat', { method:'POST', body: JSON.stringify({ q }) });
         pushBubble(r?.a || '…');
-      }catch(e){ pushBubble(`Ошибка: ${String(e.message||e)}`); }
+        loadFocus(); loadTasks();
+      }catch(e){
+        pushBubble(`Ошибка: ${String(e.message||e)}`);
+      }
     }
     chat.send.onclick = sendChat;
     chat.input.onkeydown = (e)=> (e.key==='Enter') && sendChat();
