@@ -1,23 +1,33 @@
-// api/_utils.js
-// Унифицированный парсинг пользователя и ответов
+// utils.js (фрагмент: общий fetch с tg_id)
 
-export function json(res, code, data) {
-  res.statusCode = code;
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.end(JSON.stringify(data));
+// Берём числовой Telegram ID из Mini App
+export function getTgId() {
+  const tg = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+  if (tg) return Number(tg);        // всегда число
+  // запасной вариант (например, в браузере вне Telegram — для локального теста)
+  const fromLS = localStorage.getItem('tg_id');
+  if (fromLS) return Number(fromLS);
+  return null; // пусть backend отвалится 400 — так быстрее заметим
 }
 
-export function getUserId(req) {
-  // всегда шлём с фронта X-User-Id (uuid в localStorage)
-  const uid = req.headers['x-user-id'] || req.query.u || null;
-  return typeof uid === 'string' && uid.trim() ? uid.trim() : null;
+// Единая обёртка для запросов
+export async function api(path, { method = 'GET', body, headers = {} } = {}) {
+  const tgId = getTgId();
+  const h = {
+    'Content-Type': 'application/json',
+    'x-tg-id': tgId != null ? String(tgId) : '',
+    ...headers,
+  };
+  const res = await fetch(path, {
+    method,
+    headers: h,
+    body: body ? JSON.stringify({ tg_id: tgId, ...body }) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+  return data;
 }
 
-export function need(method, req, res) {
-  if (req.method !== method) {
-    res.setHeader('Allow', method);
-    json(res, 405, { ok:false, error:`Method ${req.method} not allowed` });
-    return false;
-  }
-  return true;
-}
+// Примеры использования:
+// await api('/api/focus', { method: 'POST', body: { text } });
+// await api('/api/tasks', { method: 'POST', body: { title, due_ts } });
