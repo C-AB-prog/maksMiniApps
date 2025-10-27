@@ -1,41 +1,35 @@
-// /api/focus.js
-import { ensureSchema, q } from "./_db.js";
-import { ensureUser, json } from "./_utils.js";
+// api/focus.js
+import { getOrCreateUser, readFocus, writeFocus } from './_db.js';
+import { getUserId, json } from './_utils.js';
 
-export async function GET(req) {
+export default async function handler(req, res) {
   try {
-    await ensureSchema();
-    const user = await ensureUser(req);
-    if (!user) return json({ error: "open_via_telegram" }, 401);
+    const uid = getUserId(req);
+    if (!uid) return json(res, 400, { ok:false, error:'no user id' });
 
-    const r = await q(`SELECT text, updated_at FROM focus WHERE user_id=$1`, [user.id]);
-    return json(r.rows[0] || {});
+    await getOrCreateUser(uid);
+
+    if (req.method === 'GET') {
+      const text = await readFocus(uid);
+      return json(res, 200, { ok:true, text });
+    }
+    if (req.method === 'POST') {
+      const body = await readBody(req);
+      await writeFocus(uid, body?.text ?? '');
+      return json(res, 200, { ok:true });
+    }
+
+    res.setHeader('Allow', 'GET, POST');
+    return json(res, 405, { ok:false, error:`Method ${req.method} not allowed` });
   } catch (e) {
-    return json({ error: String(e.message || e) }, 500);
+    return json(res, 500, { ok:false, error:e.message });
   }
 }
 
-export async function PUT(req) {
-  try {
-    await ensureSchema();
-    const user = await ensureUser(req);
-    if (!user) return json({ error: "open_via_telegram" }, 401);
-
-    const body = await req.json().catch(() => ({}));
-    const text = String(body.text || "").trim();
-    if (!text) return json({ error: "empty" }, 400);
-
-    await q(
-      `
-      INSERT INTO focus (user_id, text, updated_at)
-      VALUES ($1,$2, now())
-      ON CONFLICT (user_id) DO UPDATE
-      SET text = EXCLUDED.text, updated_at = now()
-      `,
-      [user.id, text]
-    );
-    return json({ ok: true });
-  } catch (e) {
-    return json({ error: String(e.message || e) }, 500);
-  }
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let data=''; req.on('data', c => data += c);
+    req.on('end', () => { try{ resolve(data?JSON.parse(data):{}); } catch(e){ reject(e); } });
+    req.on('error', reject);
+  });
 }
