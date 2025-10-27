@@ -1,52 +1,78 @@
-// api/tasks.js
-import { addTask, deleteTask, getOrCreateUser, listTasks, toggleTask } from './_db.js';
-import { getUserId, json } from './_utils.js';
+// /api/tasks.js
+import { Pool } from 'pg';
+
+const pool = global.pgPool ?? new Pool({
+  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL || process.env.POSTGRES_PRISMA_URL,
+  ssl: { rejectUnauthorized: false },
+});
+if (!global.pgPool) global.pgPool = pool;
 
 export default async function handler(req, res) {
   try {
-    const uid = getUserId(req);
-    if (!uid) return json(res, 400, { ok:false, error:'no user id' });
+    const tgId = String(
+      req.headers['x-tg-id'] ||
+      req.body?.tg_id ||
+      req.query?.tg_id || ''
+    ).trim();
 
-    await getOrCreateUser(uid);
+    if (!tgId) return res.status(400).json({ ok: false, error: 'tg_id required' });
 
     if (req.method === 'GET') {
-      const tasks = await listTasks(uid);
-      return json(res, 200, { ok:true, tasks });
+      const q = await pool.query(
+        `select id, title, due_ts, done
+           from tasks
+          where user_id = $1::bigint
+          order by due_ts nulls last, id desc
+          limit 200`,
+        [tgId]
+      );
+      return res.json({ ok: true, items: q.rows });
     }
 
     if (req.method === 'POST') {
-      const body = await readBody(req);
-      if (!body?.title) return json(res, 400, { ok:false, error:'title is required' });
-      const t = await addTask(uid, { title: body.title, scope: body.scope, dueDate: body.dueDate });
-      return json(res, 200, { ok:true, task: t });
+      const { title, due_ts } = req.body || {};
+      if (!title) return res.status(400).json({ ok: false, error: 'title required' });
+
+      const q = await pool.query(
+        `insert into tasks(user_id, title, due_ts)
+         values ($1::bigint, $2, $3)
+         returning id, title, due_ts, done`,
+        [tgId, title, due_ts ?? null]
+      );
+      return res.json({ ok: true, item: q.rows[0] });
     }
 
-    if (req.method === 'PUT') {
-      const body = await readBody(req);
-      if (!body?.id) return json(res, 400, { ok:false, error:'id is required' });
-      const t = await toggleTask(uid, { id: Number(body.id), done: !!body.done });
-      if (!t) return json(res, 404, { ok:false, error:'not found' });
-      return json(res, 200, { ok:true, task: t });
+    if (req.method === 'PATCH') {
+      const { id, done } = req.body || {};
+      if (!id) return res.status(400).json({ ok: false, error: 'id required' });
+
+      const q = await pool.query(
+        `update tasks
+            set done = coalesce($3::bool, done)
+          where id = $1::bigint
+            and user_id = $2::bigint
+        returning id, title, due_ts, done`,
+        [String(id), tgId, done]
+      );
+      if (!q.rowCount) return res.status(404).json({ ok: false, error: 'not found' });
+      return res.json({ ok: true, item: q.rows[0] });
     }
 
     if (req.method === 'DELETE') {
-      const id = Number(req.query.id || 0);
-      if (!id) return json(res, 400, { ok:false, error:'id is required' });
-      await deleteTask(uid, id);
-      return json(res, 200, { ok:true });
+      const { id } = req.body || {};
+      if (!id) return res.status(400).json({ ok: false, error: 'id required' });
+
+      await pool.query(
+        `delete from tasks
+          where id = $1::bigint
+            and user_id = $2::bigint`,
+        [String(id), tgId]
+      );
+      return res.json({ ok: true });
     }
 
-    res.setHeader('Allow', 'GET, POST, PUT, DELETE');
-    return json(res, 405, { ok:false, error:`Method ${req.method} not allowed` });
+    return res.status(405).json({ ok: false, error: 'method not allowed' });
   } catch (e) {
-    return json(res, 500, { ok:false, error:e.message });
+    return res.status(500).json({ ok: false, error: e.message });
   }
-}
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let data=''; req.on('data', c => data += c);
-    req.on('end', () => { try{ resolve(data?JSON.parse(data):{}); } catch(e){ reject(e); } });
-    req.on('error', reject);
-  });
 }
