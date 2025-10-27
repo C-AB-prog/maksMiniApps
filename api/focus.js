@@ -1,35 +1,62 @@
-// api/focus.js
-import { getOrCreateUser, readFocus, writeFocus } from './_db.js';
-import { getUserId, json } from './_utils.js';
+// /api/focus.js
+import { Pool } from 'pg';
+
+const pool = global.pgPool ?? new Pool({
+  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL || process.env.POSTGRES_PRISMA_URL,
+  ssl: { rejectUnauthorized: false },
+});
+if (!global.pgPool) global.pgPool = pool;
 
 export default async function handler(req, res) {
   try {
-    const uid = getUserId(req);
-    if (!uid) return json(res, 400, { ok:false, error:'no user id' });
+    const tgId = String(
+      req.headers['x-tg-id'] ||
+      req.body?.tg_id ||
+      req.query?.tg_id || ''
+    ).trim();
 
-    await getOrCreateUser(uid);
+    if (!tgId) return res.status(400).json({ ok: false, error: 'tg_id required' });
 
     if (req.method === 'GET') {
-      const text = await readFocus(uid);
-      return json(res, 200, { ok:true, text });
+      const q = await pool.query(
+        `select id, text, ts
+           from focuses
+          where user_id = $1::bigint
+          order by ts desc
+          limit 50`,
+        [tgId]
+      );
+      return res.json({ ok: true, items: q.rows });
     }
+
     if (req.method === 'POST') {
-      const body = await readBody(req);
-      await writeFocus(uid, body?.text ?? '');
-      return json(res, 200, { ok:true });
+      const { text } = req.body || {};
+      if (!text) return res.status(400).json({ ok: false, error: 'text required' });
+
+      const q = await pool.query(
+        `insert into focuses(user_id, text)
+         values ($1::bigint, $2)
+         returning id, text, ts`,
+        [tgId, text]
+      );
+      return res.json({ ok: true, item: q.rows[0] });
     }
 
-    res.setHeader('Allow', 'GET, POST');
-    return json(res, 405, { ok:false, error:`Method ${req.method} not allowed` });
-  } catch (e) {
-    return json(res, 500, { ok:false, error:e.message });
-  }
-}
+    if (req.method === 'DELETE') {
+      const { id } = req.body || {};
+      if (!id) return res.status(400).json({ ok: false, error: 'id required' });
 
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let data=''; req.on('data', c => data += c);
-    req.on('end', () => { try{ resolve(data?JSON.parse(data):{}); } catch(e){ reject(e); } });
-    req.on('error', reject);
-  });
+      await pool.query(
+        `delete from focuses
+          where id = $1::bigint
+            and user_id = $2::bigint`,
+        [String(id), tgId]
+      );
+      return res.json({ ok: true });
+    }
+
+    return res.status(405).json({ ok: false, error: 'method not allowed' });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e.message });
+  }
 }
