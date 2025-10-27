@@ -1,4 +1,4 @@
-// /api/_utils.js
+// api/_utils.js
 function json(res, data, status = 200) {
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -8,18 +8,19 @@ function json(res, data, status = 200) {
 async function readBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', c => (body += c));
+    req.on('data', chunk => body += chunk);
     req.on('end', () => {
       try { resolve(body ? JSON.parse(body) : {}); }
-      catch { resolve({}); }
+      catch (e) { resolve({}); }
     });
     req.on('error', reject);
   });
 }
 
-// 1) x-telegram-id -> id = tg_XXXX
-// 2) x-stable-id   -> как есть
-// 3) fallback cookie
+// Единая идентификация пользователя:
+// 1) x-telegram-id (число) -> id = tg_XXXX
+// 2) x-stable-id (строка)   -> как есть
+// 3) запасной cookie/fallback
 function getUser(req, res) {
   const tg = (req.headers['x-telegram-id'] || '').toString().trim();
   const stable = (req.headers['x-stable-id'] || '').toString().trim();
@@ -27,7 +28,7 @@ function getUser(req, res) {
   if (tg) return { id: `tg_${tg}`, tg_id: Number(tg) || null };
   if (stable) return { id: stable, tg_id: null };
 
-  // кука-фоллбек
+  // старый запасной путь (если вдруг вызывают без хедеров)
   const cookies = Object.fromEntries(
     (req.headers.cookie || '')
       .split(';')
