@@ -144,20 +144,205 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .badge.dead{color:#991b1b;border-color:#ef4444;background:#fef2f2}
 
 /* ===================== */
-/*          CHAT         */
+/*      CHAT SYSTEM      */
 /* ===================== */
-.chat{
-  display:flex;flex-direction:column;height:340px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
-.chat-body{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,#FAFBFF,#F7FAFF)}
-.bubble{max-width:82%;padding:11px 13px;border-radius:16px;font-size:14px}
+
+.chat-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.chat-item {
+  background: #fff;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.chat-item:hover {
+  border-color: var(--brand);
+  transform: translateY(-2px);
+}
+
+.chat-item.active {
+  border-color: var(--brand);
+  background: linear-gradient(135deg, #f8faff, #f0f4ff);
+  box-shadow: 0 8px 25px rgba(91,108,255,.15);
+}
+
+.chat-item.new {
+  border: 2px dashed var(--muted);
+  background: transparent;
+}
+
+.chat-item.new:hover {
+  border-color: var(--brand);
+  background: rgba(91,108,255,.03);
+}
+
+.chat-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+  opacity: 0.7;
+}
+
+.chat-item.active .chat-icon,
+.chat-item:hover .chat-icon {
+  opacity: 1;
+}
+
+.chat-title {
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+
+.chat-date {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.chat-delete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: white;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-item:hover .chat-delete {
+  opacity: 1;
+}
+
+.chat-window {
+  display: none;
+  flex-direction: column;
+  height: 400px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.chat-window.active {
+  display: flex;
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+
+.chat-header-title {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.chat-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-body{
+  flex:1;
+  overflow:auto;
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  background:linear-gradient(180deg,#FAFBFF,#F7FAFF)
+}
+.bubble{
+  max-width:82%;
+  padding:11px 13px;
+  border-radius:16px;
+  font-size:14px;
+  line-height:1.4;
+}
 .me{
-  align-self:flex-end;background:linear-gradient(135deg, var(--brand), var(--brand-2));color:#fff;border-bottom-right-radius:6px
+  align-self:flex-end;
+  background:linear-gradient(135deg, var(--brand), var(--brand-2));
+  color:#fff;
+  border-bottom-right-radius:6px
 }
 .bot{
-  align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:6px
+  align-self:flex-start;
+  background:#fff;
+  border:1px solid var(--line);
+  border-bottom-left-radius:6px
 }
-.chat-foot{display:flex;gap:8px;padding:8px;border-top:1px solid var(--line);background:#fff}
+.chat-foot{
+  display:flex;
+  gap:8px;
+  padding:8px;
+  border-top:1px solid var(--line);
+  background:#fff
+}
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.active {
+  display: flex;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.modal-title {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 700;
+}
 
 /* ===================== */
 /*      BOTTOM NAV       */
@@ -265,14 +450,33 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   <!-- Чат -->
   <section id="screen-chat" class="grid">
     <div class="card">
-      <h3>Чат с ассистентом</h3>
-      <div class="chat">
-        <div id="chat-body" class="chat-body">
-          <div class="bubble bot">Привет! Я твой ассистент по продуктивности. Могу помочь разбить большие задачи на шаги, составить план или дать совет по тайм-менеджменту.</div>
+      <h3>Мои чаты с ассистентом</h3>
+      <div class="chat-container">
+        <div id="chat-list" class="chat-list">
+          <!-- Чат-сессии будут генерироваться здесь -->
         </div>
-        <div class="chat-foot">
-          <input id="chat-input" class="input" type="text" placeholder="Спросите про план, задачи или продуктивность…" />
-          <button id="chat-send" class="btn" aria-label="Отправить">➤</button>
+        
+        <div id="chat-window" class="chat-window">
+          <div class="chat-header">
+            <div class="chat-header-title" id="current-chat-title">Новый чат</div>
+            <div class="chat-header-actions">
+              <button class="btn ghost icon" id="back-to-chats">← Назад</button>
+            </div>
+          </div>
+          <div id="chat-body" class="chat-body">
+            <div class="bubble bot">Привет! Я твой ассистент по продуктивности. Чем могу помочь?</div>
+          </div>
+          <div class="chat-foot">
+            <input id="chat-input" class="input" type="text" placeholder="Напишите сообщение..." />
+            <button id="chat-send" class="btn" aria-label="Отправить">➤</button>
+          </div>
+        </div>
+
+        <div id="no-chats-message" style="text-align: center; padding: 40px 20px;">
+          <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">💬</div>
+          <h3 style="margin: 0 0 8px 0;">Нет активных чатов</h3>
+          <p class="muted">Создайте новый чат, чтобы начать общение с ассистентом</p>
+          <button class="btn" id="create-first-chat" style="margin-top: 16px;">Создать чат</button>
         </div>
       </div>
     </div>
@@ -347,6 +551,18 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   </section>
 </div>
 
+<!-- Modal для создания нового чата -->
+<div id="new-chat-modal" class="modal">
+  <div class="modal-content">
+    <h3 class="modal-title">Название чата</h3>
+    <input type="text" id="new-chat-title" class="input" placeholder="Например: Планирование проекта" style="margin-bottom: 16px;">
+    <div style="display: flex; gap: 10px;">
+      <button class="btn secondary" id="cancel-new-chat" style="flex: 1;">Отмена</button>
+      <button class="btn" id="confirm-new-chat" style="flex: 1;">Создать</button>
+    </div>
+  </div>
+</div>
+
 <!-- Bottom navigation -->
 <nav class="nav">
   <div class="item active" data-go="home">
@@ -358,7 +574,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     План
   </div>
   <div class="item" data-go="chat">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18л4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
     Чат
   </div>
   <div class="item" data-go="stats">
@@ -437,6 +653,154 @@ async function api(path, method='GET', body=null) {
   }
 }
 
+/* ===== CHAT SYSTEM ===== */
+let chats = [];
+let currentChatId = null;
+
+// Загрузка чатов из localStorage
+function loadChats() {
+  try {
+    const saved = localStorage.getItem('growth_assistant_chats');
+    if (saved) {
+      chats = JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Error loading chats:', e);
+    chats = [];
+  }
+  renderChatList();
+}
+
+// Сохранение чатов в localStorage
+function saveChats() {
+  try {
+    localStorage.setItem('growth_assistant_chats', JSON.stringify(chats));
+  } catch (e) {
+    console.error('Error saving chats:', e);
+  }
+}
+
+// Создание нового чата
+function createNewChat(title = 'Новый чат') {
+  const newChat = {
+    id: 'chat_' + Date.now(),
+    title: title,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    messages: [
+      {
+        role: 'assistant',
+        content: 'Привет! Я твой ассистент по продуктивности. Чем могу помочь?',
+        timestamp: new Date().toISOString()
+      }
+    ]
+  };
+  
+  chats.unshift(newChat);
+  saveChats();
+  renderChatList();
+  return newChat.id;
+}
+
+// Удаление чата
+function deleteChat(chatId) {
+  chats = chats.filter(chat => chat.id !== chatId);
+  if (currentChatId === chatId) {
+    closeChat();
+  }
+  saveChats();
+  renderChatList();
+}
+
+// Открытие чата
+function openChat(chatId) {
+  const chat = chats.find(c => c.id === chatId);
+  if (!chat) return;
+  
+  currentChatId = chatId;
+  $('#current-chat-title').textContent = chat.title;
+  $('#chat-window').classList.add('active');
+  $('#no-chats-message').style.display = 'none';
+  
+  renderChatMessages(chat.messages);
+}
+
+// Закрытие чата
+function closeChat() {
+  currentChatId = null;
+  $('#chat-window').classList.remove('active');
+  $('#no-chats-message').style.display = chats.length === 0 ? 'block' : 'none';
+  $('#chat-body').innerHTML = '';
+}
+
+// Рендер списка чатов
+function renderChatList() {
+  const container = $('#chat-list');
+  container.innerHTML = '';
+  
+  // Добавляем существующие чаты
+  chats.forEach(chat => {
+    const chatEl = document.createElement('div');
+    chatEl.className = `chat-item ${currentChatId === chat.id ? 'active' : ''}`;
+    chatEl.innerHTML = `
+      <button class="chat-delete" onclick="event.stopPropagation(); deleteChat('${chat.id}')">×</button>
+      <div class="chat-icon">💬</div>
+      <div class="chat-title">${chat.title}</div>
+      <div class="chat-date">${new Date(chat.updatedAt).toLocaleDateString('ru-RU')}</div>
+    `;
+    chatEl.onclick = () => openChat(chat.id);
+    container.appendChild(chatEl);
+  });
+  
+  // Добавляем кнопку создания нового чата
+  const newChatEl = document.createElement('div');
+  newChatEl.className = 'chat-item new';
+  newChatEl.innerHTML = `
+    <div class="chat-icon">+</div>
+    <div class="chat-title">Новый чат</div>
+  `;
+  newChatEl.onclick = () => $('#new-chat-modal').classList.add('active');
+  container.appendChild(newChatEl);
+  
+  // Показываем/скрываем сообщение о отсутствии чатов
+  $('#no-chats-message').style.display = chats.length === 0 && !currentChatId ? 'block' : 'none';
+}
+
+// Рендер сообщений в чате
+function renderChatMessages(messages) {
+  const container = $('#chat-body');
+  container.innerHTML = '';
+  
+  messages.forEach(msg => {
+    const bubble = document.createElement('div');
+    bubble.className = `bubble ${msg.role === 'user' ? 'me' : 'bot'}`;
+    bubble.textContent = msg.content;
+    container.appendChild(bubble);
+  });
+  
+  container.scrollTop = container.scrollHeight;
+}
+
+// Добавление сообщения в текущий чат
+function addMessageToChat(role, content) {
+  if (!currentChatId) return;
+  
+  const chat = chats.find(c => c.id === currentChatId);
+  if (!chat) return;
+  
+  const newMessage = {
+    role: role,
+    content: content,
+    timestamp: new Date().toISOString()
+  };
+  
+  chat.messages.push(newMessage);
+  chat.updatedAt = new Date().toISOString();
+  
+  saveChats();
+  renderChatMessages(chat.messages);
+}
+
 /* ===== nav ===== */
 const screens = {
   home: $('#screen-home'),
@@ -452,6 +816,11 @@ $$('.nav .item').forEach(it=>{
     const to = it.dataset.go;
     Object.values(screens).forEach(s=>s.classList.remove('active'));
     screens[to].classList.add('active');
+    
+    // При переходе на вкладку чата загружаем чаты
+    if (to === 'chat') {
+      loadChats();
+    }
   };
 });
 
@@ -727,33 +1096,58 @@ function renderWeekChart(){
   }
 }
 
-/* ===== chat ===== */
-function pushChat(text, me=false){
-  const b=document.createElement('div'); 
-  b.className='bubble ' + (me?'me':'bot'); 
-  b.textContent=text;
-  $('#chat-body').appendChild(b); 
-  $('#chat-body').scrollTop=1e9;
-}
+/* ===== chat system events ===== */
+$('#back-to-chats').onclick = closeChat;
 
-$('#chat-send').onclick = async ()=>{
+$('#create-first-chat').onclick = () => {
+  $('#new-chat-modal').classList.add('active');
+};
+
+$('#cancel-new-chat').onclick = () => {
+  $('#new-chat-modal').classList.remove('active');
+  $('#new-chat-title').value = '';
+};
+
+$('#confirm-new-chat').onclick = () => {
+  const title = $('#new-chat-title').value.trim() || 'Новый чат';
+  const newChatId = createNewChat(title);
+  $('#new-chat-modal').classList.remove('active');
+  $('#new-chat-title').value = '';
+  openChat(newChatId);
+  showToast('Чат создан');
+};
+
+$('#chat-send').onclick = async () => {
   const text = $('#chat-input').value.trim(); 
   if (!text) return;
   
-  $('#chat-input').value=''; 
-  pushChat(text,true);
+  // Если нет активного чата, создаем новый
+  if (!currentChatId) {
+    const newChatId = createNewChat('Новый чат');
+    openChat(newChatId);
+  }
   
-  try{
+  $('#chat-input').value = ''; 
+  addMessageToChat('user', text);
+  
+  try {
     const r = await api('/api/chat','POST',{ text });
-    pushChat(r.reply || 'Я обработал ваш запрос и готов помочь!');
-  }catch(e){
-    pushChat('В настоящее время я не могу подключиться к серверу. Вот что я могу сделать офлайн:\n\n• Помочь разбить большие задачи на шаги\n• Подсказать методы тайм-менеджмента\n• Составить примерный план выполнения задач');
+    addMessageToChat('assistant', r.reply || 'Я обработал ваш запрос и готов помочь!');
+  } catch(e) {
+    addMessageToChat('assistant', 'В настоящее время я не могу подключиться к серверу. Вот что я могу сделать офлайн:\n\n• Помочь разбить большие задачи на шаги\n• Подсказать методы тайм-менеджмента\n• Составить примерный план выполнения задач');
   }
 };
 
-$('#chat-input').addEventListener('keydown',e=>{ 
-  if (e.key==='Enter') $('#chat-send').click(); 
+$('#chat-input').addEventListener('keydown', e => { 
+  if (e.key === 'Enter') $('#chat-send').click(); 
 });
+
+// Закрытие модального окна при клике вне его
+$('#new-chat-modal').onclick = (e) => {
+  if (e.target === $('#new-chat-modal')) {
+    $('#new-chat-modal').classList.remove('active');
+  }
+};
 
 /* ===== профиль ===== */
 // Переключение языка
