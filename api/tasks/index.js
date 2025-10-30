@@ -1,3 +1,4 @@
+// api/tasks/index.js (или api/tasks.js)
 const { Pool } = require('pg');
 
 const pool = global.__POOL__ || new Pool({
@@ -9,24 +10,23 @@ const pool = global.__POOL__ || new Pool({
 global.__POOL__ = pool;
 
 let schemaReady = global.__TASKS_SCHEMA_READY__ || false;
-
 async function ensureSchema() {
   if (schemaReady) return;
   const sql = `
-  CREATE TABLE IF NOT EXISTS users(
-    id SERIAL PRIMARY KEY,
-    tg_id BIGINT UNIQUE NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT now()
-  );
-  CREATE TABLE IF NOT EXISTS tasks(
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
-    due_at TIMESTAMPTZ,
-    done BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMPTZ DEFAULT now()
-  );
-  CREATE INDEX IF NOT EXISTS tasks_user_id_idx ON tasks(user_id);
+    CREATE TABLE IF NOT EXISTS users(
+      id SERIAL PRIMARY KEY,
+      tg_id BIGINT UNIQUE NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS tasks(
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      due_at TIMESTAMPTZ,
+      done BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS tasks_user_id_idx ON tasks(user_id);
   `;
   await pool.query(sql);
   schemaReady = true;
@@ -39,29 +39,26 @@ function json(res, code, data) {
   res.setHeader('Cache-Control', 'no-store');
   res.end(JSON.stringify(data));
 }
-
 async function readJson(req) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     let raw = '';
-    req.on('data', c => raw += c);
+    req.on('data', c => (raw += c));
     req.on('end', () => {
       if (!raw) return resolve({});
       try { resolve(JSON.parse(raw)); } catch { resolve({}); }
     });
   });
 }
-
 function parseTgId(req) {
   const h = (req.headers['x-tg-id'] || '').toString().trim();
   if (h && /^\d+$/.test(h)) return h;
   const url = new URL(req.url, 'http://localhost');
   const q = url.searchParams.get('tg_id');
   if (q && /^\d+$/.test(q)) return q;
-  const b = req.body?.tg_id ?? req.body?.tgId ?? null;
+  const b = req.body?.tg_id ?? req.body?.tgId;
   if (b && /^\d+$/.test(String(b))) return String(b);
   return null;
 }
-
 async function getOrCreateUser(tgId) {
   const one = await pool.query('SELECT id FROM users WHERE tg_id=$1', [tgId]);
   if (one.rowCount) return one.rows[0];
