@@ -1,151 +1,87 @@
 /* ===== helpers ===== */
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
-const showToast = (t) => console.log('[toast]', t);
 
-/* ===== tg_id ===== */
+/* ===== tg_id: единая логика на тел/ПК ===== */
 let tgId = 0;
-
 function readTgId() {
-  // 1) Telegram WebApp
   try {
     const wa = window.Telegram?.WebApp?.initDataUnsafe;
     const uid = wa?.user?.id;
     if (uid && /^\d+$/.test(String(uid))) return Number(uid);
   } catch {}
-  // 2) URL ?tg_id=
   const qid = new URLSearchParams(location.search).get('tg_id');
   if (qid && /^\d+$/.test(qid)) return Number(qid);
-  // 3) localStorage
   const ls = localStorage.getItem('tg_id');
   if (ls && /^\d+$/.test(ls)) return Number(ls);
   return 0;
 }
-
 function saveTgIdLocal(id) {
   if (id && /^\d+$/.test(String(id))) {
     localStorage.setItem('tg_id', String(id));
     tgId = Number(id);
-    renderWho();
+    const w = $('#who'); if (w) w.textContent = `tg_id: ${tgId}`;
   }
 }
 
-function renderWho() {
-  const el = document.getElementById('who');
-  if (el) el.textContent = `tg_id: ${tgId || '—'}`;
-}
-
-/* ===== status badge ===== */
+/* ===== online badge (не уводим в офлайн по одной 400) ===== */
 async function ping() {
   try {
-    const r = await fetch('/api/ping', {
-      headers: tgId ? { 'X-TG-ID': String(tgId) } : {}
-    });
-    const j = await r.json();
-    const ok = !!j?.ok;
-    const badge = document.getElementById('badge');
-    if (badge) {
-      badge.textContent = ok ? 'online' : 'offline';
-      badge.className = `badge ${ok ? 'ok' : 'off'}`;
-    }
-    return ok;
+    const r = await fetch('/api/ping', { headers: tgId ? { 'X-TG-ID': String(tgId) } : {} });
+    const ok = (await r.json())?.ok;
+    const b = $('#badge');
+    if (b) { b.textContent = ok ? 'online' : 'offline'; b.className = 'badge ' + (ok ? 'ok' : 'off'); }
+    return !!ok;
   } catch {
-    const badge = document.getElementById('badge');
-    if (badge) {
-      badge.textContent = 'offline';
-      badge.className = 'badge off';
-    }
+    const b = $('#badge'); if (b) { b.textContent = 'offline'; b.className = 'badge off'; }
     return false;
   }
 }
 
 /* ===== chat ===== */
-const chatLog = document.getElementById('chatLog');
-
 function renderMessages(list) {
-  if (!chatLog) return;
-  chatLog.innerHTML = '';
+  const box = $('#chatLog'); if (!box) return;
+  box.innerHTML = '';
   for (const m of list) {
-    const div = document.createElement('div');
-    div.className = `msg ${m.role}`;
-    div.textContent = m.content;
-    chatLog.appendChild(div);
+    const d = document.createElement('div');
+    d.className = `msg ${m.role}`;
+    d.textContent = m.content;
+    box.appendChild(d);
   }
-  chatLog.scrollTop = chatLog.scrollHeight;
+  box.scrollTop = box.scrollHeight;
 }
-
 async function loadHistory() {
   if (!tgId) return;
-  const r = await fetch(`/api/chat-history?tg_id=${tgId}`, {
-    headers: tgId ? { 'X-TG-ID': String(tgId) } : {}
-  });
-  const j = await r.json().catch(() => ({}));
+  const r = await fetch(`/api/chat-history?tg_id=${tgId}`, { headers: { 'X-TG-ID': String(tgId) } });
+  const j = await r.json().catch(()=>({}));
   if (j?.ok) renderMessages(j.messages || []);
 }
-
 async function sendMessage() {
-  const box = document.getElementById('msg');
-  const message = box.value.trim();
-  if (!message) return;
+  const inp = $('#msg'); const message = inp?.value?.trim(); if (!message) return;
+  inp.value = '';
 
-  box.value = '';
-
-  // оптимистичный рендер
-  const current = $$('.msg').map(el => ({
-    role: el.classList.contains('user') ? 'user' : 'assistant',
-    content: el.textContent
-  }));
-  renderMessages([...current, { role: 'user', content: message }, { role: 'assistant', content: '…' }]);
+  // оптимистично показываем
+  const cur = $$('.msg').map(el => ({ role: el.classList.contains('user')?'user':'assistant', content: el.textContent }));
+  renderMessages([...cur, { role: 'user', content: message }, { role: 'assistant', content: '…' }]);
 
   const r = await fetch('/api/chat', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(tgId ? { 'X-TG-ID': String(tgId) } : {})
-    },
+    headers: { 'Content-Type': 'application/json', ...(tgId ? { 'X-TG-ID': String(tgId) } : {}) },
     body: JSON.stringify({ message, tg_id: tgId })
   });
-
-  const j = await r.json().catch(() => ({}));
-  if (!j?.ok) showToast('Ошибка чата');
+  await r.json().catch(()=>({}));
   await loadHistory();
 }
 
-/* ===== tasks (если уже есть бэкенд) ===== */
-async function loadTasks() {
-  if (!tgId) return;
-  const r = await fetch(`/api/tasks?tg_id=${tgId}`, {
-    headers: tgId ? { 'X-TG-ID': String(tgId) } : {}
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!j?.ok) return;
-  const box = document.getElementById('tasks');
-  if (!box) return;
-  box.innerHTML = '';
-  for (const t of j.items || []) {
-    const row = document.createElement('div');
-    row.className = 'taskitem';
-    row.innerHTML = `
-      <input type="checkbox" ${t.done ? 'checked' : ''} data-id="${t.id}" />
-      <div>
-        <div>${t.title}</div>
-        <small class="muted">${t.due_at ? new Date(t.due_at).toLocaleString('ru-RU') : 'без срока'}</small>
-      </div>
-      <button data-del="${t.id}">Удалить</button>
-    `;
-    box.appendChild(row);
-  }
+/* ===== tasks ===== */
+function bindTasks() {
   $$('#tasks input[type="checkbox"]').forEach(cb => {
     cb.addEventListener('change', async e => {
       const id = Number(e.target.getAttribute('data-id'));
-      const done = e.target.checked;
       await fetch('/api/tasks', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(tgId ? { 'X-TG-ID': String(tgId) } : {})
-        },
-        body: JSON.stringify({ id, done, tg_id: tgId })
+        headers: { 'Content-Type': 'application/json', 'X-TG-ID': String(tgId) },
+        body: JSON.stringify({ id, done: e.target.checked, tg_id: tgId })
       });
       await loadTasks();
     });
@@ -155,59 +91,87 @@ async function loadTasks() {
       const id = Number(e.target.getAttribute('data-del'));
       await fetch('/api/tasks', {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(tgId ? { 'X-TG-ID': String(tgId) } : {})
-        },
+        headers: { 'Content-Type': 'application/json', 'X-TG-ID': String(tgId) },
         body: JSON.stringify({ id, tg_id: tgId })
       });
       await loadTasks();
     });
   });
 }
-
+function renderTasks(items=[]) {
+  const box = $('#tasks'); if (!box) return;
+  box.innerHTML = items.map(t => `
+    <div class="taskitem">
+      <input type="checkbox" ${t.done?'checked':''} data-id="${t.id}" />
+      <div>
+        <div>${t.title}</div>
+        <small class="muted">${t.due_at ? new Date(t.due_at).toLocaleString('ru-RU') : 'без срока'}</small>
+      </div>
+      <button data-del="${t.id}">Удалить</button>
+    </div>`).join('');
+  bindTasks();
+}
+async function loadTasks() {
+  if (!tgId) return;
+  const r = await fetch(`/api/tasks?tg_id=${tgId}`, { headers: { 'X-TG-ID': String(tgId) } });
+  const j = await r.json().catch(()=>({}));
+  if (j?.ok) renderTasks(j.items || []);
+}
 async function addTask() {
-  const title = document.getElementById('taskTitle')?.value.trim();
-  const dueRaw = document.getElementById('taskDue')?.value;
+  const title = $('#taskTitle')?.value?.trim();
+  const dueRaw = $('#taskDue')?.value;
   const due_at = dueRaw ? new Date(dueRaw).toISOString() : null;
   if (!title) return;
   await fetch('/api/tasks', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(tgId ? { 'X-TG-ID': String(tgId) } : {})
-    },
+    headers: { 'Content-Type': 'application/json', ...(tgId?{'X-TG-ID':String(tgId)}:{}) },
     body: JSON.stringify({ title, due_at, tg_id: tgId })
   });
-  document.getElementById('taskTitle').value = '';
-  document.getElementById('taskDue').value = '';
+  $('#taskTitle').value = ''; if ($('#taskDue')) $('#taskDue').value = '';
   await loadTasks();
+}
+
+/* ===== focus (если есть на странице) ===== */
+async function loadFocus() {
+  const i = $('#focusInput'); if (!i || !tgId) return;
+  try {
+    const r = await fetch(`/api/focus?tg_id=${tgId}`, { headers: { 'X-TG-ID': String(tgId) } });
+    const j = await r.json(); if (j?.ok) i.value = j.text || '';
+  } catch {}
+}
+async function saveFocus() {
+  const i = $('#focusInput'); if (!i || !tgId) return;
+  const text = i.value || '';
+  try {
+    await fetch('/api/focus', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-TG-ID': String(tgId) },
+      body: JSON.stringify({ text, tg_id: tgId })
+    });
+  } catch {}
 }
 
 /* ===== init ===== */
 document.getElementById('saveTg')?.addEventListener('click', () => {
-  const val = document.getElementById('tgInput')?.value.trim();
-  if (val && /^\d+$/.test(val)) {
-    saveTgIdLocal(val);
-    ping(); loadHistory(); loadTasks();
-  }
+  const val = $('#tgInput')?.value?.trim();
+  if (val && /^\d+$/.test(val)) { saveTgIdLocal(val); ping(); loadHistory(); loadTasks(); loadFocus(); }
 });
-
 document.getElementById('send')?.addEventListener('click', sendMessage);
 document.getElementById('msg')?.addEventListener('keydown', e => e.key === 'Enter' ? sendMessage() : null);
 document.getElementById('addTask')?.addEventListener('click', addTask);
+document.getElementById('saveFocus')?.addEventListener('click', saveFocus);
 
 (async function boot() {
   tgId = readTgId();
-  renderWho();
-  if (tgId) {
-    const tgInput = document.getElementById('tgInput');
-    if (tgInput) tgInput.value = String(tgId);
-  }
+  const w = $('#who'); if (w) w.textContent = `tg_id: ${tgId || '—'}`;
+  if (tgId && $('#tgInput')) $('#tgInput').value = String(tgId);
+
   await ping();
   await loadHistory();
   await loadTasks();
-  // простой поллинг для синхронизации между устройствами
+  await loadFocus();
+
+  // пассивная синхронизация между устройствами
   setInterval(loadHistory, 8000);
   setInterval(loadTasks, 15000);
 })();
