@@ -1,200 +1,213 @@
-// ---------- Telegram ID detection ----------
-function detectTgId() {
-  // 1) Telegram Mini App
-  const tgIdFromTMA = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
-  if (tgIdFromTMA) {
-    localStorage.setItem('tg_id', String(tgIdFromTMA));
-    return Number(tgIdFromTMA);
-  }
-  // 2) URL ?tg_id= (на случай desktop теста)
-  const url = new URL(location.href);
-  const qId = url.searchParams.get('tg_id');
-  if (qId && /^\d+$/.test(qId)) {
-    localStorage.setItem('tg_id', qId);
-    return Number(qId);
-  }
-  // 3) LocalStorage (для dev в браузере)
+/* ===== helpers ===== */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const showToast = (t) => console.log('[toast]', t);
+
+/* ===== tg_id ===== */
+let tgId = 0;
+
+function readTgId() {
+  // 1) Telegram WebApp
+  try {
+    const wa = window.Telegram?.WebApp?.initDataUnsafe;
+    const uid = wa?.user?.id;
+    if (uid && /^\d+$/.test(String(uid))) return Number(uid);
+  } catch {}
+  // 2) URL ?tg_id=
+  const qid = new URLSearchParams(location.search).get('tg_id');
+  if (qid && /^\d+$/.test(qid)) return Number(qid);
+  // 3) localStorage
   const ls = localStorage.getItem('tg_id');
   if (ls && /^\d+$/.test(ls)) return Number(ls);
-
-  // 4) Ничего нет — пусть бекенд вернёт 400, а мы покажем тост
-  return null;
-}
-const TG_ID = detectTgId();
-
-// ---------- Helpers ----------
-function toast(msg, ms = 2200) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.style.display = 'block';
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => (el.style.display = 'none'), ms);
+  return 0;
 }
 
-async function api(path, { method = 'GET', body } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
-  if (TG_ID != null) headers['x-tg-id'] = String(TG_ID);
-
-  const res = await fetch(path, {
-    method,
-    headers,
-    body: body ? JSON.stringify({ tg_id: TG_ID, ...body }) : undefined,
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || data?.ok === false) {
-    throw new Error(data?.error || `HTTP ${res.status}`);
+function saveTgIdLocal(id) {
+  if (id && /^\d+$/.test(String(id))) {
+    localStorage.setItem('tg_id', String(id));
+    tgId = Number(id);
+    renderWho();
   }
-  return data;
 }
 
-// ---------- UI refs ----------
-const elFocusText = document.getElementById('focusText');
-const elSaveFocus = document.getElementById('btnSaveFocus');
+function renderWho() {
+  const el = document.getElementById('who');
+  if (el) el.textContent = `tg_id: ${tgId || '—'}`;
+}
 
-const elTaskTitle = document.getElementById('taskTitle');
-const elTaskDue = document.getElementById('taskDue');
-const elAddTask = document.getElementById('btnAddTask');
-const elTabs = document.querySelectorAll('.tab');
-const elList = document.getElementById('tasksList');
-
-let currentRange = 'today';
-
-// ---------- Events ----------
-elTabs.forEach(t => {
-  t.addEventListener('click', () => {
-    elTabs.forEach(x => x.classList.remove('active'));
-    t.classList.add('active');
-    currentRange = t.dataset.range;
-  });
-});
-
-elSaveFocus.addEventListener('click', async () => {
+/* ===== status badge ===== */
+async function ping() {
   try {
-    await api('/api/focus', { method: 'POST', body: { text: elFocusText.value.trim() } });
-    toast('Фокус сохранён ✅');
-    elFocusText.value = '';
-    // не грузим список фокусов, достаточно тоста
-  } catch (e) {
-    toast(`focus: ${e.message}`);
-  }
-});
-
-elAddTask.addEventListener('click', async () => {
-  const title = elTaskTitle.value.trim();
-  if (!title) {
-    toast('Введите название задачи');
-    return;
-  }
-  let due_ts = null;
-  if (currentRange === 'today') {
-    // если поле пустое — срок сегодня 23:59
-    const d = elTaskDue.value ? new Date(elTaskDue.value) : new Date();
-    if (!elTaskDue.value) { d.setHours(23, 59, 0, 0); }
-    due_ts = d.toISOString();
-  } else if (currentRange === 'week') {
-    const d = elTaskDue.value ? new Date(elTaskDue.value) : new Date();
-    // конец недели (вс) 23:59
-    const day = d.getDay(); // 0..6
-    const diff = 7 - day;   // до вс
-    d.setDate(d.getDate() + diff);
-    d.setHours(23, 59, 0, 0);
-    due_ts = d.toISOString();
-  } else {
-    // backlog — без срока
-    due_ts = null;
-  }
-
-  // Оптимистично в UI:
-  const temp = renderItem({ id: `tmp-${Date.now()}`, title, due_ts, done: false }, true);
-  elList.prepend(temp);
-
-  try {
-    const { item } = await api('/api/tasks', { method: 'POST', body: { title, due_ts } });
-    // Заменим временный элемент реальным
-    temp.replaceWith(renderItem(item));
-    elTaskTitle.value = '';
-    elTaskDue.value = '';
-  } catch (e) {
-    temp.remove();
-    toast(`tasks: ${e.message}`);
-  }
-});
-
-async function toggleTask(id, done) {
-  const card = document.querySelector(`[data-id="${id}"]`);
-  if (card) card.style.opacity = .5;
-  try {
-    await api('/api/tasks', { method: 'PATCH', body: { id, done } });
-    if (card) card.style.opacity = 1;
-    if (card) {
-      card.querySelector('.muted').textContent = done ? 'Готово' : 'Активна';
-      card.querySelector('.btnToggle').textContent = done ? '↩︎' : '✓';
+    const r = await fetch('/api/ping', {
+      headers: tgId ? { 'X-TG-ID': String(tgId) } : {}
+    });
+    const j = await r.json();
+    const ok = !!j?.ok;
+    const badge = document.getElementById('badge');
+    if (badge) {
+      badge.textContent = ok ? 'online' : 'offline';
+      badge.className = `badge ${ok ? 'ok' : 'off'}`;
     }
-  } catch (e) {
-    if (card) card.style.opacity = 1;
-    toast(`toggle: ${e.message}`);
+    return ok;
+  } catch {
+    const badge = document.getElementById('badge');
+    if (badge) {
+      badge.textContent = 'offline';
+      badge.className = 'badge off';
+    }
+    return false;
   }
 }
 
-async function deleteTask(id) {
-  const card = document.querySelector(`[data-id="${id}"]`);
-  if (card) card.style.opacity = .5;
-  try {
-    await api('/api/tasks', { method: 'DELETE', body: { id } });
-    if (card) card.remove(); // создаём видимость моментального удаления
-  } catch (e) {
-    if (card) card.style.opacity = 1;
-    toast(`delete: ${e.message}`);
+/* ===== chat ===== */
+const chatLog = document.getElementById('chatLog');
+
+function renderMessages(list) {
+  if (!chatLog) return;
+  chatLog.innerHTML = '';
+  for (const m of list) {
+    const div = document.createElement('div');
+    div.className = `msg ${m.role}`;
+    div.textContent = m.content;
+    chatLog.appendChild(div);
   }
+  chatLog.scrollTop = chatLog.scrollHeight;
 }
 
-// ---------- Initial load ----------
+async function loadHistory() {
+  if (!tgId) return;
+  const r = await fetch(`/api/chat-history?tg_id=${tgId}`, {
+    headers: tgId ? { 'X-TG-ID': String(tgId) } : {}
+  });
+  const j = await r.json().catch(() => ({}));
+  if (j?.ok) renderMessages(j.messages || []);
+}
+
+async function sendMessage() {
+  const box = document.getElementById('msg');
+  const message = box.value.trim();
+  if (!message) return;
+
+  box.value = '';
+
+  // оптимистичный рендер
+  const current = $$('.msg').map(el => ({
+    role: el.classList.contains('user') ? 'user' : 'assistant',
+    content: el.textContent
+  }));
+  renderMessages([...current, { role: 'user', content: message }, { role: 'assistant', content: '…' }]);
+
+  const r = await fetch('/api/chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(tgId ? { 'X-TG-ID': String(tgId) } : {})
+    },
+    body: JSON.stringify({ message, tg_id: tgId })
+  });
+
+  const j = await r.json().catch(() => ({}));
+  if (!j?.ok) showToast('Ошибка чата');
+  await loadHistory();
+}
+
+/* ===== tasks (если уже есть бэкенд) ===== */
 async function loadTasks() {
-  try {
-    const { items } = await api('/api/tasks'); // GET
-    elList.innerHTML = '';
-    items.forEach(item => elList.appendChild(renderItem(item)));
-  } catch (e) {
-    toast(`load: ${e.message}`);
+  if (!tgId) return;
+  const r = await fetch(`/api/tasks?tg_id=${tgId}`, {
+    headers: tgId ? { 'X-TG-ID': String(tgId) } : {}
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!j?.ok) return;
+  const box = document.getElementById('tasks');
+  if (!box) return;
+  box.innerHTML = '';
+  for (const t of j.items || []) {
+    const row = document.createElement('div');
+    row.className = 'taskitem';
+    row.innerHTML = `
+      <input type="checkbox" ${t.done ? 'checked' : ''} data-id="${t.id}" />
+      <div>
+        <div>${t.title}</div>
+        <small class="muted">${t.due_at ? new Date(t.due_at).toLocaleString('ru-RU') : 'без срока'}</small>
+      </div>
+      <button data-del="${t.id}">Удалить</button>
+    `;
+    box.appendChild(row);
   }
+  $$('#tasks input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', async e => {
+      const id = Number(e.target.getAttribute('data-id'));
+      const done = e.target.checked;
+      await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(tgId ? { 'X-TG-ID': String(tgId) } : {})
+        },
+        body: JSON.stringify({ id, done, tg_id: tgId })
+      });
+      await loadTasks();
+    });
+  });
+  $$('#tasks button[data-del]').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      const id = Number(e.target.getAttribute('data-del'));
+      await fetch('/api/tasks', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(tgId ? { 'X-TG-ID': String(tgId) } : {})
+        },
+        body: JSON.stringify({ id, tg_id: tgId })
+      });
+      await loadTasks();
+    });
+  });
 }
 
-function renderItem(t, isTemp = false) {
-  const el = document.createElement('div');
-  el.className = 'item';
-  el.dataset.id = t.id;
-
-  const title = document.createElement('div');
-  title.textContent = t.title;
-
-  const meta = document.createElement('div');
-  meta.className = 'muted';
-  meta.textContent = t.done ? 'Готово' : (t.due_ts ? new Date(t.due_ts).toLocaleString() : 'Без срока');
-
-  const act = document.createElement('div');
-  act.className = 'row';
-  act.style.flex = '0 0 auto';
-  act.style.gap = '6px';
-
-  const btnT = document.createElement('button');
-  btnT.className = 'btn ghost btnToggle';
-  btnT.textContent = t.done ? '↩︎' : '✓';
-  btnT.onclick = () => toggleTask(t.id, !t.done);
-
-  const btnD = document.createElement('button');
-  btnD.className = 'btn danger';
-  btnD.textContent = '✕';
-  btnD.onclick = () => deleteTask(t.id);
-
-  act.append(btnT, btnD);
-  el.append(title, meta, act);
-  if (isTemp) el.style.opacity = .7;
-  return el;
+async function addTask() {
+  const title = document.getElementById('taskTitle')?.value.trim();
+  const dueRaw = document.getElementById('taskDue')?.value;
+  const due_at = dueRaw ? new Date(dueRaw).toISOString() : null;
+  if (!title) return;
+  await fetch('/api/tasks', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(tgId ? { 'X-TG-ID': String(tgId) } : {})
+    },
+    body: JSON.stringify({ title, due_at, tg_id: tgId })
+  });
+  document.getElementById('taskTitle').value = '';
+  document.getElementById('taskDue').value = '';
+  await loadTasks();
 }
+
+/* ===== init ===== */
+document.getElementById('saveTg')?.addEventListener('click', () => {
+  const val = document.getElementById('tgInput')?.value.trim();
+  if (val && /^\d+$/.test(val)) {
+    saveTgIdLocal(val);
+    ping(); loadHistory(); loadTasks();
+  }
+});
+
+document.getElementById('send')?.addEventListener('click', sendMessage);
+document.getElementById('msg')?.addEventListener('keydown', e => e.key === 'Enter' ? sendMessage() : null);
+document.getElementById('addTask')?.addEventListener('click', addTask);
 
 (async function boot() {
-  if (TG_ID == null) {
-    toast('tg_id не найден (открой из Telegram Mini App или добавь ?tg_id=123 в URL)');
+  tgId = readTgId();
+  renderWho();
+  if (tgId) {
+    const tgInput = document.getElementById('tgInput');
+    if (tgInput) tgInput.value = String(tgId);
   }
+  await ping();
+  await loadHistory();
   await loadTasks();
+  // простой поллинг для синхронизации между устройствами
+  setInterval(loadHistory, 8000);
+  setInterval(loadTasks, 15000);
 })();
