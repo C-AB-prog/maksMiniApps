@@ -1,11 +1,8 @@
-// api/tasks/index.js (или api/tasks.js)
 const { Pool } = require('pg');
 
 const pool = global.__POOL__ || new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('sslmode=require')
-    ? { rejectUnauthorized: false }
-    : undefined
+  ssl: process.env.DATABASE_URL?.includes('sslmode=require') ? { rejectUnauthorized: false } : undefined
 });
 global.__POOL__ = pool;
 
@@ -41,12 +38,8 @@ function json(res, code, data) {
 }
 async function readJson(req) {
   return new Promise(resolve => {
-    let raw = '';
-    req.on('data', c => (raw += c));
-    req.on('end', () => {
-      if (!raw) return resolve({});
-      try { resolve(JSON.parse(raw)); } catch { resolve({}); }
-    });
+    let raw = ''; req.on('data', c => raw += c);
+    req.on('end', () => { if (!raw) return resolve({}); try { resolve(JSON.parse(raw)); } catch { resolve({}); } });
   });
 }
 function parseTgId(req) {
@@ -77,7 +70,8 @@ module.exports = async (req, res) => {
       const { rows } = await pool.query(
         `SELECT id, title, due_at, done, created_at
          FROM tasks WHERE user_id=$1
-         ORDER BY created_at DESC`, [user.id]
+         ORDER BY created_at DESC`,
+        [user.id]
       );
       return json(res, 200, { ok: true, items: rows });
     }
