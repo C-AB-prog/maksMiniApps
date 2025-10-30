@@ -934,12 +934,10 @@ const showToast = (t) => {
   const el = $('#toast'); 
   el.textContent = t; 
   el.style.display = 'block'; 
-  setTimeout(() => {
-    el.style.display = 'none';
-  }, 1800); 
+  setTimeout(() => { el.style.display = 'none'; }, 1800); 
 }
 
-// ===== TELEGRAM ID ЛОГИКА (сохранена из main.js) =====
+// ===== TELEGRAM ID ЛОГИКА =====
 let tgId = 0;
 function readTgId() {
   try {
@@ -988,7 +986,7 @@ async function ping() {
   }
 }
 
-// ===== СИСТЕМА ЧАТОВ (расширенная) =====
+// ===== СИСТЕМА ЧАТОВ =====
 let chats = [];
 let currentChatId = null;
 let isTyping = false;
@@ -1005,13 +1003,29 @@ function loadChats() {
   }
   renderChatList();
 }
-
 function saveChats() {
   try {
     localStorage.setItem('growth_assistant_chats', JSON.stringify(chats));
   } catch (e) {
     console.error('Error saving chats:', e);
   }
+}
+
+// гарантируем наличие основного чата для синхронизации с сервером
+function ensureMainChat() {
+  let main = chats.find(c => c.id === 'main_chat');
+  if (!main) {
+    main = {
+      id: 'main_chat',
+      title: 'Основной чат',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      messages: []
+    };
+    chats.unshift(main);
+    saveChats();
+  }
+  return main;
 }
 
 function createNewChat(title = 'Новый чат') {
@@ -1021,52 +1035,34 @@ function createNewChat(title = 'Новый чат') {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     messages: [
-      {
-        role: 'assistant',
-        content: 'Привет! Я твой ассистент по продуктивности. Чем могу помочь?',
-        timestamp: new Date().toISOString()
-      }
+      { role: 'assistant', content: 'Привет! Я твой ассистент по продуктивности. Чем могу помочь?', timestamp: new Date().toISOString() }
     ]
   };
-  
   chats.unshift(newChat);
   saveChats();
   renderChatList();
   return newChat.id;
 }
-
 function deleteChat(chatId) {
   chats = chats.filter(chat => chat.id !== chatId);
-  if (currentChatId === chatId) {
-    closeChat();
-  }
+  if (currentChatId === chatId) closeChat();
   saveChats();
   renderChatList();
 }
-
 function openChat(chatId) {
   const chat = chats.find(c => c.id === chatId);
   if (!chat) return;
-  
   currentChatId = chatId;
   $('#current-chat-title').textContent = chat.title;
-  
   $('#bottom-nav').classList.add('hidden');
-  
   const chatFullscreen = $('#chat-fullscreen');
   chatFullscreen.classList.add('active');
-  
   renderChatMessages(chat.messages);
-  
-  setTimeout(() => {
-    $('#msg').focus();
-  }, 400);
+  setTimeout(() => { $('#msg').focus(); }, 400);
 }
-
 function closeChat() {
   const chatFullscreen = $('#chat-fullscreen');
   chatFullscreen.classList.add('slide-out');
-  
   setTimeout(() => {
     chatFullscreen.classList.remove('active', 'slide-out');
     $('#bottom-nav').classList.remove('hidden');
@@ -1074,11 +1070,9 @@ function closeChat() {
     $('#chatLog').innerHTML = '';
   }, 400);
 }
-
 function renderChatList() {
   const container = $('#chat-list');
   container.innerHTML = '';
-  
   chats.forEach((chat, index) => {
     const chatEl = document.createElement('div');
     chatEl.className = `chat-item ${currentChatId === chat.id ? 'active' : ''}`;
@@ -1092,24 +1086,17 @@ function renderChatList() {
     chatEl.onclick = () => openChat(chat.id);
     container.appendChild(chatEl);
   });
-  
   const newChatEl = document.createElement('div');
   newChatEl.className = 'chat-item new';
   newChatEl.style.animationDelay = `${chats.length * 0.1}s`;
-  newChatEl.innerHTML = `
-    <div class="chat-icon">+</div>
-    <div class="chat-title">Новый чат</div>
-  `;
+  newChatEl.innerHTML = `<div class="chat-icon">+</div><div class="chat-title">Новый чат</div>`;
   newChatEl.onclick = () => $('#new-chat-modal').classList.add('active');
   container.appendChild(newChatEl);
-  
   $('#no-chats-message').style.display = chats.length === 0 ? 'block' : 'none';
 }
-
 function renderChatMessages(messages) {
   const container = $('#chatLog');
   container.innerHTML = '';
-  
   messages.forEach((msg, index) => {
     const bubble = document.createElement('div');
     bubble.className = `msg ${msg.role}`;
@@ -1117,54 +1104,83 @@ function renderChatMessages(messages) {
     bubble.style.animationDelay = `${index * 0.05}s`;
     container.appendChild(bubble);
   });
-  
   container.scrollTop = container.scrollHeight;
 }
-
 function showTypingIndicator() {
   if (isTyping) return;
-  
   isTyping = true;
   const container = $('#chatLog');
   const typingEl = document.createElement('div');
   typingEl.className = 'typing-indicator';
-  typingEl.innerHTML = `
-    <div class="typing-dot"></div>
-    <div class="typing-dot"></div>
-    <div class="typing-dot"></div>
-  `;
+  typingEl.innerHTML = `<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>`;
   container.appendChild(typingEl);
   container.scrollTop = container.scrollHeight;
 }
-
 function hideTypingIndicator() {
   isTyping = false;
   const typingEl = $('.typing-indicator');
-  if (typingEl) {
-    typingEl.remove();
-  }
+  if (typingEl) typingEl.remove();
 }
-
 function addMessageToChat(role, content) {
   if (!currentChatId) return;
-  
   const chat = chats.find(c => c.id === currentChatId);
   if (!chat) return;
-  
-  const newMessage = {
-    role: role,
-    content: content,
-    timestamp: new Date().toISOString()
-  };
-  
+  const newMessage = { role, content, timestamp: new Date().toISOString() };
   chat.messages.push(newMessage);
   chat.updatedAt = new Date().toISOString();
-  
   saveChats();
   renderChatMessages(chat.messages);
 }
 
-// ===== СИСТЕМА ЗАДАЧ (расширенная) =====
+// серверная синхронизация истории (единая на телефон/ПК)
+async function loadHistory() {
+  if (!tgId) return;
+  try {
+    const r = await fetch(`/api/chat-history?tg_id=${tgId}`, { headers: { 'X-TG-ID': String(tgId) } });
+    const j = await r.json();
+    if (j?.ok) {
+      const main = ensureMainChat();
+      main.messages = j.messages || [];
+      main.updatedAt = new Date().toISOString();
+      saveChats();
+      renderChatList();
+      if (currentChatId === 'main_chat') renderChatMessages(main.messages);
+    }
+  } catch (e) {
+    console.error('Load history error:', e);
+  }
+}
+
+// отправка сообщения с подтягиванием серверной ленты
+async function sendMessage() {
+  const inp = $('#msg'); 
+  const message = inp?.value?.trim(); 
+  if (!message) return;
+  inp.value = '';
+
+  const main = ensureMainChat();
+  if (!currentChatId) openChat('main_chat');
+
+  addMessageToChat('user', message);
+  showTypingIndicator();
+
+  try {
+    const r = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(tgId ? { 'X-TG-ID': String(tgId) } : {}) },
+      body: JSON.stringify({ message, tg_id: tgId })
+    });
+    await r.json().catch(()=>({}));
+    await loadHistory(); // тянем ответ с сервера
+  } catch (e) {
+    console.error('Chat send error:', e);
+    addMessageToChat('assistant', 'Сервер недоступен. Сообщение сохранено локально.');
+  } finally {
+    hideTypingIndicator();
+  }
+}
+
+// ===== СИСТЕМА ЗАДАЧ =====
 let tasks = [];
 let focus = null;
 let quickPrio = 'today';
@@ -1172,8 +1188,8 @@ let currentLanguage = 'ru';
 
 // Date helpers
 const startOfDay = d => { const x = new Date(d); x.setHours(0,0,0,0); return x; }
-const endOfDay = d => { const x = new Date(d); x.setHours(23,59,59,999); return x; }
-const addDays = (d,n)=>{const x=new Date(d); x.setDate(x.getDate()+n); return x;}
+const endOfDay   = d => { const x = new Date(d); x.setHours(23,59,59,999); return x; }
+const addDays    = (d,n)=>{const x=new Date(d); x.setDate(x.getDate()+n); return x;}
 
 function normalizeDue(v){
   if (v === null || v === undefined) return null;
@@ -1192,9 +1208,7 @@ function normalizeDue(v){
   }
   return null;
 }
-
 function normalizeTask(t){ return { ...t, due_ts: normalizeDue(t.due_at) }; }
-
 function fmt(ts){
   const ms = normalizeDue(ts);
   if (ms === null) return '—';
@@ -1203,22 +1217,16 @@ function fmt(ts){
   return d.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
 }
 
-// Task rendering for new UI
 function rowTask(t){
   const el = document.createElement('div'); 
   el.className='task'+(t.done?' done':'');
-  
   const chk = document.createElement('button'); 
   chk.className='btn icon'; 
   chk.textContent = t.done?'✓':'○';
-  chk.onclick = async ()=>{
-    await toggleTask(t.id, !t.done);
-  };
-  
+  chk.onclick = async ()=>{ await toggleTask(t.id, !t.done); };
   const ttl = document.createElement('div'); 
   ttl.className='ttl'; 
   ttl.textContent = t.title;
-  
   const badge = document.createElement('div');
   if (t.due_ts==null){ 
     badge.className='badge'; 
@@ -1228,19 +1236,14 @@ function rowTask(t){
     badge.className = 'badge ' + (past ? (t.done?'ok':'dead') : 'due');
     badge.textContent = (t.done?'сделано • ':'до ') + fmt(t.due_ts);
   }
-  
   const del = document.createElement('button'); 
   del.className='btn secondary icon'; 
   del.textContent='✕';
-  del.onclick = async ()=>{
-    await deleteTask(t.id);
-  };
-  
+  del.onclick = async ()=>{ await deleteTask(t.id); };
   el.append(chk, ttl, badge, del);
   return el;
 }
 
-// API functions for tasks
 async function toggleTask(id, done) {
   try {
     await fetch('/api/tasks', {
@@ -1253,7 +1256,6 @@ async function toggleTask(id, done) {
     console.error('Toggle task error:', e);
   }
 }
-
 async function deleteTask(id) {
   try {
     await fetch('/api/tasks', {
@@ -1266,7 +1268,6 @@ async function deleteTask(id) {
     console.error('Delete task error:', e);
   }
 }
-
 async function loadTasks() {
   if (!tgId) return;
   try {
@@ -1282,12 +1283,10 @@ async function loadTasks() {
     console.error('Load tasks error:', e);
   }
 }
-
 async function addTask() {
   const title = $('#taskTitle')?.value?.trim();
   const dueRaw = $('#taskDue')?.value;
   let due_ts = null;
-  
   if (dueRaw){ 
     const ms = Date.parse(dueRaw); 
     if (!isNaN(ms)) due_ts = ms; 
@@ -1297,16 +1296,13 @@ async function addTask() {
     else if (quickPrio==='week') due_ts = endOfDay(addDays(now,7)).getTime();
     else if (quickPrio==='month') due_ts = endOfDay(addDays(now,30)).getTime();
   }
-  
   if (!title) return showToast('Введите название');
-  
   try {
     await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(tgId?{'X-TG-ID':String(tgId)}:{}) },
       body: JSON.stringify({ title, due_at: due_ts ? new Date(due_ts).toISOString() : null, tg_id: tgId })
     });
-    
     $('#taskTitle').value = ''; 
     if ($('#taskDue')) $('#taskDue').value = '';
     await loadTasks();
@@ -1317,15 +1313,18 @@ async function addTask() {
   }
 }
 
-// ===== RENDERING FUNCTIONS =====
+// ===== RENDERING =====
 function renderHome(){
   const s = startOfDay(new Date()).getTime();
   const e = endOfDay(new Date()).getTime();
-  const today = tasks.filter(t => {
+  // Сегодня + без срока
+  const today = tasks
+    .filter(t => {
       const ms = normalizeDue(t.due_ts);
-      return ms!=null && ms>=s && ms<=e;
+      if (ms === null) return true; // показываем задачи без дедлайна
+      return ms >= s && ms <= e;
     })
-    .sort((a,b)=> (a.done-b.done) || ((normalizeDue(a.due_ts)||0)-(normalizeDue(b.due_ts)||0)));
+    .sort((a,b)=> (a.done - b.done) || ((normalizeDue(a.due_ts)||0) - (normalizeDue(b.due_ts)||0)));
   const box = $('#tasks-today'); 
   if (!box) return;
   box.innerHTML='';
@@ -1340,31 +1339,29 @@ let planFilter='today';
 function renderPlan(){
   let arr = tasks.slice();
   const now = new Date();
-  
   if (planFilter==='today') {
     const dayStart = startOfDay(now).getTime();
     const dayEnd = endOfDay(now).getTime();
     arr = arr.filter(t => {
       const ms = normalizeDue(t.due_ts);
-      return ms!=null && ms>=dayStart && ms<=dayEnd;
+      return ms === null || (ms >= dayStart && ms <= dayEnd);
     });
   } else if (planFilter==='week') {
     const weekEnd = endOfDay(addDays(now,7)).getTime();
     arr = arr.filter(t => {
       const ms = normalizeDue(t.due_ts);
-      return ms!=null && ms<=weekEnd;
+      return ms === null || (ms <= weekEnd);
     });
   } else if (planFilter==='month') {
     const monthEnd = endOfDay(addDays(now,30)).getTime();
     arr = arr.filter(t => {
       const ms = normalizeDue(t.due_ts);
-      return ms!=null && ms<=monthEnd;
+      return ms === null || (ms <= monthEnd);
     });
   } else if (planFilter==='team') {
     arr = arr.filter(t => t.priority === 'team');
   }
-  
-  arr.sort((a,b)=>(a.done-b.done)||((normalizeDue(a.due_ts)||1e20)-(normalizeDue(b.due_ts)||1e20)));
+  arr.sort((a,b)=>(a.done - b.done) || ((normalizeDue(a.due_ts)||1e20) - (normalizeDue(b.due_ts)||1e20)));
   const box = $('#tasks-plan'); 
   if (!box) return;
   box.innerHTML='';
@@ -1384,20 +1381,16 @@ function renderStats(){
     return !t.done && ms!=null && ms < Date.now();
   }).length;
   const rate = total ? Math.round(done*100/total) : 0;
-  
   $('#m-total').textContent = total;
   $('#m-done').textContent  = done;
   $('#m-rate').textContent  = rate+'%';
   $('#m-over').textContent  = overdue;
-  
   renderWeekChart();
 }
-
 function renderWeekChart(){
   const chart = $('#week-chart');
   if (!chart) return;
   chart.innerHTML = '';
-  
   for (let i = 6; i >= 0; i--) {
     const day = addDays(new Date(), -i);
     const dayStart = startOfDay(day).getTime();
@@ -1409,21 +1402,18 @@ function renderWeekChart(){
     const doneCount = dayTasks.filter(t => t.done).length;
     const totalCount = dayTasks.length;
     const height = totalCount > 0 ? (doneCount / totalCount) * 100 : 10;
-    
     const bar = document.createElement('div');
     bar.className = 'chart-bar';
     bar.style.height = `${height}%`;
-    
     const label = document.createElement('div');
     label.className = 'chart-label';
     label.textContent = day.toLocaleDateString('ru-RU', { weekday: 'short' });
-    
     bar.appendChild(label);
     chart.appendChild(bar);
   }
 }
 
-// ===== FOCUS SYSTEM =====
+// ===== FOCUS =====
 async function loadFocus() {
   const i = $('#focusInput'); 
   if (!i || !tgId) return;
@@ -1433,7 +1423,6 @@ async function loadFocus() {
     if (j?.ok) i.value = j.text || '';
   } catch {}
 }
-
 async function saveFocus() {
   const i = $('#focusInput'); 
   if (!i || !tgId) return;
@@ -1450,66 +1439,7 @@ async function saveFocus() {
   }
 }
 
-// ===== CHAT MESSAGING =====
-async function loadHistory() {
-  if (!tgId) return;
-  try {
-    const r = await fetch(`/api/chat-history?tg_id=${tgId}`, { headers: { 'X-TG-ID': String(tgId) } });
-    const j = await r.json();
-    if (j?.ok) {
-      // Если есть сообщения, создаем чат с ними
-      if (j.messages && j.messages.length > 0 && chats.length === 0) {
-        const mainChat = {
-          id: 'main_chat',
-          title: 'Основной чат',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          messages: j.messages
-        };
-        chats = [mainChat];
-        saveChats();
-        renderChatList();
-      }
-    }
-  } catch(e) {
-    console.error('Load history error:', e);
-  }
-}
-
-async function sendMessage() {
-  const inp = $('#msg'); 
-  const message = inp?.value?.trim(); 
-  if (!message) return;
-  inp.value = '';
-
-  // Если нет активного чата, создаем новый
-  if (!currentChatId) {
-    currentChatId = createNewChat('Основной чат');
-  }
-
-  addMessageToChat('user', message);
-  showTypingIndicator();
-  
-  try {
-    const r = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(tgId ? { 'X-TG-ID': String(tgId) } : {}) },
-      body: JSON.stringify({ message, tg_id: tgId })
-    });
-    const response = await r.json();
-    
-    setTimeout(() => {
-      hideTypingIndicator();
-      addMessageToChat('assistant', response?.reply || 'Готово! Задачи добавлены.');
-    }, 1000);
-    
-  } catch(e) {
-    hideTypingIndicator();
-    addMessageToChat('assistant', 'Сейчас нет соединения. Напиши "добавь: <задача> до <дата>", и я создам задачи, как только сервер будет доступен.');
-  }
-}
-
-// ===== NAVIGATION SYSTEM =====
+// ===== NAVIGATION =====
 const screens = {
   home: $('#screen-home'),
   plan: $('#screen-plan'),
@@ -1517,7 +1447,6 @@ const screens = {
   stats: $('#screen-stats'),
   profile: $('#screen-profile'),
 };
-
 $$('.nav .item').forEach(it => {
   it.onclick = () => {
     $$('.nav .item').forEach(x => x.classList.remove('active'));
@@ -1525,14 +1454,14 @@ $$('.nav .item').forEach(it => {
     const to = it.dataset.go;
     Object.values(screens).forEach(s => s.classList.remove('active'));
     screens[to].classList.add('active');
-    
     if (to === 'chat') {
       loadChats();
+      loadHistory(); // важное: подтягиваем серверную ленту
     }
   };
 });
 
-// ===== INITIALIZATION =====
+// ===== UI INIT =====
 function initUI() {
   // Quick add priority chips
   $$('.seg .chip[data-prio]').forEach(ch => {
@@ -1546,15 +1475,14 @@ function initUI() {
 
   // Plan filter
   $('#f-today').onclick = () => { planFilter='today'; updPlanBtns(); renderPlan(); }
-  $('#f-week').onclick = () => { planFilter='week'; updPlanBtns(); renderPlan(); }
+  $('#f-week').onclick  = () => { planFilter='week';  updPlanBtns(); renderPlan(); }
   $('#f-month').onclick = () => { planFilter='month'; updPlanBtns(); renderPlan(); }
-  $('#f-team').onclick = () => { planFilter='team'; updPlanBtns(); renderPlan(); }
-  
+  $('#f-team').onclick  = () => { planFilter='team';  updPlanBtns(); renderPlan(); }
   function updPlanBtns(){
     $('#f-today').classList.toggle('active', planFilter==='today');
-    $('#f-week').classList.toggle('active', planFilter==='week');
+    $('#f-week').classList.toggle('active',  planFilter==='week');
     $('#f-month').classList.toggle('active', planFilter==='month');
-    $('#f-team').classList.toggle('active', planFilter==='team');
+    $('#f-team').classList.toggle('active',  planFilter==='team');
   }
 
   // Chat system events
@@ -1581,9 +1509,9 @@ function initUI() {
   });
 
   $('#btn-tariff').onclick = () => showToast('Раздел "Тарифы" в разработке');
-  $('#btn-help').onclick = () => showToast('Раздел "Помощь" в разработке');
-  $('#btn-guide').onclick = () => showToast('Раздел "Как пользоваться" в разработке');
-  $('#btn-consult').onclick = () => showToast('Раздел "Консультация" в разработке');
+  $('#btn-help').onclick   = () => showToast('Раздел "Помощь" в разработке');
+  $('#btn-guide').onclick  = () => showToast('Раздел "Как пользоваться" в разработке');
+  $('#btn-consult').onclick= () => showToast('Раздел "Консультация" в разработке');
 
   // Modal close on outside click
   $('#new-chat-modal').onclick = (e) => {
@@ -1593,7 +1521,7 @@ function initUI() {
   };
 }
 
-// ===== EVENT LISTENERS =====
+// ===== EVENTS =====
 function setupEventListeners() {
   $('#saveTg')?.addEventListener('click', () => {
     const val = $('#tgInput')?.value?.trim();
@@ -1603,9 +1531,10 @@ function setupEventListeners() {
       loadFocus(); 
       loadTasks();
       loadHistory();
+    } else {
+      showToast('Введите корректный Telegram ID');
     }
   });
-  
   $('#send')?.addEventListener('click', sendMessage);
   $('#msg')?.addEventListener('keydown', e => e.key === 'Enter' ? sendMessage() : null);
   $('#addTask')?.addEventListener('click', addTask);
@@ -1625,10 +1554,12 @@ async function boot() {
   await loadFocus();
   await loadTasks();
   loadChats();
+  await loadHistory();
 
   // Пассивная синхронизация
   setInterval(loadFocus, 10000);
   setInterval(loadTasks, 15000);
+  setInterval(loadHistory, 8000); // важное: чат синхронизируется
   setInterval(ping, 30000);
 }
 
