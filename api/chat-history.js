@@ -9,24 +9,23 @@ const pool = global.__POOL__ || new Pool({
 global.__POOL__ = pool;
 
 let schemaReady = global.__SCHEMA_READY__ || false;
-
 async function ensureSchema() {
   if (schemaReady) return;
   const sql = `
-  CREATE TABLE IF NOT EXISTS users(
-    id SERIAL PRIMARY KEY,
-    tg_id BIGINT UNIQUE NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT now()
-  );
-  CREATE TABLE IF NOT EXISTS chat_messages(
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role TEXT NOT NULL CHECK (role IN ('user','assistant','system')),
-    content TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT now()
-  );
-  CREATE INDEX IF NOT EXISTS chat_messages_user_id_created_at_idx
-    ON chat_messages(user_id, created_at DESC);
+    CREATE TABLE IF NOT EXISTS users(
+      id SERIAL PRIMARY KEY,
+      tg_id BIGINT UNIQUE NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS chat_messages(
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      role TEXT NOT NULL CHECK (role IN ('user','assistant','system')),
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS chat_messages_user_id_created_at_idx
+      ON chat_messages(user_id, created_at DESC);
   `;
   await pool.query(sql);
   schemaReady = true;
@@ -39,7 +38,6 @@ function json(res, code, data) {
   res.setHeader('Cache-Control', 'no-store');
   res.end(JSON.stringify(data));
 }
-
 function parseTgId(req) {
   const h = (req.headers['x-tg-id'] || '').toString().trim();
   if (h && /^\d+$/.test(h)) return h;
@@ -48,7 +46,6 @@ function parseTgId(req) {
   if (q && /^\d+$/.test(q)) return q;
   return null;
 }
-
 async function getOrCreateUser(tgId) {
   const one = await pool.query('SELECT id FROM users WHERE tg_id=$1', [tgId]);
   if (one.rowCount) return one.rows[0];
@@ -58,8 +55,10 @@ async function getOrCreateUser(tgId) {
 
 module.exports = async (req, res) => {
   if (req.method !== 'GET') return json(res, 405, { error: 'method_not_allowed' });
+
   try {
     await ensureSchema();
+
     const tgId = parseTgId(req);
     if (!tgId) return json(res, 400, { error: 'TG_ID_REQUIRED' });
 
