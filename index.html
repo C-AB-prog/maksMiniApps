@@ -242,32 +242,51 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   opacity: 1;
 }
 
-.chat-window {
+/* ОТДЕЛЬНОЕ ОКНО ЧАТА */
+.chat-window-overlay {
   display: none;
-  flex-direction: column;
-  height: 400px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  overflow: hidden;
-  background: #fff;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
 }
 
-.chat-window.active {
+.chat-window-overlay.active {
   display: flex;
+}
+
+.chat-window {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 800px;
+  height: 80vh;
+  max-height: 700px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+  overflow: hidden;
 }
 
 .chat-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--line);
   background: #fff;
+  flex-shrink: 0;
 }
 
 .chat-header-title {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .chat-header-actions {
@@ -278,18 +297,19 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .chat-body{
   flex:1;
   overflow:auto;
-  padding:10px;
+  padding:16px;
   display:flex;
   flex-direction:column;
-  gap:8px;
+  gap:12px;
   background:linear-gradient(180deg,#FAFBFF,#F7FAFF)
 }
 .bubble{
-  max-width:82%;
-  padding:11px 13px;
-  border-radius:16px;
+  max-width:75%;
+  padding:12px 16px;
+  border-radius:18px;
   font-size:14px;
   line-height:1.4;
+  word-wrap: break-word;
 }
 .me{
   align-self:flex-end;
@@ -305,10 +325,11 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 }
 .chat-foot{
   display:flex;
-  gap:8px;
-  padding:8px;
+  gap:10px;
+  padding:12px 16px;
   border-top:1px solid var(--line);
-  background:#fff
+  background:#fff;
+  flex-shrink: 0;
 }
 
 /* Modal */
@@ -320,7 +341,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   right: 0;
   bottom: 0;
   background: rgba(0,0,0,0.5);
-  z-index: 100;
+  z-index: 1100;
   align-items: center;
   justify-content: center;
 }
@@ -455,22 +476,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
         <div id="chat-list" class="chat-list">
           <!-- Чат-сессии будут генерироваться здесь -->
         </div>
-        
-        <div id="chat-window" class="chat-window">
-          <div class="chat-header">
-            <div class="chat-header-title" id="current-chat-title">Новый чат</div>
-            <div class="chat-header-actions">
-              <button class="btn ghost icon" id="back-to-chats">← Назад</button>
-            </div>
-          </div>
-          <div id="chat-body" class="chat-body">
-            <div class="bubble bot">Привет! Я твой ассистент по продуктивности. Чем могу помочь?</div>
-          </div>
-          <div class="chat-foot">
-            <input id="chat-input" class="input" type="text" placeholder="Напишите сообщение..." />
-            <button id="chat-send" class="btn" aria-label="Отправить">➤</button>
-          </div>
-        </div>
 
         <div id="no-chats-message" style="text-align: center; padding: 40px 20px;">
           <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">💬</div>
@@ -549,6 +554,25 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       </div>
     </div>
   </section>
+</div>
+
+<!-- ОТДЕЛЬНОЕ ОКНО ЧАТА -->
+<div id="chat-window-overlay" class="chat-window-overlay">
+  <div class="chat-window">
+    <div class="chat-header">
+      <div class="chat-header-title" id="current-chat-title">Новый чат</div>
+      <div class="chat-header-actions">
+        <button class="btn ghost icon" id="close-chat">✕</button>
+      </div>
+    </div>
+    <div id="chat-body" class="chat-body">
+      <div class="bubble bot">Привет! Я твой ассистент по продуктивности. Чем могу помочь?</div>
+    </div>
+    <div class="chat-foot">
+      <input id="chat-input" class="input" type="text" placeholder="Напишите сообщение..." />
+      <button id="chat-send" class="btn" aria-label="Отправить">➤</button>
+    </div>
+  </div>
 </div>
 
 <!-- Modal для создания нового чата -->
@@ -712,24 +736,27 @@ function deleteChat(chatId) {
   renderChatList();
 }
 
-// Открытие чата
+// Открытие чата в отдельном окне
 function openChat(chatId) {
   const chat = chats.find(c => c.id === chatId);
   if (!chat) return;
   
   currentChatId = chatId;
   $('#current-chat-title').textContent = chat.title;
-  $('#chat-window').classList.add('active');
-  $('#no-chats-message').style.display = 'none';
+  $('#chat-window-overlay').classList.add('active');
   
   renderChatMessages(chat.messages);
+  
+  // Фокус на поле ввода
+  setTimeout(() => {
+    $('#chat-input').focus();
+  }, 100);
 }
 
 // Закрытие чата
 function closeChat() {
   currentChatId = null;
-  $('#chat-window').classList.remove('active');
-  $('#no-chats-message').style.display = chats.length === 0 ? 'block' : 'none';
+  $('#chat-window-overlay').classList.remove('active');
   $('#chat-body').innerHTML = '';
 }
 
@@ -763,7 +790,7 @@ function renderChatList() {
   container.appendChild(newChatEl);
   
   // Показываем/скрываем сообщение о отсутствии чатов
-  $('#no-chats-message').style.display = chats.length === 0 && !currentChatId ? 'block' : 'none';
+  $('#no-chats-message').style.display = chats.length === 0 ? 'block' : 'none';
 }
 
 // Рендер сообщений в чате
@@ -1097,7 +1124,7 @@ function renderWeekChart(){
 }
 
 /* ===== chat system events ===== */
-$('#back-to-chats').onclick = closeChat;
+$('#close-chat').onclick = closeChat;
 
 $('#create-first-chat').onclick = () => {
   $('#new-chat-modal').classList.add('active');
@@ -1131,7 +1158,10 @@ $('#chat-send').onclick = async () => {
   addMessageToChat('user', text);
   
   try {
-    const r = await api('/api/chat','POST',{ text });
+    const r = await api('/api/chat','POST',{ 
+      text,
+      chat_id: currentChatId 
+    });
     addMessageToChat('assistant', r.reply || 'Я обработал ваш запрос и готов помочь!');
   } catch(e) {
     addMessageToChat('assistant', 'В настоящее время я не могу подключиться к серверу. Вот что я могу сделать офлайн:\n\n• Помочь разбить большие задачи на шаги\n• Подсказать методы тайм-менеджмента\n• Составить примерный план выполнения задач');
@@ -1142,10 +1172,16 @@ $('#chat-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') $('#chat-send').click(); 
 });
 
-// Закрытие модального окна при клике вне его
+// Закрытие модальных окон при клике вне их
 $('#new-chat-modal').onclick = (e) => {
   if (e.target === $('#new-chat-modal')) {
     $('#new-chat-modal').classList.remove('active');
+  }
+};
+
+$('#chat-window-overlay').onclick = (e) => {
+  if (e.target === $('#chat-window-overlay')) {
+    closeChat();
   }
 };
 
