@@ -166,45 +166,74 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   padding: 16px 12px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 120px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .chat-item:hover {
   border-color: var(--brand);
-  transform: translateY(-2px);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(91,108,255,.15);
 }
 
 .chat-item.active {
   border-color: var(--brand);
   background: linear-gradient(135deg, #f8faff, #f0f4ff);
   box-shadow: 0 8px 25px rgba(91,108,255,.15);
+  transform: translateY(-2px);
 }
 
 .chat-item.new {
   border: 2px dashed var(--muted);
   background: transparent;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    border-color: var(--muted);
+    transform: scale(1);
+  }
+  50% {
+    border-color: var(--brand);
+    transform: scale(1.02);
+  }
 }
 
 .chat-item.new:hover {
   border-color: var(--brand);
   background: rgba(91,108,255,.03);
+  animation: none;
 }
 
 .chat-icon {
   font-size: 24px;
   margin-bottom: 8px;
   opacity: 0.7;
+  transition: all 0.3s ease;
 }
 
 .chat-item.active .chat-icon,
 .chat-item:hover .chat-icon {
   opacity: 1;
+  transform: scale(1.1);
 }
 
 .chat-title {
@@ -212,11 +241,13 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   font-size: 13px;
   line-height: 1.3;
   margin-bottom: 4px;
+  transition: color 0.3s ease;
 }
 
 .chat-date {
   font-size: 11px;
   color: var(--muted);
+  transition: color 0.3s ease;
 }
 
 .chat-delete {
@@ -232,46 +263,40 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   font-size: 12px;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  transform: scale(0.8);
 }
 
 .chat-item:hover .chat-delete {
   opacity: 1;
+  transform: scale(1);
 }
 
-/* ОТДЕЛЬНОЕ ОКНО ЧАТА */
-.chat-window-overlay {
+/* ПОЛНОЭКРАННЫЙ ЧАТ */
+.chat-fullscreen {
   display: none;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 1000;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.chat-window-overlay.active {
-  display: flex;
-}
-
-.chat-window {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: 800px;
-  height: 80vh;
-  max-height: 700px;
   background: #fff;
-  border-radius: 20px;
-  box-shadow: 0 25px 50px rgba(0,0,0,0.25);
-  overflow: hidden;
+  z-index: 1000;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chat-fullscreen.active {
+  display: flex;
+  transform: translateY(0);
+}
+
+.chat-fullscreen.slide-out {
+  transform: translateY(100%);
 }
 
 .chat-header {
@@ -282,11 +307,25 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   border-bottom: 1px solid var(--line);
   background: #fff;
   flex-shrink: 0;
+  position: relative;
+  animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .chat-header-title {
   font-weight: 600;
-  font-size: 16px;
+  font-size: 18px;
+  color: var(--ink);
 }
 
 .chat-header-actions {
@@ -297,39 +336,60 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .chat-body{
   flex:1;
   overflow:auto;
-  padding:16px;
+  padding:20px;
   display:flex;
   flex-direction:column;
-  gap:12px;
-  background:linear-gradient(180deg,#FAFBFF,#F7FAFF)
+  gap:16px;
+  background:linear-gradient(180deg,#FAFBFF,#F7FAFF);
+  scroll-behavior: smooth;
 }
+
 .bubble{
-  max-width:75%;
-  padding:12px 16px;
-  border-radius:18px;
-  font-size:14px;
+  max-width:85%;
+  padding:14px 18px;
+  border-radius:20px;
+  font-size:15px;
   line-height:1.4;
   word-wrap: break-word;
+  animation: messageSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center bottom;
 }
+
+@keyframes messageSlide {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .me{
   align-self:flex-end;
   background:linear-gradient(135deg, var(--brand), var(--brand-2));
   color:#fff;
-  border-bottom-right-radius:6px
+  border-bottom-right-radius:8px;
+  animation-delay: 0.1s;
 }
+
 .bot{
   align-self:flex-start;
   background:#fff;
   border:1px solid var(--line);
-  border-bottom-left-radius:6px
+  border-bottom-left-radius:8px;
+  animation-delay: 0.2s;
 }
+
 .chat-foot{
   display:flex;
-  gap:10px;
-  padding:12px 16px;
+  gap:12px;
+  padding:16px 20px;
   border-top:1px solid var(--line);
   background:#fff;
   flex-shrink: 0;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both;
 }
 
 /* Modal */
@@ -344,6 +404,12 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   z-index: 1100;
   align-items: center;
   justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modal.active {
@@ -352,17 +418,81 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 
 .modal-content {
   background: #fff;
-  border-radius: 20px;
-  padding: 24px;
+  border-radius: 24px;
+  padding: 28px;
   max-width: 400px;
   width: 90%;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+  animation: scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .modal-title {
-  margin: 0 0 16px 0;
-  font-size: 18px;
+  margin: 0 0 20px 0;
+  font-size: 20px;
   font-weight: 700;
+  text-align: center;
+  color: var(--ink);
+}
+
+/* Loading animation */
+.typing-indicator {
+  display: inline-flex;
+  gap: 4px;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  align-self: flex-start;
+}
+
+.typing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+.typing-dot:nth-child(3) { animation-delay: 0s; }
+
+@keyframes typing {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Smooth transitions for interactive elements */
+.btn, .chat-item, .chip {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover effects */
+.btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.chip:hover {
+  transform: translateY(-1px);
 }
 
 /* ===================== */
@@ -374,21 +504,69 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   background:rgba(255,255,255,.9); border-top:1px solid var(--line);
   backdrop-filter: saturate(160%) blur(10px);
   box-shadow:0 -8px 24px rgba(17,24,39,.08);
-  display:flex; justify-content:space-around
+  display:flex; justify-content:space-around;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.nav .item{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:64px;color:var(--muted);font-size:12px}
-.nav .item svg{opacity:.6; transition:opacity .15s, transform .06s}
-.nav .item.active{color:var(--brand)}
-.nav .item.active svg{opacity:1; transform:translateY(-1px); filter: drop-shadow(0 4px 8px rgba(91,108,255,.35))}
+
+.nav.hidden {
+  transform: translateY(100%);
+}
+
+.nav .item{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  min-width:64px;
+  color:var(--muted);
+  font-size:12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0);
+}
+
+.nav .item:hover {
+  transform: translateY(-2px);
+}
+
+.nav .item svg{
+  opacity:.6;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(1);
+}
+
+.nav .item.active{
+  color:var(--brand);
+}
+
+.nav .item.active svg{
+  opacity:1;
+  transform: translateY(-2px) scale(1.1);
+  filter: drop-shadow(0 4px 8px rgba(91,108,255,.35))
+}
 
 /* ===================== */
 /*         TOAST         */
 /* ===================== */
 .toast{
-  position:fixed;left:50%;bottom:calc(78px + var(--safe-bottom));
-  transform:translateX(-50%);background:#111827;color:#fff;padding:10px 14px;border-radius:12px;
-  box-shadow:0 10px 20px rgba(0,0,0,.2);z-index:999
+  position:fixed;
+  left:50%;
+  bottom:calc(78px + var(--safe-bottom));
+  transform:translateX(-50%) translateY(20px);
+  background:#111827;
+  color:#fff;
+  padding:12px 18px;
+  border-radius:14px;
+  box-shadow:0 10px 30px rgba(0,0,0,.3);
+  z-index:999;
+  animation: toastSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
+
+@keyframes toastSlide {
+  to {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
 .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
 .muted{color:var(--muted)}
 
@@ -401,13 +579,31 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .profile-btn{
   display:flex;justify-content:space-between;align-items:center;
   padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:14px;
-  cursor:pointer;transition:all .15s
+  cursor:pointer;transition:all .3s cubic-bezier(0.4, 0, 0.2, 1)
 }
-.profile-btn:hover{background:var(--bg);border-color:var(--brand)}
-.profile-btn .arrow{color:var(--muted);font-size:14px}
+.profile-btn:hover{
+  background:var(--bg);
+  border-color:var(--brand);
+  transform: translateX(4px);
+}
+.profile-btn .arrow{color:var(--muted);font-size:14px;transition: transform 0.3s ease}
+.profile-btn:hover .arrow{transform: translateX(2px)}
 .lang-switch{display:flex;gap:8px;margin-top:8px}
-.lang-btn{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;flex:1}
-.lang-btn.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+.lang-btn{
+  padding:8px 12px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#fff;
+  cursor:pointer;
+  flex:1;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.lang-btn.active{
+  background:var(--brand);
+  color:#fff;
+  border-color:var(--brand);
+  transform: scale(1.05);
+}
 </style>
 </head>
 <body>
@@ -478,7 +674,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
         </div>
 
         <div id="no-chats-message" style="text-align: center; padding: 40px 20px;">
-          <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">💬</div>
+          <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.5; animation: bounce 2s infinite;">💬</div>
           <h3 style="margin: 0 0 8px 0;">Нет активных чатов</h3>
           <p class="muted">Создайте новый чат, чтобы начать общение с ассистентом</p>
           <button class="btn" id="create-first-chat" style="margin-top: 16px;">Создать чат</button>
@@ -556,22 +752,20 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   </section>
 </div>
 
-<!-- ОТДЕЛЬНОЕ ОКНО ЧАТА -->
-<div id="chat-window-overlay" class="chat-window-overlay">
-  <div class="chat-window">
-    <div class="chat-header">
-      <div class="chat-header-title" id="current-chat-title">Новый чат</div>
-      <div class="chat-header-actions">
-        <button class="btn ghost icon" id="close-chat">✕</button>
-      </div>
+<!-- ПОЛНОЭКРАННЫЙ ЧАТ -->
+<div id="chat-fullscreen" class="chat-fullscreen">
+  <div class="chat-header">
+    <div class="chat-header-title" id="current-chat-title">Новый чат</div>
+    <div class="chat-header-actions">
+      <button class="btn ghost icon" id="close-chat">✕</button>
     </div>
-    <div id="chat-body" class="chat-body">
-      <div class="bubble bot">Привет! Я твой ассистент по продуктивности. Чем могу помочь?</div>
-    </div>
-    <div class="chat-foot">
-      <input id="chat-input" class="input" type="text" placeholder="Напишите сообщение..." />
-      <button id="chat-send" class="btn" aria-label="Отправить">➤</button>
-    </div>
+  </div>
+  <div id="chat-body" class="chat-body">
+    <div class="bubble bot">Привет! Я твой ассистент по продуктивности. Чем могу помочь?</div>
+  </div>
+  <div class="chat-foot">
+    <input id="chat-input" class="input" type="text" placeholder="Напишите сообщение..." />
+    <button id="chat-send" class="btn" aria-label="Отправить">➤</button>
   </div>
 </div>
 
@@ -579,7 +773,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 <div id="new-chat-modal" class="modal">
   <div class="modal-content">
     <h3 class="modal-title">Название чата</h3>
-    <input type="text" id="new-chat-title" class="input" placeholder="Например: Планирование проекта" style="margin-bottom: 16px;">
+    <input type="text" id="new-chat-title" class="input" placeholder="Например: Планирование проекта" style="margin-bottom: 20px;">
     <div style="display: flex; gap: 10px;">
       <button class="btn secondary" id="cancel-new-chat" style="flex: 1;">Отмена</button>
       <button class="btn" id="confirm-new-chat" style="flex: 1;">Создать</button>
@@ -588,7 +782,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 </div>
 
 <!-- Bottom navigation -->
-<nav class="nav">
+<nav class="nav" id="bottom-nav">
   <div class="item active" data-go="home">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7v10a1 1 0 0 1-1 1h-6v-6H10v6H4a1 1 0 0 1-1-1V10l9-7z"/></svg>
     Главная
@@ -617,7 +811,15 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 /* ===== helpers ===== */
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
-const showToast = (t) => { const el = $('#toast'); el.textContent=t; el.style.display='block'; setTimeout(()=>el.style.display='none',1800); }
+const showToast = (t) => { 
+  const el = $('#toast'); 
+  el.textContent = t; 
+  el.style.display = 'block'; 
+  setTimeout(() => {
+    el.style.display = 'none';
+  }, 1800); 
+}
+
 const startOfDay = d => { const x = new Date(d); x.setHours(0,0,0,0); return x; }
 const endOfDay = d => { const x = new Date(d); x.setHours(23,59,59,999); return x; }
 const addDays = (d,n)=>{const x=new Date(d); x.setDate(x.getDate()+n); return x;}
@@ -680,6 +882,7 @@ async function api(path, method='GET', body=null) {
 /* ===== CHAT SYSTEM ===== */
 let chats = [];
 let currentChatId = null;
+let isTyping = false;
 
 // Загрузка чатов из localStorage
 function loadChats() {
@@ -736,28 +939,40 @@ function deleteChat(chatId) {
   renderChatList();
 }
 
-// Открытие чата в отдельном окне
+// Открытие чата в полноэкранном режиме
 function openChat(chatId) {
   const chat = chats.find(c => c.id === chatId);
   if (!chat) return;
   
   currentChatId = chatId;
   $('#current-chat-title').textContent = chat.title;
-  $('#chat-window-overlay').classList.add('active');
+  
+  // Скрываем нижнюю навигацию
+  $('#bottom-nav').classList.add('hidden');
+  
+  // Показываем полноэкранный чат с анимацией
+  const chatFullscreen = $('#chat-fullscreen');
+  chatFullscreen.classList.add('active');
   
   renderChatMessages(chat.messages);
   
   // Фокус на поле ввода
   setTimeout(() => {
     $('#chat-input').focus();
-  }, 100);
+  }, 400);
 }
 
-// Закрытие чата
+// Закрытие чата с анимацией
 function closeChat() {
-  currentChatId = null;
-  $('#chat-window-overlay').classList.remove('active');
-  $('#chat-body').innerHTML = '';
+  const chatFullscreen = $('#chat-fullscreen');
+  chatFullscreen.classList.add('slide-out');
+  
+  setTimeout(() => {
+    chatFullscreen.classList.remove('active', 'slide-out');
+    $('#bottom-nav').classList.remove('hidden');
+    currentChatId = null;
+    $('#chat-body').innerHTML = '';
+  }, 400);
 }
 
 // Рендер списка чатов
@@ -766,9 +981,10 @@ function renderChatList() {
   container.innerHTML = '';
   
   // Добавляем существующие чаты
-  chats.forEach(chat => {
+  chats.forEach((chat, index) => {
     const chatEl = document.createElement('div');
     chatEl.className = `chat-item ${currentChatId === chat.id ? 'active' : ''}`;
+    chatEl.style.animationDelay = `${index * 0.1}s`;
     chatEl.innerHTML = `
       <button class="chat-delete" onclick="event.stopPropagation(); deleteChat('${chat.id}')">×</button>
       <div class="chat-icon">💬</div>
@@ -782,6 +998,7 @@ function renderChatList() {
   // Добавляем кнопку создания нового чата
   const newChatEl = document.createElement('div');
   newChatEl.className = 'chat-item new';
+  newChatEl.style.animationDelay = `${chats.length * 0.1}s`;
   newChatEl.innerHTML = `
     <div class="chat-icon">+</div>
     <div class="chat-title">Новый чат</div>
@@ -798,14 +1015,41 @@ function renderChatMessages(messages) {
   const container = $('#chat-body');
   container.innerHTML = '';
   
-  messages.forEach(msg => {
+  messages.forEach((msg, index) => {
     const bubble = document.createElement('div');
     bubble.className = `bubble ${msg.role === 'user' ? 'me' : 'bot'}`;
     bubble.textContent = msg.content;
+    bubble.style.animationDelay = `${index * 0.05}s`;
     container.appendChild(bubble);
   });
   
   container.scrollTop = container.scrollHeight;
+}
+
+// Показать индикатор набора сообщения
+function showTypingIndicator() {
+  if (isTyping) return;
+  
+  isTyping = true;
+  const container = $('#chat-body');
+  const typingEl = document.createElement('div');
+  typingEl.className = 'typing-indicator';
+  typingEl.innerHTML = `
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+  `;
+  container.appendChild(typingEl);
+  container.scrollTop = container.scrollHeight;
+}
+
+// Скрыть индикатор набора сообщения
+function hideTypingIndicator() {
+  isTyping = false;
+  const typingEl = $('.typing-indicator');
+  if (typingEl) {
+    typingEl.remove();
+  }
 }
 
 // Добавление сообщения в текущий чат
@@ -1104,6 +1348,7 @@ function renderWeekChart(){
       height: ${height}%;
       min-height: 8px;
       position: relative;
+      transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     `;
     
     const label = document.createElement('div');
@@ -1157,13 +1402,23 @@ $('#chat-send').onclick = async () => {
   $('#chat-input').value = ''; 
   addMessageToChat('user', text);
   
+  // Показываем индикатор набора
+  showTypingIndicator();
+  
   try {
     const r = await api('/api/chat','POST',{ 
       text,
       chat_id: currentChatId 
     });
-    addMessageToChat('assistant', r.reply || 'Я обработал ваш запрос и готов помочь!');
+    
+    // Скрываем индикатор и показываем ответ
+    setTimeout(() => {
+      hideTypingIndicator();
+      addMessageToChat('assistant', r.reply || 'Я обработал ваш запрос и готов помочь!');
+    }, 1000);
+    
   } catch(e) {
+    hideTypingIndicator();
     addMessageToChat('assistant', 'В настоящее время я не могу подключиться к серверу. Вот что я могу сделать офлайн:\n\n• Помочь разбить большие задачи на шаги\n• Подсказать методы тайм-менеджмента\n• Составить примерный план выполнения задач');
   }
 };
@@ -1176,12 +1431,6 @@ $('#chat-input').addEventListener('keydown', e => {
 $('#new-chat-modal').onclick = (e) => {
   if (e.target === $('#new-chat-modal')) {
     $('#new-chat-modal').classList.remove('active');
-  }
-};
-
-$('#chat-window-overlay').onclick = (e) => {
-  if (e.target === $('#chat-window-overlay')) {
-    closeChat();
   }
 };
 
