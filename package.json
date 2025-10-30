@@ -1,0 +1,14 @@
+{
+  "name": "maks-mini-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Growth Assistant mini-app (Vercel + Neon)",
+  "main": "index.html",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "openai": "^4.56.0",
+    "pg": "^8.11.5"
+  }
+}
