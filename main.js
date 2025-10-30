@@ -2,7 +2,7 @@
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 
-/* ===== tg_id: единая логика на тел/ПК ===== */
+/* ===== tg_id: единая логика (телефон/ПК) ===== */
 let tgId = 0;
 function readTgId() {
   try {
@@ -24,13 +24,12 @@ function saveTgIdLocal(id) {
   }
 }
 
-/* ===== online badge (не уводим в офлайн по одной 400) ===== */
+/* ===== online badge ===== */
 async function ping() {
   try {
     const r = await fetch('/api/ping', { headers: tgId ? { 'X-TG-ID': String(tgId) } : {} });
     const ok = (await r.json())?.ok;
-    const b = $('#badge');
-    if (b) { b.textContent = ok ? 'online' : 'offline'; b.className = 'badge ' + (ok ? 'ok' : 'off'); }
+    const b = $('#badge'); if (b) { b.textContent = ok ? 'online' : 'offline'; b.className = 'badge ' + (ok ? 'ok' : 'off'); }
     return !!ok;
   } catch {
     const b = $('#badge'); if (b) { b.textContent = 'offline'; b.className = 'badge off'; }
@@ -60,7 +59,6 @@ async function sendMessage() {
   const inp = $('#msg'); const message = inp?.value?.trim(); if (!message) return;
   inp.value = '';
 
-  // оптимистично показываем
   const cur = $$('.msg').map(el => ({ role: el.classList.contains('user')?'user':'assistant', content: el.textContent }));
   renderMessages([...cur, { role: 'user', content: message }, { role: 'assistant', content: '…' }]);
 
@@ -131,7 +129,7 @@ async function addTask() {
   await loadTasks();
 }
 
-/* ===== focus (если есть на странице) ===== */
+/* ===== focus ===== */
 async function loadFocus() {
   const i = $('#focusInput'); if (!i || !tgId) return;
   try {
@@ -152,14 +150,14 @@ async function saveFocus() {
 }
 
 /* ===== init ===== */
-document.getElementById('saveTg')?.addEventListener('click', () => {
+$('#saveTg')?.addEventListener('click', () => {
   const val = $('#tgInput')?.value?.trim();
   if (val && /^\d+$/.test(val)) { saveTgIdLocal(val); ping(); loadHistory(); loadTasks(); loadFocus(); }
 });
-document.getElementById('send')?.addEventListener('click', sendMessage);
-document.getElementById('msg')?.addEventListener('keydown', e => e.key === 'Enter' ? sendMessage() : null);
-document.getElementById('addTask')?.addEventListener('click', addTask);
-document.getElementById('saveFocus')?.addEventListener('click', saveFocus);
+$('#send')?.addEventListener('click', sendMessage);
+$('#msg')?.addEventListener('keydown', e => e.key === 'Enter' ? sendMessage() : null);
+$('#addTask')?.addEventListener('click', addTask);
+$('#saveFocus')?.addEventListener('click', saveFocus);
 
 (async function boot() {
   tgId = readTgId();
@@ -167,11 +165,12 @@ document.getElementById('saveFocus')?.addEventListener('click', saveFocus);
   if (tgId && $('#tgInput')) $('#tgInput').value = String(tgId);
 
   await ping();
+  await loadFocus();
   await loadHistory();
   await loadTasks();
-  await loadFocus();
 
   // пассивная синхронизация между устройствами
+  setInterval(loadFocus, 10000);
   setInterval(loadHistory, 8000);
   setInterval(loadTasks, 15000);
 })();
