@@ -1,17 +1,12 @@
-// api/chat.js (или api/chat/index.js)
 const { Pool } = require('pg');
 const OpenAI = require('openai');
 
-/** ---------- PG pool (reuse между вызовами) ---------- */
 const pool = global.__POOL__ || new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('sslmode=require')
-    ? { rejectUnauthorized: false }
-    : undefined
+  ssl: process.env.DATABASE_URL?.includes('sslmode=require') ? { rejectUnauthorized: false } : undefined
 });
 global.__POOL__ = pool;
 
-/** ---------- Init schema один раз ---------- */
 let schemaReady = global.__SCHEMA_READY__ || false;
 async function ensureSchema() {
   if (schemaReady) return;
@@ -36,7 +31,6 @@ async function ensureSchema() {
   global.__SCHEMA_READY__ = true;
 }
 
-/** ---------- утилиты ---------- */
 function json(res, code, data) {
   res.statusCode = code;
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -45,12 +39,8 @@ function json(res, code, data) {
 }
 async function readJson(req) {
   return new Promise(resolve => {
-    let raw = '';
-    req.on('data', c => (raw += c));
-    req.on('end', () => {
-      if (!raw) return resolve({});
-      try { resolve(JSON.parse(raw)); } catch { resolve({}); }
-    });
+    let raw = ''; req.on('data', c => raw += c);
+    req.on('end', () => { if (!raw) return resolve({}); try { resolve(JSON.parse(raw)); } catch { resolve({}); } });
   });
 }
 function parseTgId(req) {
@@ -70,10 +60,8 @@ async function getOrCreateUser(tgId) {
   return ins.rows[0];
 }
 
-/** ---------- OpenAI (опционально) ---------- */
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
-/** ---------- handler ---------- */
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return json(res, 405, { error: 'method_not_allowed' });
 
@@ -88,20 +76,14 @@ module.exports = async (req, res) => {
     const message = (req.body?.message || '').toString().trim();
     if (!message) return json(res, 400, { error: 'EMPTY_MESSAGE' });
 
-    // 1) сохраняем вопрос
-    await pool.query(
-      'INSERT INTO chat_messages (user_id, role, content) VALUES ($1,$2,$3)',
-      [user.id, 'user', message]
-    );
+    await pool.query('INSERT INTO chat_messages (user_id, role, content) VALUES ($1,$2,$3)', [user.id, 'user', message]);
 
-    // 2) контекст (последние 15)
     const { rows } = await pool.query(
-      `SELECT role, content FROM chat_messages WHERE user_id=$1
-       ORDER BY created_at DESC LIMIT 15`, [user.id]
+      `SELECT role, content FROM chat_messages WHERE user_id=$1 ORDER BY created_at DESC LIMIT 15`,
+      [user.id]
     );
     const history = rows.reverse();
 
-    // 3) ответ ассистента
     let answer = '';
     if (openai) {
       const completion = await openai.chat.completions.create({
@@ -119,11 +101,7 @@ module.exports = async (req, res) => {
       answer = 'История сохранена (без OpenAI).';
     }
 
-    // 4) сохраняем ответ
-    await pool.query(
-      'INSERT INTO chat_messages (user_id, role, content) VALUES ($1,$2,$3)',
-      [user.id, 'assistant', answer]
-    );
+    await pool.query('INSERT INTO chat_messages (user_id, role, content) VALUES ($1,$2,$3)', [user.id, 'assistant', answer]);
 
     return json(res, 200, { ok: true, reply: answer });
   } catch (e) {
