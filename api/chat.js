@@ -1,7 +1,5 @@
 // api/chat.js
-// Growth Assistant — LLM-чат с инструментами: add/list/delete/complete tasks, set focus.
-// Работает как единая "агентная" функция с многошаговыми tool calls (до 3).
-// Нужны: process.env.OPENAI_API_KEY. Эндпоинты /api/tasks и /api/focus уже существуют.
+// Growth Assistant — LLM-чат с инструментами и поддержкой множественных чатов
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -10,7 +8,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { text, message, tg_id } = await readJson(req);
+    const { text, message, tg_id, chat_id } = await readJson(req);
     const userText = (text || message || '').toString().trim();
     if (!userText) return res.status(400).json({ ok: false, error: 'Empty message' });
 
@@ -34,12 +32,17 @@ export default async function handler(req, res) {
     // --- 2) Основной цикл: модель может вызывать функции последовательно
     const reply = await runAgent(messages, baseUrl, tgId);
 
-    return res.status(200).json({ ok: true, reply: reply || 'Готово.' });
+    return res.status(200).json({ 
+      ok: true, 
+      reply: reply || 'Готово.',
+      chat_id: chat_id || null
+    });
   } catch (e) {
     console.error('[chat] error:', e);
     return res.status(200).json({
       ok: true,
-      reply: `Я на секунду задумался 😅 Скажи, что сделать: «добавь задачу … завтра в 15:00», «фокус: …», «покажи задачи на неделю», «удали задачу …».`
+      reply: `Я на секунду задумался 😅 Скажи, что сделать: «добавь задачу … завтра в 15:00», «фокус: …», «покажи задачи на неделю», «удали задачу …».`,
+      chat_id: req.body?.chat_id || null
     });
   }
 }
@@ -48,7 +51,7 @@ export default async function handler(req, res) {
 
 async function runAgent(messages, baseUrl, tgId) {
   const apiKey = process.env.OPENAI_API_KEY || '';
-  const model  = 'gpt-4o-mini'; // можно позже заменить на более мощную модель
+  const model  = 'gpt-4o-mini';
 
   const OpenAI = (await import('openai')).default;
   const openai = new OpenAI({ apiKey });
@@ -141,7 +144,6 @@ async function runAgent(messages, baseUrl, tgId) {
       }
 
       steps += 1;
-      // Пойдём на следующий цикл — модель увидит ответы инструментов и сформирует итог
       continue;
     }
 
@@ -151,7 +153,6 @@ async function runAgent(messages, baseUrl, tgId) {
     break;
   }
 
-  // Фоллбэк — короткий структурированный ответ
   return `Готово. Если нужно — скажи «покажи задачи на неделю» или «добавь задачу … завтра в 10:00».`;
 }
 
