@@ -144,18 +144,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .badge.dead{color:#991b1b;border-color:#ef4444;background:#fef2f2}
 
 /* ===================== */
-/*        CALENDAR       */
-/* ===================== */
-.cal-head{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;color:var(--muted);font-size:12px}
-.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-.day{
-  background:#fff;border:1px solid var(--line);padding:12px;border-radius:14px;min-height:72px;position:relative
-}
-.day .n{font-weight:800}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--brand);position:absolute;right:8px;bottom:10px}
-.count{position:absolute;left:8px;bottom:8px}
-
-/* ===================== */
 /*          CHAT         */
 /* ===================== */
 .chat{
@@ -197,6 +185,23 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 }
 .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
 .muted{color:var(--muted)}
+
+/* ===================== */
+/*       PROFILE         */
+/* ===================== */
+.profile-section{margin-bottom:20px}
+.profile-section h4{margin:0 0 12px 0;font-size:15px;color:var(--ink)}
+.profile-actions{display:flex;flex-direction:column;gap:8px}
+.profile-btn{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:14px;
+  cursor:pointer;transition:all .15s
+}
+.profile-btn:hover{background:var(--bg);border-color:var(--brand)}
+.profile-btn .arrow{color:var(--muted);font-size:14px}
+.lang-switch{display:flex;gap:8px;margin-top:8px}
+.lang-btn{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;flex:1}
+.lang-btn.active{background:var(--brand);color:#fff;border-color:var(--brand)}
 </style>
 </head>
 <body>
@@ -204,27 +209,13 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 <!-- Top bar -->
 <div class="appbar">
   <h1>Growth Assistant</h1>
-  <div class="sub">Фокус дня • задачи • календарь • Статистика</div>
+  <div class="sub">Фокус дня • задачи • план • чат • статистика</div>
 </div>
 
 <div class="container">
 
-  <!-- Главная (чат на экране) -->
+  <!-- Главная -->
   <section id="screen-home" class="active grid-2">
-    <div class="card">
-      <h3>Чат с ассистентом</h3>
-      <div class="chat">
-        <div id="chat-body" class="chat-body">
-          <div class="bubble bot">Привет! Напиши, что нужно сделать — помогу разбить по шагам и добавить в задачи.</div>
-        </div>
-        <div class="chat-foot">
-          <input id="chat-input" class="input" type="text" placeholder="Спросите про план, статистику или задачу…" />
-          <button id="chat-send" class="btn" aria-label="Отправить">➤</button>
-        </div>
-      </div>
-      <div class="muted" style="margin-top:8px">Если сервер чата не подключён — отвечу подсказкой, интерфейс не ломается.</div>
-    </div>
-
     <div class="card">
       <h3>Фокус дня</h3>
       <label>Самое главное сегодня</label>
@@ -234,19 +225,18 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       </div>
     </div>
 
-    <div class="card" style="grid-column:1/-1">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <h3 style="margin:0">Быстрое добавление</h3>
-        <div class="seg">
-          <div class="chip" data-prio="today">Сегодня</div>
-          <div class="chip" data-prio="week">Неделя</div>
-          <div class="chip" data-prio="backlog">Бэклог</div>
-        </div>
+    <div class="card">
+      <h3>Быстрое добавление</h3>
+      <div class="seg">
+        <div class="chip" data-prio="today">Сегодня</div>
+        <div class="chip" data-prio="week">Неделя</div>
+        <div class="chip" data-prio="month">Месяц</div>
+        <div class="chip" data-prio="team">Команда</div>
       </div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap">
-        <input id="quick-title" class="input" type="text" placeholder="Название задачи" style="flex:1 1 320px" />
-        <input id="quick-due" class="input" type="datetime-local" style="width:220px" />
-        <button id="quick-add" class="btn">Добавить</button>
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px">
+        <input id="quick-title" class="input" type="text" placeholder="Название задачи" />
+        <input id="quick-due" class="input" type="datetime-local" />
+        <button id="quick-add" class="btn">Добавить задачу</button>
       </div>
     </div>
 
@@ -260,54 +250,99 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   <section id="screen-plan" class="grid">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <h3 style="margin:0">План</h3>
+        <h3 style="margin:0">План задач</h3>
         <div class="seg">
-          <div id="f-week" class="chip active">Неделя</div>
-          <div id="f-backlog" class="chip">Бэклог</div>
-          <div id="f-all" class="chip">Все</div>
+          <div id="f-today" class="chip active">Сегодня</div>
+          <div id="f-week" class="chip">Неделя</div>
+          <div id="f-month" class="chip">Месяц</div>
+          <div id="f-team" class="chip">Команда</div>
         </div>
       </div>
       <div id="tasks-plan" class="list"></div>
     </div>
   </section>
 
-  <!-- Календарь -->
-  <section id="screen-calendar" class="grid grid-2">
+  <!-- Чат -->
+  <section id="screen-chat" class="grid">
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 style="margin:0">Календарь</h3>
-        <div style="display:flex;gap:8px">
-          <button id="m-prev" class="btn ghost icon" aria-label="Предыдущий месяц">‹</button>
-          <button id="m-next" class="btn ghost icon" aria-label="Следующий месяц">›</button>
+      <h3>Чат с ассистентом</h3>
+      <div class="chat">
+        <div id="chat-body" class="chat-body">
+          <div class="bubble bot">Привет! Я твой ассистент по продуктивности. Могу помочь разбить большие задачи на шаги, составить план или дать совет по тайм-менеджменту.</div>
+        </div>
+        <div class="chat-foot">
+          <input id="chat-input" class="input" type="text" placeholder="Спросите про план, задачи или продуктивность…" />
+          <button id="chat-send" class="btn" aria-label="Отправить">➤</button>
         </div>
       </div>
-      <div id="cal-head" class="cal-head" style="margin-top:10px"></div>
-      <div id="calendar" class="calendar"></div>
-    </div>
-    <div class="card">
-      <h3>Задачи выбранного дня</h3>
-      <div id="tasks-day" class="list"></div>
     </div>
   </section>
 
-  <!-- Статистика (бывш. HADI) -->
-  <section id="screen-profile" class="grid grid-2">
+  <!-- Статистика -->
+  <section id="screen-stats" class="grid grid-2">
     <div class="card">
-      <h3>Статистика</h3>
+      <h3>Статистика продуктивности</h3>
       <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">
         <div class="card" style="flex:1;min-width:180px"><label>Всего задач</label><div id="m-total" style="font-size:22px;font-weight:800">0</div></div>
         <div class="card" style="flex:1;min-width:180px"><label>Выполнено</label><div id="m-done" style="font-size:22px;font-weight:800;color:var(--ok)">0</div></div>
-        <div class="card" style="flex:1;min-width:180px"><label>Успех (Done/All)</label><div id="m-rate" style="font-size:22px;font-weight:800">0%</div></div>
+        <div class="card" style="flex:1;min-width:180px"><label>Процент успеха</label><div id="m-rate" style="font-size:22px;font-weight:800">0%</div></div>
         <div class="card" style="flex:1;min-width:180px"><label>Просрочено</label><div id="m-over" style="font-size:22px;font-weight:800;color:var(--danger)">0</div></div>
       </div>
-      <p class="muted" style="margin-top:8px">
-        Следи за процентом выполнения и просрочками — цель держать ≥70% завершения вовремя.
+      <p class="muted" style="margin-top:12px">
+        <b>Гипотеза:</b> «Если фиксировать задачи и ставить дедлайны, завершу ≥70% вовремя».<br/>
+        <b>Действие:</b> добавляй/закрывай задачи вовремя. <b>Данные:</b> метрики выше. <b>Инсайт:</b> держи ≥70%.
       </p>
     </div>
     <div class="card">
+      <h3>Прогресс за неделю</h3>
+      <div id="week-chart" style="height:200px;display:flex;align-items:end;gap:4px;margin-top:20px">
+        <!-- График будет генерироваться JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Профиль -->
+  <section id="screen-profile" class="grid">
+    <div class="card">
       <h3>Профиль</h3>
-      <div class="muted">Telegram ID: <span id="profile-id" class="mono">–</span></div>
-      <div class="muted">Регион сервера: <span id="profile-region" class="mono">–</span></div>
+      <div class="muted" style="margin-bottom:16px">Telegram ID: <span id="profile-id" class="mono">–</span></div>
+      
+      <div class="profile-section">
+        <h4>Настройки</h4>
+        <label>Язык интерфейса</label>
+        <div class="lang-switch">
+          <div class="lang-btn active" data-lang="ru">Русский</div>
+          <div class="lang-btn" data-lang="en">English</div>
+        </div>
+      </div>
+
+      <div class="profile-section">
+        <h4>Аккаунт</h4>
+        <div class="profile-actions">
+          <div class="profile-btn" id="btn-tariff">
+            <span>Тариф</span>
+            <span style="color:var(--brand);font-weight:600">Пробный</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-section">
+        <h4>Помощь</h4>
+        <div class="profile-actions">
+          <div class="profile-btn" id="btn-help">
+            <span>Помощь и поддержка</span>
+            <span class="arrow">›</span>
+          </div>
+          <div class="profile-btn" id="btn-guide">
+            <span>Как пользоваться</span>
+            <span class="arrow">›</span>
+          </div>
+          <div class="profile-btn" id="btn-consult">
+            <span>Записаться на консультацию</span>
+            <span class="arrow">›</span>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 </div>
@@ -322,9 +357,13 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h16v2H4zM4 11h16v2H4zM4 17h10v2H4z"/></svg>
     План
   </div>
-  <div class="item" data-go="calendar">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h2v2h6V2h2v2h3v18H4V4h3V2zm13 8H4v10h16V10z"/></svg>
-    Календарь
+  <div class="item" data-go="chat">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18л4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    Чат
+  </div>
+  <div class="item" data-go="stats">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11V3H8v6H2v12h20V11h-6zm-6-6h4v14h-4V5zm-6 6h4v8H4v-8zm16 8h-4v-6h4v6z"/></svg>
+    Статистика
   </div>
   <div class="item" data-go="profile">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4.42 0-8 2.24-8 5v3h16v-3c0-2.76-3.58-5-8-5z"/></svg>
@@ -341,9 +380,9 @@ const $$ = s => Array.from(document.querySelectorAll(s));
 const showToast = (t) => { const el = $('#toast'); el.textContent=t; el.style.display='block'; setTimeout(()=>el.style.display='none',1800); }
 const startOfDay = d => { const x = new Date(d); x.setHours(0,0,0,0); return x; }
 const endOfDay = d => { const x = new Date(d); x.setHours(23,59,59,999); return x; }
-const addDays = (d,n)=>{const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+const addDays = (d,n)=>{const x=new Date(d); x.setDate(x.getDate()+n); return x;}
 
-/* --- SAFE DATE HELPERS (фикс Invalid Date) --- */
+/* --- SAFE DATE HELPERS (исправляет Invalid Date) --- */
 function normalizeDue(v){
   if (v === null || v === undefined) return null;
   if (typeof v === 'string' && v.trim().toLowerCase() === 'null') return null;
@@ -361,15 +400,13 @@ function normalizeDue(v){
   }
   return null;
 }
-function normalizeTask(t){
-  return { ...t, due_ts: normalizeDue(t.due_ts) };
-}
+function normalizeTask(t){ return { ...t, due_ts: normalizeDue(t.due_ts) }; }
 function fmt(ts){
   const ms = normalizeDue(ts);
   if (ms === null) return '—';
   const d = new Date(ms);
   if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+  return d.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
 }
 
 /* ===== telegram id ===== */
@@ -384,22 +421,28 @@ try {
 $('#profile-id').textContent = tgId || '–';
 
 const HEADERS = () => tgId ? { 'Content-Type':'application/json', 'X-TG-ID': String(tgId) } : { 'Content-Type':'application/json' };
+
+/* ===== API functions ===== */
 async function api(path, method='GET', body=null) {
   const opt = { method, headers: HEADERS() };
   if (body) opt.body = JSON.stringify(body);
-  const r = await fetch(path, opt);
-  const ct = r.headers.get('content-type')||'';
-  if (!ct.includes('application/json')) throw new Error('not-json');
-  const data = await r.json();
-  if (!r.ok || data.ok===false) throw new Error(data.error||('HTTP '+r.status));
-  return data;
+  try {
+    const r = await fetch(path, opt);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    return data;
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
+  }
 }
 
 /* ===== nav ===== */
 const screens = {
   home: $('#screen-home'),
   plan: $('#screen-plan'),
-  calendar: $('#screen-calendar'),
+  chat: $('#screen-chat'),
+  stats: $('#screen-stats'),
   profile: $('#screen-profile'),
 };
 $$('.nav .item').forEach(it=>{
@@ -409,7 +452,6 @@ $$('.nav .item').forEach(it=>{
     const to = it.dataset.go;
     Object.values(screens).forEach(s=>s.classList.remove('active'));
     screens[to].classList.add('active');
-    if (to==='calendar') renderCalendar();
   };
 });
 
@@ -417,7 +459,7 @@ $$('.nav .item').forEach(it=>{
 let tasks = [];
 let focus = null;
 let quickPrio = 'today';
-let currentMonth = new Date();
+let currentLanguage = 'ru';
 
 /* ===== init UI ===== */
 $$('.seg .chip[data-prio]').forEach(ch=>{
@@ -430,32 +472,32 @@ $$('.seg .chip[data-prio]').forEach(ch=>{
 $$('.seg .chip[data-prio]')[0].classList.add('active');
 
 /* план фильтр */
-let planFilter='week';
+let planFilter='today';
+$('#f-today').onclick=()=>{planFilter='today'; updPlanBtns(); renderPlan();}
 $('#f-week').onclick=()=>{planFilter='week'; updPlanBtns(); renderPlan();}
-$('#f-backlog').onclick=()=>{planFilter='backlog'; updPlanBtns(); renderPlan();}
-$('#f-all').onclick=()=>{planFilter='all'; updPlanBtns(); renderPlan();}
+$('#f-month').onclick=()=>{planFilter='month'; updPlanBtns(); renderPlan();}
+$('#f-team').onclick=()=>{planFilter='team'; updPlanBtns(); renderPlan();}
 function updPlanBtns(){
+  $('#f-today').classList.toggle('active', planFilter==='today');
   $('#f-week').classList.toggle('active', planFilter==='week');
-  $('#f-backlog').classList.toggle('active', planFilter==='backlog');
-  $('#f-all').classList.toggle('active', planFilter==='all');
+  $('#f-month').classList.toggle('active', planFilter==='month');
+  $('#f-team').classList.toggle('active', planFilter==='team');
 }
 
 /* ===== load ===== */
 async function loadAll(){
   try{
-    const h = await api('/api/health');
-    $('#profile-region').textContent = h.region || '–';
-  }catch{ $('#profile-region').textContent = '–'; }
-  try{
     const f = await api('/api/focus');
     focus = f.focus||null;
     $('#focus-input').value = focus?.text || '';
-  }catch{}
+  }catch(e){ console.log('Focus load failed:', e); }
+  
   try{
     const t = await api('/api/tasks');
-    tasks = (t.items || []).map(normalizeTask); // нормализуем даты
-  }catch{}
-  renderHome(); renderPlan(); renderCalendar(); renderStats();
+    tasks = (t.items||[]).map(normalizeTask);  // нормализуем даты
+  }catch(e){ console.log('Tasks load failed:', e); }
+  
+  renderHome(); renderPlan(); renderStats();
 }
 loadAll();
 
@@ -467,7 +509,11 @@ $('#focus-save').onclick = async ()=>{
     const r = await api('/api/focus','POST',{ text });
     focus = r.focus;
     showToast('Фокус сохранён');
-  }catch(e){ showToast('Ошибка сервера (focus)'); }
+  }catch(e){ 
+    // Офлайн режим
+    focus = { text, id: 'local_' + Date.now() };
+    showToast('Фокус сохранён (офлайн)');
+  }
 };
 
 /* ===== quick add ===== */
@@ -475,50 +521,93 @@ $('#quick-add').onclick = async ()=>{
   const title = $('#quick-title').value.trim();
   const dueStr = $('#quick-due').value;
   if (!title) return showToast('Введите название');
+  
   let due_ts = null;
-  if (dueStr){
-    const ms = Date.parse(dueStr);
-    if (!isNaN(ms)) due_ts = ms;
-  }else{
-    if (quickPrio==='today') due_ts = endOfDay(new Date()).getTime();
-    else if (quickPrio==='week') due_ts = endOfDay(addDays(new Date(),7)).getTime();
-    else due_ts = null;
+  if (dueStr){ 
+    const ms = Date.parse(dueStr); 
+    if (!isNaN(ms)) due_ts = ms; 
+  } else {
+    const now = new Date();
+    if (quickPrio==='today') due_ts = endOfDay(now).getTime();
+    else if (quickPrio==='week') due_ts = endOfDay(addDays(now,7)).getTime();
+    else if (quickPrio==='month') due_ts = endOfDay(addDays(now,30)).getTime();
+    // Для "команда" due_ts остается null
   }
+  
   try{
-    const r = await api('/api/tasks','POST',{ title, due_ts });
-    tasks.unshift(normalizeTask(r.task)); // нормализация новой задачи
+    const r = await api('/api/tasks','POST',{ 
+      title, 
+      due_ts,
+      priority: quickPrio 
+    });
+    tasks.unshift(normalizeTask(r.task)); // нормализуем новую задачу
   }catch(e){
-    const fake = { id: 'tmp_'+Date.now(), title, due_ts, is_done:false };
+    // Офлайн режим
+    const fake = { 
+      id: 'tmp_'+Date.now(), 
+      title, 
+      due_ts, 
+      is_done: false,
+      priority: quickPrio
+    };
     tasks.unshift(fake);
   }
-  $('#quick-title').value=''; $('#quick-due').value='';
-  renderHome(); renderPlan(); renderCalendar(); renderStats();
-  showToast('Добавлено');
+  
+  $('#quick-title').value=''; 
+  $('#quick-due').value='';
+  renderHome(); 
+  renderPlan(); 
+  renderStats();
+  showToast('Задача добавлена');
 };
 
 /* ===== render: tasks ===== */
 function rowTask(t){
-  const el = document.createElement('div'); el.className='task'+(t.is_done?' done':'');
-  const chk = document.createElement('button'); chk.className='btn icon'; chk.textContent = t.is_done?'✓':'○';
+  const el = document.createElement('div'); 
+  el.className='task'+(t.is_done?' done':'');
+  
+  const chk = document.createElement('button'); 
+  chk.className='btn icon'; 
+  chk.textContent = t.is_done?'✓':'○';
   chk.onclick = async ()=>{
-    t.is_done = !t.is_done; renderHome(); renderPlan(); renderCalendar(); renderStats();
-    try{ await api('/api/tasks/toggle?id='+t.id,'POST',{}); }
-    catch(e){ /* офлайн-видимость */ }
+    t.is_done = !t.is_done; 
+    renderHome(); 
+    renderPlan(); 
+    renderStats();
+    try{ 
+      await api('/api/tasks/toggle?id='+t.id,'POST',{}); 
+    } catch(e){ 
+      // Офлайн - изменения остаются локально
+    }
   };
-  const ttl = document.createElement('div'); ttl.className='ttl'; ttl.textContent = t.title;
+  
+  const ttl = document.createElement('div'); 
+  ttl.className='ttl'; 
+  ttl.textContent = t.title;
+  
   const badge = document.createElement('div');
-  if (t.due_ts==null){ badge.className='badge'; badge.textContent='бэклог'; }
-  else{
-    const past = t.due_ts < Date.now();
+  if (t.due_ts==null){ 
+    badge.className='badge'; 
+    badge.textContent='без срока'; 
+  } else {
+    const past = normalizeDue(t.due_ts) < Date.now();
     badge.className = 'badge ' + (past ? (t.is_done?'ok':'dead') : 'due');
     badge.textContent = (t.is_done?'сделано • ':'до ') + fmt(t.due_ts);
   }
-  const del = document.createElement('button'); del.className='btn secondary icon'; del.textContent='✕';
+  
+  const del = document.createElement('button'); 
+  del.className='btn secondary icon'; 
+  del.textContent='✕';
   del.onclick = async ()=>{
     tasks = tasks.filter(x=>x.id!==t.id);
-    renderHome(); renderPlan(); renderCalendar(); renderStats();
-    try{ await api('/api/tasks/delete?id='+t.id,'POST',{}); } catch(e){}
+    renderHome(); 
+    renderPlan(); 
+    renderStats();
+    try{ 
+      await api('/api/tasks/delete?id='+t.id,'POST',{}); 
+    } catch(e){}
   };
+  
   el.append(chk, ttl, badge, del);
   return el;
 }
@@ -526,91 +615,162 @@ function rowTask(t){
 function renderHome(){
   const s = startOfDay(new Date()).getTime();
   const e = endOfDay(new Date()).getTime();
-  const today = tasks
-    .filter(t => t.due_ts!=null && t.due_ts>=s && t.due_ts<=e)
-    .sort((a,b)=>(a.is_done-b.is_done)||((a.due_ts||0)-(b.due_ts||0)));
-  const box = $('#tasks-today'); box.innerHTML='';
-  if (!today.length){ box.innerHTML='<div class="muted">На сегодня нет задач.</div>'; return; }
+  const today = tasks.filter(t => {
+      const ms = normalizeDue(t.due_ts);
+      return ms!=null && ms>=s && ms<=e;
+    })
+    .sort((a,b)=> (a.is_done-b.is_done) || ((normalizeDue(a.due_ts)||0)-(normalizeDue(b.due_ts)||0)));
+  const box = $('#tasks-today'); 
+  box.innerHTML='';
+  if (!today.length){ 
+    box.innerHTML='<div class="muted">На сегодня нет задач.</div>'; 
+    return; 
+  }
   today.forEach(t=> box.appendChild(rowTask(t)));
 }
 
 function renderPlan(){
   let arr = tasks.slice();
   const now = new Date();
-  const weekEnd = endOfDay(addDays(now,7)).getTime();
-  if (planFilter==='week') arr = arr.filter(t=> t.due_ts!=null && t.due_ts<=weekEnd);
-  if (planFilter==='backlog') arr = arr.filter(t=> t.due_ts==null);
-  arr.sort((a,b)=>(a.is_done-b.is_done)||((a.due_ts||1e20)-(b.due_ts||1e20)));
-  const box = $('#tasks-plan'); box.innerHTML='';
-  if (!arr.length){ box.innerHTML='<div class="muted">Пусто.</div>'; return; }
+  
+  if (planFilter==='today') {
+    const dayStart = startOfDay(now).getTime();
+    const dayEnd = endOfDay(now).getTime();
+    arr = arr.filter(t => {
+      const ms = normalizeDue(t.due_ts);
+      return ms!=null && ms>=dayStart && ms<=dayEnd;
+    });
+  } else if (planFilter==='week') {
+    const weekEnd = endOfDay(addDays(now,7)).getTime();
+    arr = arr.filter(t => {
+      const ms = normalizeDue(t.due_ts);
+      return ms!=null && ms<=weekEnd;
+    });
+  } else if (planFilter==='month') {
+    const monthEnd = endOfDay(addDays(now,30)).getTime();
+    arr = arr.filter(t => {
+      const ms = normalizeDue(t.due_ts);
+      return ms!=null && ms<=monthEnd;
+    });
+  } else if (planFilter==='team') {
+    arr = arr.filter(t => t.priority === 'team');
+  }
+  
+  arr.sort((a,b)=>(a.is_done-b.is_done)||((normalizeDue(a.due_ts)||1e20)-(normalizeDue(b.due_ts)||1e20)));
+  const box = $('#tasks-plan'); 
+  box.innerHTML='';
+  if (!arr.length){ 
+    box.innerHTML='<div class="muted">Нет задач для отображения.</div>'; 
+    return; 
+  }
   arr.forEach(t=> box.appendChild(rowTask(t)));
 }
 
-/* ===== calendar ===== */
-let currentDate = new Date();
-function metaMonth(d){ const y=d.getFullYear(), m=d.getMonth(); const first=new Date(y,m,1), last=new Date(y,m+1,0); return {first,last,days:last.getDate()}; }
-function renderCalendar(){
-  const head=$('#cal-head'); head.innerHTML=''; 'Пн Вт Ср Чт Пт Сб Вс'.split(' ').forEach(n=>{ const s=document.createElement('div'); s.textContent=n; head.appendChild(s); });
-  const wrap=$('#calendar'); wrap.innerHTML='';
-  const {first,days} = metaMonth(currentDate);
-  const off = (first.getDay()+6)%7;
-  for (let i=0;i<off;i++){ wrap.appendChild(document.createElement('div')); }
-  for (let d=1; d<=days; d++){
-    const dt = new Date(first.getFullYear(), first.getMonth(), d);
-    const cell=document.createElement('div'); cell.className='day'; cell.innerHTML=`<div class="n">${d}</div>`;
-    const st=startOfDay(dt).getTime(), en=endOfDay(dt).getTime();
-    const cnt = tasks.filter(t=> t.due_ts!=null && t.due_ts>=st && t.due_ts<=en).length;
-    if (cnt>0){ const dot=document.createElement('div'); dot.className='dot'; cell.appendChild(dot);
-      const c=document.createElement('div'); c.className='badge count'; c.textContent=cnt; cell.appendChild(c);
-    }
-    cell.onclick=()=> renderDay(dt);
-    wrap.appendChild(cell);
-  }
-  renderDay(new Date());
-}
-function renderDay(dt){
-  const st=startOfDay(dt).getTime(), en=endOfDay(dt).getTime();
-  const day=tasks
-    .filter(t=> t.due_ts!=null && t.due_ts>=st && t.due_ts<=en)
-    .sort((a,b)=>(a.is_done-b.is_done)||(a.due_ts-b.due_ts));
-  const box = $('#tasks-day'); box.innerHTML='';
-  if (!day.length){ box.innerHTML='<div class="muted">На выбранный день задач нет.</div>'; return; }
-  day.forEach(t=> box.appendChild(rowTask(t)));
-}
-$('#m-prev').onclick=()=>{ currentDate = addDays(currentDate,-15); currentDate.setDate(1); renderCalendar(); }
-$('#m-next').onclick=()=>{ currentDate = addDays(currentDate, 40); currentDate.setDate(1); renderCalendar(); }
-
-/* ===== Статистика ===== */
+/* ===== статистика ===== */
 function renderStats(){
   const total = tasks.length;
   const done = tasks.filter(t=>t.is_done).length;
-  const overdue = tasks.filter(t=>!t.is_done && t.due_ts!=null && t.due_ts < Date.now()).length;
+  const overdue = tasks.filter(t=>{
+    const ms = normalizeDue(t.due_ts);
+    return !t.is_done && ms!=null && ms < Date.now();
+  }).length;
   const rate = total ? Math.round(done*100/total) : 0;
+  
   $('#m-total').textContent = total;
   $('#m-done').textContent  = done;
   $('#m-rate').textContent  = rate+'%';
   $('#m-over').textContent  = overdue;
+  
+  renderWeekChart();
+}
+
+function renderWeekChart(){
+  const chart = $('#week-chart');
+  chart.innerHTML = '';
+  
+  for (let i = 6; i >= 0; i--) {
+    const day = addDays(new Date(), -i);
+    const dayStart = startOfDay(day).getTime();
+    const dayEnd = endOfDay(day).getTime();
+    const dayTasks = tasks.filter(t => {
+      const ms = normalizeDue(t.due_ts);
+      return ms!=null && ms>=dayStart && ms<=dayEnd;
+    });
+    const doneCount = dayTasks.filter(t => t.is_done).length;
+    const totalCount = dayTasks.length;
+    const height = totalCount > 0 ? (doneCount / totalCount) * 100 : 10;
+    
+    const bar = document.createElement('div');
+    bar.style.cssText = `
+      flex: 1;
+      background: linear-gradient(to top, var(--brand), var(--brand-2));
+      border-radius: 4px 4px 0 0;
+      height: ${height}%;
+      min-height: 8px;
+      position: relative;
+    `;
+    
+    const label = document.createElement('div');
+    label.style.cssText = `
+      position: absolute;
+      bottom: -20px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 10px;
+      color: var(--muted);
+    `;
+    label.textContent = day.toLocaleDateString('ru-RU', { weekday: 'short' });
+    
+    bar.appendChild(label);
+    chart.appendChild(bar);
+  }
 }
 
 /* ===== chat ===== */
 function pushChat(text, me=false){
-  const b=document.createElement('div'); b.className='bubble ' + (me?'me':'bot'); b.textContent=text;
-  $('#chat-body').appendChild(b); $('#chat-body').scrollTop=1e9;
+  const b=document.createElement('div'); 
+  b.className='bubble ' + (me?'me':'bot'); 
+  b.textContent=text;
+  $('#chat-body').appendChild(b); 
+  $('#chat-body').scrollTop=1e9;
 }
+
 $('#chat-send').onclick = async ()=>{
-  const text = $('#chat-input').value.trim(); if (!text) return;
-  $('#chat-input').value=''; pushChat(text,true);
+  const text = $('#chat-input').value.trim(); 
+  if (!text) return;
+  
+  $('#chat-input').value=''; 
+  pushChat(text,true);
+  
   try{
     const r = await api('/api/chat','POST',{ text });
-    pushChat(r.reply || 'Ок!');
+    pushChat(r.reply || 'Я обработал ваш запрос и готов помочь!');
   }catch(e){
-    const hint = `Чтобы я помог лучше:
-— Сформулируй цель и срок: «Сделай X до 21:00»
-— Добавлю подзадачи и распланирую по дням.`;
-    pushChat(hint);
+    pushChat('В настоящее время я не могу подключиться к серверу. Вот что я могу сделать офлайн:\n\n• Помочь разбить большие задачи на шаги\n• Подсказать методы тайм-менеджмента\n• Составить примерный план выполнения задач');
   }
 };
-$('#chat-input').addEventListener('keydown',e=>{ if (e.key==='Enter') $('#chat-send').click(); });
+
+$('#chat-input').addEventListener('keydown',e=>{ 
+  if (e.key==='Enter') $('#chat-send').click(); 
+});
+
+/* ===== профиль ===== */
+// Переключение языка
+$$('.lang-btn').forEach(btn => {
+  btn.onclick = () => {
+    $$('.lang-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const map = {ru:'Русский', en:'English'};
+    showToast(`Язык изменен на ${map[btn.dataset.lang] || btn.textContent}`);
+  };
+});
+
+// Заглушки для кнопок профиля
+$('#btn-tariff').onclick = () => showToast('Раздел "Тарифы" в разработке');
+$('#btn-help').onclick = () => showToast('Раздел "Помощь" в разработке');
+$('#btn-guide').onclick = () => showToast('Раздел "Как пользоваться" в разработке');
+$('#btn-consult').onclick = () => showToast('Раздел "Консультация" в разработке');
 </script>
 </body>
 </html>
