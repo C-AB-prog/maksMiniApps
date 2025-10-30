@@ -1,24 +1,79 @@
-// /api/chat-history.js
-// GET: ?limit=30 -> история для текущего tg_id (хронологически)
+const { Pool } = require('pg');
 
-import { getTgId, getChatHistory, ensureSchema } from './_db.js';
+const pool = global.__POOL__ || new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL?.includes('sslmode=require')
+    ? { rejectUnauthorized: false }
+    : undefined
+});
+global.__POOL__ = pool;
 
-export default async function handler(req, res) {
-  try {
-    if (req.method !== 'GET') {
-      return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
-    }
-    await ensureSchema();
+let schemaReady = global.__SCHEMA_READY__ || false;
 
-    const tg_id = getTgId(req);
-    if (!tg_id) return res.status(400).json({ ok: false, error: 'TG_ID_REQUIRED' });
-
-    const limit = Math.min(100, Math.max(1, Number(req.query?.limit || 30)));
-    const items = await getChatHistory(tg_id, limit);
-
-    return res.status(200).json({ ok: true, items });
-  } catch (e) {
-    console.error('/api/chat-history error', e);
-    return res.status(500).json({ ok: false, error: 'HISTORY_FAILED' });
-  }
+async function ensureSchema() {
+  if (schemaReady) return;
+  const sql = `
+  CREATE TABLE IF NOT EXISTS users(
+    id SERIAL PRIMARY KEY,
+    tg_id BIGINT UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+  );
+  CREATE TABLE IF NOT EXISTS chat_messages(
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK (role IN ('user','assistant','system')),
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS chat_messages_user_id_created_at_idx
+    ON chat_messages(user_id, created_at DESC);
+  `;
+  await pool.query(sql);
+  schemaReady = true;
+  global.__SCHEMA_READY__ = true;
 }
+
+function json(res, code, data) {
+  res.statusCode = code;
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store');
+  res.end(JSON.stringify(data));
+}
+
+function parseTgId(req) {
+  const h = (req.headers['x-tg-id'] || '').toString().trim();
+  if (h && /^\d+$/.test(h)) return h;
+  const url = new URL(req.url, 'http://localhost');
+  const q = url.searchParams.get('tg_id');
+  if (q && /^\d+$/.test(q)) return q;
+  return null;
+}
+
+async function getOrCreateUser(tgId) {
+  const one = await pool.query('SELECT id FROM users WHERE tg_id=$1', [tgId]);
+  if (one.rowCount) return one.rows[0];
+  const ins = await pool.query('INSERT INTO users (tg_id) VALUES ($1) RETURNING id', [tgId]);
+  return ins.rows[0];
+}
+
+module.exports = async (req, res) => {
+  if (req.method !== 'GET') return json(res, 405, { error: 'method_not_allowed' });
+  try {
+    await ensureSchema();
+    const tgId = parseTgId(req);
+    if (!tgId) return json(res, 400, { error: 'TG_ID_REQUIRED' });
+
+    const user = await getOrCreateUser(tgId);
+    const { rows } = await pool.query(
+      `SELECT role, content, created_at
+       FROM chat_messages
+       WHERE user_id=$1
+       ORDER BY created_at ASC
+       LIMIT 200`, [user.id]
+    );
+    return json(res, 200, { ok: true, messages: rows });
+  } catch (e) {
+    console.error('history_error', e);
+    return json(res, 500, { error: 'HISTORY_FAILED' });
+  }
+};
