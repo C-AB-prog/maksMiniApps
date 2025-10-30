@@ -1,78 +1,132 @@
-// /api/chat.js
-// POST: { text } -> вызывает OpenAI, пишет в БД ("user","assistant"), возвращает reply
+// api/chat.js  (или api/chat/index.js)
+const { Pool } = require('pg');
+const OpenAI = require('openai');
 
-import { getTgId, getChatHistory, addChatPair, ensureSchema } from './_db.js';
+const pool = global.__POOL__ || new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL?.includes('sslmode=require')
+    ? { rejectUnauthorized: false }
+    : undefined
+});
+global.__POOL__ = pool;
 
-const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
-const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
-const API_KEY = process.env.OPENAI_API_KEY;
+let schemaReady = global.__SCHEMA_READY__ || false;
 
-export default async function handler(req, res) {
-  try {
-    if (req.method !== 'POST') {
-      return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
-    }
-
-    await ensureSchema();
-    const tg_id = getTgId(req);
-    if (!tg_id) return res.status(400).json({ ok: false, error: 'TG_ID_REQUIRED' });
-
-    const { text } = typeof req.body === 'object' ? req.body : {};
-    if (!text || !text.trim()) {
-      return res.status(400).json({ ok: false, error: 'EMPTY_TEXT' });
-    }
-
-    // Тянем последние 12 сообщений для контекста
-    const history = await getChatHistory(tg_id, 12);
-    const messages = [
-      {
-        role: 'system',
-        content:
-          'Ты — продуктовый ассистент. Коротко и по делу. Если пользователь просит план/разбивку задач — предлагай чек-лист с сроками. Язык — русский.',
-      },
-      ...history.map(m => ({ role: m.role, content: m.content })),
-      { role: 'user', content: text },
-    ];
-
-    let reply = '';
-
-    if (API_KEY) {
-      const resp = await fetch(OPENAI_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          messages,
-          temperature: 0.3,
-        }),
-      });
-
-      if (!resp.ok) {
-        const errText = await resp.text().catch(() => '');
-        throw new Error(`OpenAI HTTP ${resp.status}: ${errText}`);
-      }
-      const data = await resp.json();
-      reply = data?.choices?.[0]?.message?.content?.trim() || 'Готово.';
-    } else {
-      // Фолбэк без ключа: простая генерация
-      reply = [
-        'Понял задачу.',
-        '1) Определи цель и срок.',
-        '2) Разбей на 3–5 шагов.',
-        '3) Поставь дедлайны на сегодня/неделю.',
-        'Напиши «добавь: … до …», я создам задачи.',
-      ].join('\n');
-    }
-
-    // Сохраняем пару (user + assistant)
-    await addChatPair(tg_id, text, reply);
-
-    return res.status(200).json({ ok: true, reply });
-  } catch (e) {
-    console.error('/api/chat error', e);
-    return res.status(500).json({ ok: false, error: 'CHAT_FAILED' });
-  }
+async function ensureSchema() {
+  if (schemaReady) return;
+  const sql = `
+  CREATE TABLE IF NOT EXISTS users(
+    id SERIAL PRIMARY KEY,
+    tg_id BIGINT UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+  );
+  CREATE TABLE IF NOT EXISTS chat_messages(
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK (role IN ('user','assistant','system')),
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS chat_messages_user_id_created_at_idx
+    ON chat_messages(user_id, created_at DESC);
+  `;
+  await pool.query(sql);
+  schemaReady = true;
+  global.__SCHEMA_READY__ = true;
 }
+
+function json(res, code, data) {
+  res.statusCode = code;
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store');
+  res.end(JSON.stringify(data));
+}
+
+async function readJson(req) {
+  return new Promise((resolve) => {
+    let raw = '';
+    req.on('data', c => raw += c);
+    req.on('end', () => {
+      if (!raw) return resolve({});
+      try { resolve(JSON.parse(raw)); } catch { resolve({}); }
+    });
+  });
+}
+
+function parseTgId(req) {
+  const h = (req.headers['x-tg-id'] || '').toString().trim();
+  if (h && /^\d+$/.test(h)) return h;
+  const url = new URL(req.url, 'http://localhost');
+  const q = url.searchParams.get('tg_id');
+  if (q && /^\d+$/.test(q)) return q;
+  const b = req.body?.tg_id ?? req.body?.tgId ?? null;
+  if (b && /^\d+$/.test(String(b))) return String(b);
+  return null;
+}
+
+async function getOrCreateUser(tgId) {
+  const one = await pool.query('SELECT id FROM users WHERE tg_id=$1', [tgId]);
+  if (one.rowCount) return one.rows[0];
+  const ins = await pool.query('INSERT INTO users (tg_id) VALUES ($1) RETURNING id', [tgId]);
+  return ins.rows[0];
+}
+
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
+
+module.exports = async (req, res) => {
+  if (req.method !== 'POST') return json(res, 405, { error: 'method_not_allowed' });
+  try {
+    await ensureSchema();
+    req.body = await readJson(req);
+
+    const tgId = parseTgId(req);
+    if (!tgId) return json(res, 400, { error: 'TG_ID_REQUIRED' });
+
+    const user = await getOrCreateUser(tgId);
+    const message = (req.body?.message || '').toString().trim();
+    if (!message) return json(res, 400, { error: 'EMPTY_MESSAGE' });
+
+    // сохраняем вопрос пользователя
+    await pool.query(
+      'INSERT INTO chat_messages (user_id, role, content) VALUES ($1,$2,$3)',
+      [user.id, 'user', message]
+    );
+
+    // поднимаем контекст (последние 15)
+    const { rows } = await pool.query(
+      `SELECT role, content FROM chat_messages WHERE user_id=$1
+       ORDER BY created_at DESC LIMIT 15`,
+      [user.id]
+    );
+    const history = rows.reverse();
+
+    // ответ ассистента
+    let answer = '';
+    if (openai) {
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        temperature: 0.3,
+        max_tokens: 600,
+        messages: [
+          { role: 'system', content: 'Ты дружелюбный русскоязычный ассистент мини-приложения.' },
+          ...history.map(m => ({ role: m.role, content: m.content })),
+          { role: 'user', content: message }
+        ]
+      });
+      answer = completion.choices?.[0]?.message?.content?.trim() || 'Готово.';
+    } else {
+      answer = 'История сохранена. (OPENAI_API_KEY не задан)';
+    }
+
+    // сохраняем ответ
+    await pool.query(
+      'INSERT INTO chat_messages (user_id, role, content) VALUES ($1,$2,$3)',
+      [user.id, 'assistant', answer]
+    );
+
+    return json(res, 200, { ok: true, reply: answer });
+  } catch (e) {
+    console.error('chat_error', e);
+    return json(res, 500, { error: 'CHAT_FAILED' });
+  }
+};
