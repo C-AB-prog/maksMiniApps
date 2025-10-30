@@ -2,9 +2,7 @@ const { Pool } = require('pg');
 
 const pool = global.__POOL__ || new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('sslmode=require')
-    ? { rejectUnauthorized: false }
-    : undefined
+  ssl: process.env.DATABASE_URL?.includes('sslmode=require') ? { rejectUnauthorized: false } : undefined
 });
 global.__POOL__ = pool;
 
@@ -68,8 +66,10 @@ module.exports = async (req, res) => {
        FROM chat_messages
        WHERE user_id=$1
        ORDER BY created_at ASC
-       LIMIT 200`, [user.id]
+       LIMIT 200`,
+      [user.id]
     );
+
     return json(res, 200, { ok: true, messages: rows });
   } catch (e) {
     console.error('history_error', e);
