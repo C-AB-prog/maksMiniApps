@@ -2,9 +2,7 @@ const { Pool } = require('pg');
 
 const pool = global.__POOL__ || new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('sslmode=require')
-    ? { rejectUnauthorized: false }
-    : undefined
+  ssl: process.env.DATABASE_URL?.includes('sslmode=require') ? { rejectUnauthorized: false } : undefined
 });
 global.__POOL__ = pool;
 
@@ -36,12 +34,8 @@ function json(res, code, data) {
 }
 async function readJson(req) {
   return new Promise(resolve => {
-    let raw = '';
-    req.on('data', c => (raw += c));
-    req.on('end', () => {
-      if (!raw) return resolve({});
-      try { resolve(JSON.parse(raw)); } catch { resolve({}); }
-    });
+    let raw = ''; req.on('data', c => raw += c);
+    req.on('end', () => { if (!raw) return resolve({}); try { resolve(JSON.parse(raw)); } catch { resolve({}); } });
   });
 }
 function parseTgId(req) {
@@ -69,7 +63,6 @@ module.exports = async (req, res) => {
       const tgId = parseTgId(req);
       if (!tgId) return json(res, 400, { error: 'TG_ID_REQUIRED' });
       const user = await getOrCreateUser(tgId);
-
       const { rows } = await pool.query(`SELECT text, updated_at FROM focus WHERE user_id=$1`, [user.id]);
       return json(res, 200, { ok: true, text: rows[0]?.text || '' });
     }
@@ -79,8 +72,8 @@ module.exports = async (req, res) => {
       const tgId = parseTgId(req);
       if (!tgId) return json(res, 400, { error: 'TG_ID_REQUIRED' });
       const user = await getOrCreateUser(tgId);
-      const text = (req.body?.text || '').toString();
 
+      const text = (req.body?.text || '').toString();
       await pool.query(
         `INSERT INTO focus(user_id, text, updated_at)
          VALUES($1,$2,now())
