@@ -415,7 +415,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 <!-- Top bar -->
 <div class="appbar">
   <h1>Growth Assistant</h1>
-  <div class="sub">Фокус дня • задачи • план • чат • статистика</div>
+  <div class="sub">Фокус • задачи • план • чат • статистика</div>
 </div>
 
 <div class="container">
@@ -423,8 +423,8 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   <!-- Главная -->
   <section id="screen-home" class="active grid-2">
     <div class="card">
-      <h3>Фокус дня</h3>
-      <label>Самое главное сегодня</label>
+      <h3>Фокус</h3>
+      <label>Самое главное</label>
       <div style="display:flex; gap:10px">
         <input id="focus-input" class="input" type="text" placeholder="Например: закрыть отчёт" />
         <button id="focus-save" class="btn">Сохранить</button>
@@ -442,7 +442,10 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px">
         <input id="quick-title" class="input" type="text" placeholder="Название задачи" />
         <input id="quick-due" class="input" type="datetime-local" />
-        <button id="quick-add" class="btn">Добавить задачу</button>
+        <div style="display:flex; gap:10px; flex-wrap:wrap">
+          <button id="quick-add" class="btn">Добавить задачу</button>
+          <button id="team-invite" class="btn secondary" style="display:none">Ссылка в команду</button>
+        </div>
       </div>
     </div>
 
@@ -473,9 +476,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     <div class="card">
       <h3>Мои чаты с ассистентом</h3>
       <div class="chat-container">
-        <div id="chat-list" class="chat-list">
-          <!-- Чат-сессии будут генерироваться здесь -->
-        </div>
+        <div id="chat-list" class="chat-list"></div>
 
         <div id="no-chats-message" style="text-align: center; padding: 40px 20px;">
           <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">💬</div>
@@ -504,9 +505,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     </div>
     <div class="card">
       <h3>Прогресс за неделю</h3>
-      <div id="week-chart" style="height:200px;display:flex;align-items:end;gap:4px;margin-top:20px">
-        <!-- График будет генерироваться JS -->
-      </div>
+      <div id="week-chart" style="height:200px;display:flex;align-items:end;gap:4px;margin-top:20px"></div>
     </div>
   </section>
 
@@ -863,6 +862,8 @@ $$('.seg .chip[data-prio]').forEach(ch=>{
     $$('.seg .chip[data-prio]').forEach(x=>x.classList.remove('active'));
     ch.classList.add('active');
     quickPrio = ch.dataset.prio;
+    // кнопка приглашения видна только в "Команда"
+    $('#team-invite').style.display = (quickPrio === 'team') ? 'inline-block' : 'none';
   };
 });
 $$('.seg .chip[data-prio]')[0].classList.add('active');
@@ -890,25 +891,47 @@ async function loadAll(){
   
   try{
     const t = await api('/api/tasks');
-    tasks = (t.items||[]).map(normalizeTask);  // нормализуем даты
+    tasks = (t.items||[]).map(x => ({...x, due_ts: normalizeDue(x.due_ts), priority: x.team_id ? 'team' : null}));
   }catch(e){ console.log('Tasks load failed:', e); }
   
   renderHome(); renderPlan(); renderStats();
 }
 loadAll();
 
+/* ===== join по ссылке ?join=TOKEN ===== */
+(async function handleJoin(){
+  const token = new URLSearchParams(location.search).get('join');
+  if (!token) return;
+  try{
+    const r = await api('/api/team/join','POST',{ token });
+    if (r.ok) showToast('Вы присоединились к команде');
+    await loadAll();
+  }catch(e){
+    showToast('Не удалось присоединиться к команде');
+  }
+})();
+
 /* ===== focus ===== */
 $('#focus-save').onclick = async ()=>{
   const text = $('#focus-input').value.trim();
   if (!text) return showToast('Пустой фокус');
   try{
-    const r = await api('/api/focus','POST',{ text });
+    const r = await api('/api/focus','PUT',{ text }); // редактирование последнего
     focus = r.focus;
     showToast('Фокус сохранён');
   }catch(e){ 
-    // Офлайн режим
-    focus = { text, id: 'local_' + Date.now() };
-    showToast('Фокус сохранён (офлайн)');
+    showToast('Не удалось сохранить');
+  }
+};
+
+/* ===== invite link ===== */
+$('#team-invite').onclick = async ()=>{
+  try{
+    const r = await api('/api/team/invite','GET');
+    await navigator.clipboard.writeText(r.invite_link);
+    showToast('Ссылка скопирована');
+  }catch(e){
+    showToast('Не удалось получить ссылку');
   }
 };
 
@@ -927,7 +950,7 @@ $('#quick-add').onclick = async ()=>{
     if (quickPrio==='today') due_ts = endOfDay(now).getTime();
     else if (quickPrio==='week') due_ts = endOfDay(addDays(now,7)).getTime();
     else if (quickPrio==='month') due_ts = endOfDay(addDays(now,30)).getTime();
-    // Для "команда" due_ts остается null
+    // Для "команда" due_ts может остаться null
   }
   
   try{
@@ -936,7 +959,7 @@ $('#quick-add').onclick = async ()=>{
       due_ts,
       priority: quickPrio 
     });
-    tasks.unshift(normalizeTask(r.task)); // нормализуем новую задачу
+    tasks.unshift({ ...r.task, due_ts: normalizeDue(r.task.due_ts), priority: r.task.team_id ? 'team' : null });
   }catch(e){
     // Офлайн режим
     const fake = { 
@@ -944,7 +967,8 @@ $('#quick-add').onclick = async ()=>{
       title, 
       due_ts, 
       is_done: false,
-      priority: quickPrio
+      priority: quickPrio,
+      team_id: quickPrio==='team' ? 1 : null
     };
     tasks.unshift(fake);
   }
@@ -972,14 +996,12 @@ function rowTask(t){
     renderStats();
     try{ 
       await api('/api/tasks/toggle?id='+t.id,'POST',{}); 
-    } catch(e){ 
-      // Офлайн - изменения остаются локально
-    }
+    } catch(e){ }
   };
   
   const ttl = document.createElement('div'); 
   ttl.className='ttl'; 
-  ttl.textContent = t.title;
+  ttl.textContent = t.title + (t.team_id ? ' 👥' : '');
   
   const badge = document.createElement('div');
   if (t.due_ts==null){ 
@@ -1049,7 +1071,7 @@ function renderPlan(){
       return ms!=null && ms<=monthEnd;
     });
   } else if (planFilter==='team') {
-    arr = arr.filter(t => t.priority === 'team');
+    arr = arr.filter(t => t.team_id);
   }
   
   arr.sort((a,b)=>(a.is_done-b.is_done)||((normalizeDue(a.due_ts)||1e20)-(normalizeDue(b.due_ts)||1e20)));
@@ -1186,7 +1208,6 @@ $('#chat-window-overlay').onclick = (e) => {
 };
 
 /* ===== профиль ===== */
-// Переключение языка
 $$('.lang-btn').forEach(btn => {
   btn.onclick = () => {
     $$('.lang-btn').forEach(b => b.classList.remove('active'));
@@ -1195,8 +1216,6 @@ $$('.lang-btn').forEach(btn => {
     showToast(`Язык изменен на ${map[btn.dataset.lang] || btn.textContent}`);
   };
 });
-
-// Заглушки для кнопок профиля
 $('#btn-tariff').onclick = () => showToast('Раздел "Тарифы" в разработке');
 $('#btn-help').onclick = () => showToast('Раздел "Помощь" в разработке');
 $('#btn-guide').onclick = () => showToast('Раздел "Как пользоваться" в разработке');
