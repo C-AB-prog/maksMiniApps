@@ -24,7 +24,6 @@ export async function q(text, params = []) {
 }
 
 export async function ensureSchema() {
-  // создаём таблицы, если вдруг их нет (защита от «холодного старта»)
   await q(`
     CREATE TABLE IF NOT EXISTS users (
       id BIGSERIAL PRIMARY KEY,
@@ -43,17 +42,46 @@ export async function ensureSchema() {
   `);
 
   await q(`
+    CREATE TABLE IF NOT EXISTS teams (
+      id BIGSERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      join_token TEXT UNIQUE NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+  `);
+
+  await q(`
+    CREATE TABLE IF NOT EXISTS team_members (
+      team_id BIGINT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      joined_at TIMESTAMPTZ DEFAULT now(),
+      PRIMARY KEY (team_id, user_id)
+    );
+  `);
+
+  await q(`
     CREATE TABLE IF NOT EXISTS tasks (
       id BIGSERIAL PRIMARY KEY,
       user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       title TEXT NOT NULL,
       due_ts BIGINT NULL,
       is_done BOOLEAN NOT NULL DEFAULT false,
+      team_id BIGINT NULL REFERENCES teams(id) ON DELETE SET NULL,
       created_at TIMESTAMPTZ DEFAULT now()
     );
   `);
 
   await q(`CREATE INDEX IF NOT EXISTS idx_tasks_user   ON tasks(user_id);`);
   await q(`CREATE INDEX IF NOT EXISTS idx_tasks_due_ts ON tasks(due_ts);`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_tasks_team   ON tasks(team_id);`);
   await q(`CREATE INDEX IF NOT EXISTS idx_focuses_user ON focuses(user_id);`);
+
+  await q(`
+    CREATE TABLE IF NOT EXISTS task_notifications (
+      task_id BIGINT PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
+      sent_due_warning BOOLEAN NOT NULL DEFAULT false,
+      sent_overdue BOOLEAN NOT NULL DEFAULT false,
+      updated_at TIMESTAMPTZ DEFAULT now()
+    );
+  `);
 }
