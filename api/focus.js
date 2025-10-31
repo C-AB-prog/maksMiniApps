@@ -33,5 +33,32 @@ export default async function handler(req, res) {
     return res.json({ ok: true, focus: rows[0] });
   }
 
+  if (req.method === 'PUT') {
+    const text = (req.body?.text || '').trim();
+    if (!text) return res.status(400).json({ ok: false, error: 'text required' });
+
+    const { rows } = await q(
+      `UPDATE focuses
+       SET text = $1
+       WHERE id = (
+         SELECT id FROM focuses WHERE user_id = $2 ORDER BY id DESC LIMIT 1
+       )
+       RETURNING id, text, created_at`,
+      [text, userId],
+    );
+
+    // если не было — создадим
+    if (!rows.length) {
+      const ins = await q(
+        `INSERT INTO focuses (user_id, text)
+         VALUES ($1,$2) RETURNING id, text, created_at`,
+        [userId, text],
+      );
+      return res.json({ ok: true, focus: ins.rows[0] });
+    }
+
+    return res.json({ ok: true, focus: rows[0] });
+  }
+
   return res.status(405).end();
 }
