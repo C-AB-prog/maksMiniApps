@@ -1,6 +1,5 @@
-// /api/debug.js
-import { pool } from './_db';
-import { getTgIdFromReq } from './_utils';
+import { pool } from './_db.js';
+import { getTgId } from './_utils.js';
 
 export default async function handler(req, res) {
   try {
@@ -11,7 +10,7 @@ export default async function handler(req, res) {
     }
 
     if (what === 'who') {
-      const id = getTgIdFromReq(req);
+      const id = getTgId(req);
       return res.json({ ok: true, tg_id: id });
     }
 
@@ -20,7 +19,7 @@ export default async function handler(req, res) {
         select table_name, column_name, data_type
         from information_schema.columns
         where table_schema = 'public'
-          and table_name in ('tasks','focuses')
+          and table_name in ('tasks','focuses','teams','team_members','task_notifications','users')
         order by table_name, ordinal_position
       `);
       return res.json({ ok: true, schema: x.rows });
