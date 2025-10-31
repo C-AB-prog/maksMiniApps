@@ -24,6 +24,7 @@ export async function q(text, params = []) {
 }
 
 export async function ensureSchema() {
+  // базовые таблицы
   await q(`
     CREATE TABLE IF NOT EXISTS users (
       id BIGSERIAL PRIMARY KEY,
@@ -31,6 +32,10 @@ export async function ensureSchema() {
       created_at TIMESTAMPTZ DEFAULT now()
     );
   `);
+  // новые поля для отображения участников команды
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS username   TEXT;`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT;`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name  TEXT;`);
 
   await q(`
     CREATE TABLE IF NOT EXISTS focuses (
@@ -41,6 +46,24 @@ export async function ensureSchema() {
     );
   `);
 
+  await q(`
+    CREATE TABLE IF NOT EXISTS tasks (
+      id BIGSERIAL PRIMARY KEY,
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      due_ts BIGINT NULL,
+      is_done BOOLEAN NOT NULL DEFAULT false,
+      created_at TIMESTAMPTZ DEFAULT now(),
+      team_id BIGINT NULL
+    );
+  `);
+
+  await q(`CREATE INDEX IF NOT EXISTS idx_tasks_user   ON tasks(user_id);`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_tasks_due_ts ON tasks(due_ts);`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_focuses_user ON focuses(user_id);`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_tasks_due_active ON tasks(due_ts) WHERE is_done = false;`);
+
+  // команды
   await q(`
     CREATE TABLE IF NOT EXISTS teams (
       id BIGSERIAL PRIMARY KEY,
@@ -58,24 +81,24 @@ export async function ensureSchema() {
       PRIMARY KEY (team_id, user_id)
     );
   `);
+  await q(`CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id);`);
 
+  // FK для tasks.team_id (если ещё нет)
   await q(`
-    CREATE TABLE IF NOT EXISTS tasks (
-      id BIGSERIAL PRIMARY KEY,
-      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      title TEXT NOT NULL,
-      due_ts BIGINT NULL,
-      is_done BOOLEAN NOT NULL DEFAULT false,
-      team_id BIGINT NULL REFERENCES teams(id) ON DELETE SET NULL,
-      created_at TIMESTAMPTZ DEFAULT now()
-    );
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE table_name='tasks' AND constraint_name='fk_tasks_team'
+      ) THEN
+        ALTER TABLE tasks
+          ADD CONSTRAINT fk_tasks_team
+          FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL;
+      END IF;
+    END $$;
   `);
 
-  await q(`CREATE INDEX IF NOT EXISTS idx_tasks_user   ON tasks(user_id);`);
-  await q(`CREATE INDEX IF NOT EXISTS idx_tasks_due_ts ON tasks(due_ts);`);
-  await q(`CREATE INDEX IF NOT EXISTS idx_tasks_team   ON tasks(team_id);`);
-  await q(`CREATE INDEX IF NOT EXISTS idx_focuses_user ON focuses(user_id);`);
-
+  // фиксация отправленных напоминаний
   await q(`
     CREATE TABLE IF NOT EXISTS task_notifications (
       task_id BIGINT PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
