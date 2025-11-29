@@ -28,7 +28,7 @@
              radial-gradient(900px 500px at -10% 0%, rgba(135, 121, 255, .18), transparent 55%),
              #F3F6FF;
 
-  --card: rgba(255,255,255,.86);
+  --card: rgba(255,255,255,.9);
   --card-blur: blur(10px);
 
   --r: 18px;
@@ -40,7 +40,7 @@
 }
 
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
+html,body{height:100%;margin:0;padding:0}
 body{
   color:var(--ink);
   font:15px/1.45 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
@@ -53,34 +53,38 @@ body{
 /* ===================== */
 .appbar{
   position:sticky; top:0; z-index:20;
-  padding: calc(8px + var(--safe-top)) 18px 12px;
-  background: linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.55));
+  padding: calc(8px + var(--safe-top)) 14px 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.78));
   backdrop-filter: saturate(160%) blur(8px);
   border-bottom:1px solid var(--line);
 }
 .appbar h1{
-  margin:0; font-size:22px; font-weight:900; letter-spacing:.2px;
+  margin:0; font-size:20px; font-weight:900; letter-spacing:.2px;
   background: linear-gradient(90deg, var(--brand), var(--brand-2));
   -webkit-background-clip:text; background-clip:text; color:transparent;
 }
-.appbar .sub{color:var(--muted); font-size:12px}
+.appbar .sub{color:var(--muted); font-size:11px;margin-top:2px}
 
 /* ===================== */
 /*        LAYOUT         */
 /* ===================== */
-.container{max-width:940px;margin:0 auto;padding:16px 14px 110px}
+.container{
+  max-width:940px;
+  margin:0 auto;
+  padding:10px 10px 110px;
+}
 .card{
   background:var(--card);
   border:1px solid var(--line);
   border-radius:var(--r);
   box-shadow:var(--shadow);
-  padding:14px;
+  padding:12px;
   backdrop-filter: var(--card-blur);
 }
-h3{margin:0 0 12px 0; font-size:16px}
+h3{margin:0 0 10px 0; font-size:16px}
 
-/* 2 колонки на десктопе */
-section{display:none;gap:14px}
+/* grid: мобилка = одна колонка, десктоп = 2 */
+section{display:none;gap:10px}
 section.active{display:grid}
 .grid-2{grid-template-columns:1fr}
 @media (min-width: 860px){
@@ -92,33 +96,35 @@ section.active{display:grid}
 /* ===================== */
 label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .input, input[type="text"], input[type="datetime-local"], select{
-  width:100%; background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px 14px; outline:none;
+  width:100%; background:#fff; border:1px solid var(--line); border-radius:14px; padding:10px 12px; outline:none;
   transition:border-color .2s, box-shadow .2s;
+  font-size:14px;
 }
 .input:focus, input[type="text"]:focus, input[type="datetime-local"]:focus, select:focus{
   border-color:var(--brand);
   box-shadow:0 0 0 3px rgba(91,108,255,.12);
 }
 .btn{
-  appearance:none; border:none; padding:14px 16px; border-radius:14px;
+  appearance:none; border:none; padding:10px 14px; border-radius:14px;
   background:linear-gradient(135deg, var(--brand), var(--brand-2));
   color:#fff; cursor:pointer; font-weight:800; letter-spacing:.2px;
   box-shadow:var(--shadow-2); transition:transform .06s ease-in-out, filter .2s;
+  font-size:14px;
 }
 .btn:active{transform:translateY(1px)}
 .btn.secondary{
   background:#fff;color:var(--ink); border:1px solid var(--line); box-shadow:none; font-weight:700;
 }
 .btn.ghost{background:rgba(91,108,255,.10); color:var(--brand); box-shadow:none}
-.btn.icon{padding:8px 10px; border-radius:999px}
+.btn.icon{padding:6px 9px; border-radius:999px}
 
 /* ===================== */
 /*     SEGMENTED CHIP    */
 /* ===================== */
-.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
 .seg .chip{
-  padding:9px 13px; border-radius:999px; border:1px solid var(--line); background:#fff; cursor:pointer; font-weight:600;
-  transition:all .15s;
+  padding:7px 11px; border-radius:999px; border:1px solid var(--line); background:#fff; cursor:pointer; font-weight:600;
+  transition:all .15s; font-size:13px;
 }
 .seg .chip.active{
   background:linear-gradient(135deg, var(--brand), var(--brand-2)); color:#fff; border-color:transparent;
@@ -128,14 +134,17 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 /* ===================== */
 /*         LISTS         */
 /* ===================== */
-.list{display:flex;flex-direction:column;gap:10px}
+.list{display:flex;flex-direction:column;gap:8px}
 .task{
-  display:flex;align-items:center;gap:12px;padding:12px;
+  display:flex;align-items:center;gap:10px;padding:10px;
   border:1px solid var(--line); border-radius:14px; background:#fff;
 }
-.task .ttl{flex:1}
+.task .ttl{flex:1;font-size:14px}
 .task.done{opacity:.7}
-.badge{font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--muted)}
+.badge{
+  font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);
+  background:#fff;color:var(--muted);white-space:nowrap;
+}
 .badge.ok{color:#065f46;border-color:#10b981;background:#ecfdf5}
 .badge.due{color:#7c2d12;border-color:#f59e0b;background:#fffbeb}
 .badge.dead{color:#991b1b;border-color:#ef4444;background:#fef2f2}
@@ -146,25 +155,25 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .chat-container {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .chat-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .chat-item {
   background: #fff;
   border: 2px solid var(--line);
-  border-radius: 16px;
-  padding: 16px 12px;
+  border-radius: 14px;
+  padding: 12px 8px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
-  min-height: 120px;
+  min-height: 100px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -194,8 +203,8 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 }
 
 .chat-icon {
-  font-size: 24px;
-  margin-bottom: 8px;
+  font-size: 22px;
+  margin-bottom: 6px;
   opacity: 0.7;
 }
 
@@ -206,27 +215,27 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 
 .chat-title {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.3;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .chat-date {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--muted);
 }
 
 .chat-delete {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 20px;
-  height: 20px;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--danger);
   color: white;
   border: none;
-  font-size: 12px;
+  font-size: 11px;
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.2s;
@@ -251,7 +260,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   z-index: 1000;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 10px;
 }
 
 .chat-window-overlay.active {
@@ -266,7 +275,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   height: 80vh;
   max-height: 700px;
   background: #fff;
-  border-radius: 20px;
+  border-radius: 18px;
   box-shadow: 0 25px 50px rgba(0,0,0,0.25);
   overflow: hidden;
 }
@@ -275,7 +284,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--line);
   background: #fff;
   flex-shrink: 0;
@@ -283,27 +292,27 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 
 .chat-header-title {
   font-weight: 600;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .chat-header-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .chat-body{
   flex:1;
   overflow:auto;
-  padding:16px;
+  padding:12px;
   display:flex;
   flex-direction:column;
-  gap:12px;
+  gap:8px;
   background:linear-gradient(180deg,#FAFBFF,#F7FAFF)
 }
 .bubble{
-  max-width:75%;
-  padding:12px 16px;
-  border-radius:18px;
+  max-width:80%;
+  padding:10px 12px;
+  border-radius:16px;
   font-size:14px;
   line-height:1.4;
   word-wrap: break-word;
@@ -322,8 +331,8 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 }
 .chat-foot{
   display:flex;
-  gap:10px;
-  padding:12px 16px;
+  gap:8px;
+  padding:10px 12px;
   border-top:1px solid var(--line);
   background:#fff;
   flex-shrink: 0;
@@ -349,16 +358,16 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 
 .modal-content {
   background: #fff;
-  border-radius: 20px;
-  padding: 24px;
-  max-width: 400px;
+  border-radius: 18px;
+  padding: 18px;
+  max-width: 380px;
   width: 90%;
   box-shadow: 0 20px 60px rgba(0,0,0,0.2);
 }
 
 .modal-title {
-  margin: 0 0 16px 0;
-  font-size: 18px;
+  margin: 0 0 12px 0;
+  font-size: 16px;
   font-weight: 700;
 }
 
@@ -367,13 +376,16 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 /* ===================== */
 .nav{
   position:fixed; left:0; right:0; bottom:0; z-index:25;
-  padding:10px 10px calc(10px + var(--safe-bottom));
-  background:rgba(255,255,255,.9); border-top:1px solid var(--line);
+  padding:8px 6px calc(8px + var(--safe-bottom));
+  background:rgba(255,255,255,.96); border-top:1px solid var(--line);
   backdrop-filter: saturate(160%) blur(10px);
   box-shadow:0 -8px 24px rgba(17,24,39,.08);
   display:flex; justify-content:space-around
 }
-.nav .item{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:64px;color:var(--muted);font-size:12px}
+.nav .item{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  min-width:56px;color:var(--muted);font-size:11px;
+}
 .nav .item svg{opacity:.6; transition:opacity .15s, transform .06s}
 .nav .item.active{color:var(--brand)}
 .nav .item.active svg{opacity:1; transform:translateY(-1px); filter: drop-shadow(0 4px 8px rgba(91,108,255,.35))}
@@ -382,9 +394,9 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 /*         TOAST         */
 /* ===================== */
 .toast{
-  position:fixed;left:50%;bottom:calc(78px + var(--safe-bottom));
-  transform:translateX(-50%);background:#111827;color:#fff;padding:10px 14px;border-radius:12px;
-  box-shadow:0 10px 20px rgba(0,0,0,.2);z-index:999
+  position:fixed;left:50%;bottom:calc(70px + var(--safe-bottom));
+  transform:translateX(-50%);background:#111827;color:#fff;padding:8px 12px;border-radius:12px;
+  box-shadow:0 10px 20px rgba(0,0,0,.2);z-index:999;font-size:13px;
 }
 .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
 .muted{color:var(--muted)}
@@ -392,18 +404,18 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 /* ===================== */
 /*       PROFILE         */
 /* ===================== */
-.profile-section{margin-bottom:20px}
-.profile-section h4{margin:0 0 12px 0;font-size:15px;color:var(--ink)}
-.profile-actions{display:flex;flex-direction:column;gap:8px}
+.profile-section{margin-bottom:16px}
+.profile-section h4{margin:0 0 8px 0;font-size:15px;color:var(--ink)}
+.profile-actions{display:flex;flex-direction:column;gap:6px}
 .profile-btn{
   display:flex;justify-content:space-between;align-items:center;
-  padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:14px;
-  cursor:pointer;transition:all .15s
+  padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:14px;
+  cursor:pointer;transition:all .15s;font-size:14px;
 }
 .profile-btn:hover{background:var(--bg);border-color:var(--brand)}
 .profile-btn .arrow{color:var(--muted);font-size:14px}
-.lang-switch{display:flex;gap:8px;margin-top:8px}
-.lang-btn{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;flex:1}
+.lang-switch{display:flex;gap:6px;margin-top:6px}
+.lang-btn{padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;flex:1;font-size:13px}
 .lang-btn.active{background:var(--brand);color:#fff;border-color:var(--brand)}
 
 /* ===== Команды: плюс и меню ===== */
@@ -414,14 +426,14 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   position:relative;
 }
 #team-plus{
-  width:36px;
-  height:36px;
+  width:32px;
+  height:32px;
   border-radius:999px;
   padding:0;
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:20px;
+  font-size:18px;
 }
 .team-menu{
   position:absolute;
@@ -466,6 +478,55 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   overflow:hidden;
   text-overflow:ellipsis;
 }
+
+/* футер карточки команд с плюсиком */
+.team-footer{
+  margin-top:10px;
+  padding-top:8px;
+  border-top:1px solid rgba(231,236,245,.9);
+  display:flex;
+  justify-content:flex-end;
+}
+
+/* список команд */
+.team-list{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.team-list-item{
+  padding:9px 11px;
+  border-radius:12px;
+  background:#fff;
+  border:1px solid var(--line);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  font-size:14px;
+}
+.team-list-item span{
+  font-weight:600;
+}
+.team-list-item:hover{
+  border-color:var(--brand);
+  box-shadow:0 6px 18px rgba(91,108,255,.18);
+}
+
+#team-back{
+  margin-bottom:8px;
+}
+#team-back span{
+  margin-left:6px;
+}
+
+/* мелкие правки под очень узкие экраны */
+@media (max-width: 400px){
+  .appbar h1{font-size:18px}
+  .seg .chip{font-size:12px;padding:6px 9px}
+  .task{gap:8px}
+  .badge{padding:4px 8px}
+}
 </style>
 </head>
 <body>
@@ -483,9 +544,9 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     <div class="card">
       <h3>Фокус</h3>
       <label>Самое главное сегодня</label>
-      <div style="display:flex; gap:10px">
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
         <input id="focus-input" class="input" type="text" placeholder="Например: закрыть отчёт" />
-        <button id="focus-save" class="btn">Сохранить</button>
+        <button id="focus-save" class="btn" style="flex-shrink:0">Сохранить</button>
       </div>
     </div>
 
@@ -497,7 +558,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
         <div class="chip" data-prio="month">Месяц</div>
         <div class="chip" data-prio="team">Команда</div>
       </div>
-      <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px">
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
         <input id="quick-title" class="input" type="text" placeholder="Название задачи" />
         <input id="quick-due" class="input" type="datetime-local" />
         <div id="quick-team-wrap" style="display:none">
@@ -520,7 +581,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   <section id="screen-plan" class="grid grid-2">
     <!-- Левая колонка: задачи -->
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;flex-wrap:wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap">
         <div class="seg">
           <div id="mode-my" class="chip active">Мои</div>
           <div id="mode-team" class="chip">Команды</div>
@@ -535,47 +596,62 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       <div id="tasks-plan" class="list"></div>
     </div>
 
-    <!-- Правая колонка: команды (только в режиме "Команды") -->
+    <!-- Правая колонка: команды -->
     <div class="card" id="team-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;flex-wrap:wrap">
         <h3 style="margin:0">Команды</h3>
       </div>
 
-      <div id="teams-empty" class="muted" style="margin-bottom:12px;display:none">
-        У вас пока нет команды. Создайте её или вступите по коду.
+      <!-- список команд -->
+      <div id="team-list-view">
+        <div id="teams-empty" class="muted" style="margin-bottom:10px;display:none">
+          У вас пока нет команды. Создайте её или вступите по коду.
+        </div>
+        <div id="teams-list" class="team-list"></div>
       </div>
 
-      <div id="team-details" style="display:none">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;gap:8px">
-          <div>
-            <div id="team-title" style="font-size:15px;font-weight:600;margin-bottom:2px">Команда</div>
-            <div class="muted" style="font-size:11px">
-              Код: <span id="team-code-text" class="mono team-code-short">—</span>
+      <!-- детали одной команды -->
+      <div id="team-detail-view" style="display:none">
+        <button class="btn secondary icon" id="team-back">
+          ← <span>К списку команд</span>
+        </button>
+
+        <div id="team-details">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:8px">
+            <div>
+              <div id="team-title" style="font-size:15px;font-weight:600;margin-bottom:2px">Команда</div>
+              <div class="muted" style="font-size:11px">
+                Код: <span id="team-code-text" class="mono team-code-short">—</span>
+              </div>
+            </div>
+            <button class="btn secondary icon" id="copy-code" style="font-size:16px" title="Копировать код">
+              📋
+            </button>
+          </div>
+
+          <!-- задачи выбранной команды -->
+          <div id="team-tasks" class="list" style="margin:6px 0 10px 0"></div>
+
+          <!-- участники со шторкой -->
+          <div class="card" style="padding:10px;margin:0 0 8px 0">
+            <div class="team-members-header" id="team-members-header">
+              <label style="margin-bottom:0">Участники</label>
+              <span id="team-members-arrow" class="team-members-arrow">▾</span>
+            </div>
+            <div id="team-members-panel" style="display:none;margin-top:6px">
+              <ul id="team-members" style="margin:6px 0 0 0; padding-left:16px"></ul>
             </div>
           </div>
-          <button class="btn secondary icon" id="copy-code" style="font-size:16px" title="Копировать код">
-            📋
+
+          <button class="btn secondary" id="btn-team-leave"
+            style="width:100%;background:#fff;color:#b91c1c;border-color:#fecaca">
+            Расформировать команду
           </button>
         </div>
-
-        <div class="card" style="padding:12px;margin:0 0 10px 0">
-          <div class="team-members-header" id="team-members-header">
-            <label style="margin-bottom:0">Участники</label>
-            <span id="team-members-arrow" class="team-members-arrow">▾</span>
-          </div>
-          <div id="team-members-panel" style="display:none;margin-top:6px">
-            <ul id="team-members" style="margin:8px 0 0 0; padding-left:16px"></ul>
-          </div>
-        </div>
-
-        <button class="btn secondary" id="btn-team-leave"
-          style="width:100%;background:#fff;color:#b91c1c;border-color:#fecaca">
-          Расформировать команду
-        </button>
       </div>
 
-      <!-- плюсик снизу карточки -->
-      <div style="display:flex;justify-content:flex-end;margin-top:12px">
+      <!-- плюсик снизу карточки, отделённый линией -->
+      <div class="team-footer">
         <div class="team-header-right">
           <button class="btn secondary icon" id="team-plus">+</button>
           <div id="team-menu" class="team-menu">
@@ -594,11 +670,11 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       <div class="chat-container">
         <div id="chat-list" class="chat-list"></div>
 
-        <div id="no-chats-message" style="text-align: center; padding: 40px 20px;">
-          <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">💬</div>
-          <h3 style="margin: 0 0 8px 0;">Нет активных чатов</h3>
-          <p class="muted">Создайте новый чат, чтобы начать общение с ассистентом</p>
-          <button class="btn" id="create-first-chat" style="margin-top: 16px;">Создать чат</button>
+        <div id="no-chats-message" style="text-align: center; padding: 28px 10px;">
+          <div style="font-size: 40px; margin-bottom: 10px; opacity: 0.5;">💬</div>
+          <h3 style="margin: 0 0 6px 0;font-size:16px;">Нет активных чатов</h3>
+          <p class="muted" style="font-size:13px">Создайте новый чат, чтобы начать общение с ассистентом</p>
+          <button class="btn" id="create-first-chat" style="margin-top: 10px;">Создать чат</button>
         </div>
       </div>
     </div>
@@ -608,20 +684,20 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   <section id="screen-stats" class="grid grid-2">
     <div class="card">
       <h3>Статистика продуктивности</h3>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">
-        <div class="card" style="flex:1;min-width:180px"><label>Всего задач</label><div id="m-total" style="font-size:22px;font-weight:800">0</div></div>
-        <div class="card" style="flex:1;min-width:180px"><label>Выполнено</label><div id="m-done" style="font-size:22px;font-weight:800;color:var(--ok)">0</div></div>
-        <div class="card" style="flex:1;min-width:180px"><label>Процент успеха</label><div id="m-rate" style="font-size:22px;font-weight:800">0%</div></div>
-        <div class="card" style="flex:1;min-width:180px"><label>Просрочено</label><div id="m-over" style="font-size:22px;font-weight:800;color:var(--danger)">0</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+        <div class="card" style="flex:1;min-width:130px"><label>Всего задач</label><div id="m-total" style="font-size:20px;font-weight:800">0</div></div>
+        <div class="card" style="flex:1;min-width:130px"><label>Выполнено</label><div id="m-done" style="font-size:20px;font-weight:800;color:var(--ok)">0</div></div>
+        <div class="card" style="flex:1;min-width:130px"><label>Процент успеха</label><div id="m-rate" style="font-size:20px;font-weight:800">0%</div></div>
+        <div class="card" style="flex:1;min-width:130px"><label>Просрочено</label><div id="m-over" style="font-size:20px;font-weight:800;color:var(--danger)">0</div></div>
       </div>
-      <p class="muted" style="margin-top:12px">
+      <p class="muted" style="margin-top:10px;font-size:13px">
         <b>Гипотеза:</b> «Если фиксировать задачи и ставить дедлайны, завершу ≥70% вовремя».<br/>
-        <b>Действие:</b> добавляй/закрывай задачи вовремя. <b>Данные:</b> метрики выше. <b>Инсайт:</b> держи ≥70%.
+        <b>Действие:</b> добавляй/закрывай задачи вовремя. <b>Инсайт:</b> держи ≥70%.
       </p>
     </div>
     <div class="card">
       <h3>Прогресс за неделю</h3>
-      <div id="week-chart" style="height:200px;display:flex;align-items:end;gap:4px;margin-top:20px"></div>
+      <div id="week-chart" style="height:180px;display:flex;align-items:end;gap:4px;margin-top:16px"></div>
     </div>
   </section>
 
@@ -629,7 +705,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   <section id="screen-profile" class="grid">
     <div class="card">
       <h3>Профиль</h3>
-      <div class="muted" style="margin-bottom:16px">Telegram ID: <span id="profile-id" class="mono">–</span></div>
+      <div class="muted" style="margin-bottom:12px;font-size:13px">Telegram ID: <span id="profile-id" class="mono">–</span></div>
       
       <div class="profile-section">
         <h4>Настройки</h4>
@@ -694,8 +770,8 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 <div id="new-chat-modal" class="modal">
   <div class="modal-content">
     <h3 class="modal-title">Название чата</h3>
-    <input type="text" id="new-chat-title" class="input" placeholder="Например: Планирование проекта" style="margin-bottom: 16px;">
-    <div style="display: flex; gap: 10px;">
+    <input type="text" id="new-chat-title" class="input" placeholder="Например: Планирование проекта" style="margin-bottom: 12px;">
+    <div style="display: flex; gap: 8px;">
       <button class="btn secondary" id="cancel-new-chat" style="flex: 1;">Отмена</button>
       <button class="btn" id="confirm-new-chat" style="flex: 1;">Создать</button>
     </div>
@@ -898,7 +974,9 @@ let focus = null;
 let quickPrio = 'today';
 let planFilter = 'all';      // all|today|week|month
 let planMode   = 'my';       // my|team
-let teamInfo   = null;       // { team_id, name, join_code, members:[] }
+let teamInfo   = null;       // активная команда
+let teamList   = [];         // список команд
+let teamDetailOpen = false;  // открыт ли экран деталей
 
 /* ===== init UI ===== */
 $$('.seg .chip[data-prio]').forEach(ch=>{
@@ -933,15 +1011,29 @@ $('#mode-team').onclick = ()=>{planMode='team'; updPlanModeBtns(); renderPlan();
 
 /* показать/спрятать фильтры и карточку команд */
 function updateTeamSideVisibility(){
-  const hasTeam = !!teamInfo;
+  const hasTeam = teamList.length > 0;
   $('#time-filters').style.display = planMode==='my' ? 'flex' : 'none';
 
   const teamCard = $('#team-card');
   teamCard.style.display = planMode==='team' ? 'block' : 'none';
 
-  if (planMode==='team') {
-    $('#team-details').style.display = hasTeam ? 'block' : 'none';
-    $('#teams-empty').style.display  = hasTeam ? 'none' : 'block';
+  if (planMode !== 'team') return;
+
+  const listView   = $('#team-list-view');
+  const detailView = $('#team-detail-view');
+
+  if (!hasTeam) {
+    listView.style.display   = 'block';
+    detailView.style.display = 'none';
+    $('#teams-empty').style.display = 'block';
+  } else if (teamDetailOpen && teamInfo) {
+    listView.style.display   = 'none';
+    detailView.style.display = 'block';
+    $('#teams-empty').style.display = 'none';
+  } else {
+    listView.style.display   = 'block';
+    detailView.style.display = 'none';
+    $('#teams-empty').style.display = 'none';
   }
 }
 
@@ -1096,11 +1188,16 @@ function renderHome(){
 }
 
 function renderPlan(){
+  const planBox = $('#tasks-plan');      // левый список
+  const teamBox = $('#team-tasks');      // задачи команды справа
+
   let arr = tasks.slice();
   const now = new Date();
 
   if (planMode === 'my') {
-    arr = arr.filter(t => !t.team_id);  // только личные задачи
+    // --- только личные задачи ---
+    arr = arr.filter(t => !t.team_id);
+
     if (planFilter==='today') {
       const dayStart = startOfDay(now).getTime();
       const dayEnd   = endOfDay(now).getTime();
@@ -1121,22 +1218,44 @@ function renderPlan(){
         return ms!=null && ms<=monthEnd;
       });
     }
-  } else {
-    // режим "Команды": все задачи текущей команды, без фильтров по сроку
-    if (teamInfo && teamInfo.team_id){
-      arr = arr.filter(t => t.team_id === teamInfo.team_id);
+
+    arr.sort((a,b)=>(a.is_done-b.is_done)||((normalizeDue(a.due_ts)||1e20)-(normalizeDue(b.due_ts)||1e20)));
+
+    planBox.innerHTML='';
+    if (!arr.length){
+      planBox.innerHTML='<div class="muted">Нет задач для отображения.</div>';
     } else {
-      arr = arr.filter(t => t.team_id);
+      arr.forEach(t=> planBox.appendChild(rowTask(t)));
+    }
+
+    if (teamBox) teamBox.innerHTML = '';
+
+  } else {
+    // --- режим Команды: задачи внутри карточки команды ---
+    let teamTasks = [];
+    if (teamInfo && teamInfo.team_id){
+      teamTasks = arr.filter(t => t.team_id === teamInfo.team_id);
+    } else {
+      teamTasks = arr.filter(t => t.team_id);
+    }
+
+    teamTasks.sort((a,b)=>(a.is_done-b.is_done)||((normalizeDue(a.due_ts)||1e20)-(normalizeDue(b.due_ts)||1e20)));
+
+    planBox.innerHTML = '<div class="muted">Выберите команду справа, чтобы увидеть задачи.</div>';
+
+    if (teamBox){
+      teamBox.innerHTML = '';
+      if (!teamDetailOpen){
+        // пока выбран только список команд – задач не показываем
+        return;
+      }
+      if (!teamTasks.length){
+        teamBox.innerHTML = '<div class="muted">В этой команде ещё нет задач.</div>';
+      } else {
+        teamTasks.forEach(t => teamBox.appendChild(rowTask(t)));
+      }
     }
   }
-
-  arr.sort((a,b)=>(a.is_done-b.is_done)||((normalizeDue(a.due_ts)||1e20)-(normalizeDue(b.due_ts)||1e20)));
-  const box = $('#tasks-plan'); box.innerHTML='';
-  if (!arr.length){ 
-    box.innerHTML='<div class="muted">Нет задач для отображения.</div>'; 
-    return; 
-  }
-  arr.forEach(t=> box.appendChild(rowTask(t)));
 }
 
 /* ===== статистика (только личные задачи) ===== */
@@ -1178,13 +1297,13 @@ function renderWeekChart(personalTasks){
       background: linear-gradient(to top, var(--brand), var(--brand-2));
       border-radius: 4px 4px 0 0;
       height: ${height}%;
-      min-height: 8px;
+      min-height: 6px;
       position: relative;
     `;
     const label = document.createElement('div');
     label.style.cssText = `
       position: absolute;
-      bottom: -20px;
+      bottom: -18px;
       left: 0;
       right: 0;
       text-align: center;
@@ -1249,32 +1368,82 @@ $('#btn-consult').onclick = () => showToast('Раздел "Консультац�
 async function loadTeamInfo(){
   try{
     const r = await api('/api/team/members','GET');
+    teamList = [];
+
     if (!r.team_id) {
       teamInfo = null;
-      $('#team-details').style.display='none';
-      $('#teams-empty').style.display='block';
-      const ul = $('#team-members'); ul.innerHTML='';
+      const ul = $('#team-members'); if (ul) ul.innerHTML='';
+      renderTeamList();
       updateTeamSideVisibility();
+      updateQuickTeamVisibility();
       return;
     }
-    teamInfo = { team_id: r.team_id, members: r.members || [] };
 
-    // код приглашения + имя
+    const base = { team_id: r.team_id, members: r.members || [] };
+
     try{
       const inv = await api('/api/team/invite','GET');
-      teamInfo.join_code = inv.join_code || '';
-      teamInfo.name = inv.team_name || inv.name || ('Команда #'+r.team_id);
+      base.join_code = inv.join_code || '';
+      base.name = inv.team_name || inv.name || ('Команда #'+r.team_id);
     }catch{
-      teamInfo.join_code = '';
-      teamInfo.name = 'Команда #'+r.team_id;
+      base.join_code = '';
+      base.name = 'Команда #'+r.team_id;
     }
 
-    $('#teams-empty').style.display='none';
-    $('#team-title').textContent = teamInfo.name;
-    $('#team-code-text').textContent = teamInfo.join_code || '—';
+    teamList = [base];
+    teamInfo = base;
 
-    const ul = $('#team-members'); ul.innerHTML='';
-    if (teamInfo.members.length){
+    renderTeamList();
+    if (teamDetailOpen) {
+      fillTeamDetail();
+    }
+    updateTeamSideVisibility();
+    updateQuickTeamVisibility();
+  }catch(e){
+    console.log('loadTeamInfo error', e);
+    teamList = [];
+    teamInfo = null;
+    renderTeamList();
+    updateTeamSideVisibility();
+  }
+}
+
+function renderTeamList(){
+  const listEl = $('#teams-list');
+  if (!listEl) return;
+
+  listEl.innerHTML = '';
+
+  if (!teamList.length){
+    $('#teams-empty').style.display = 'block';
+    return;
+  }
+  $('#teams-empty').style.display = 'none';
+
+  teamList.forEach(t=>{
+    const item = document.createElement('div');
+    item.className = 'team-list-item';
+    item.innerHTML = `<span>${t.name || ('Команда #'+t.team_id)}</span>`;
+    item.onclick = ()=>{
+      teamInfo = t;
+      teamDetailOpen = true;
+      fillTeamDetail();
+      updateTeamSideVisibility();
+    };
+    listEl.appendChild(item);
+  });
+}
+
+function fillTeamDetail(){
+  if (!teamInfo) return;
+
+  $('#team-title').textContent = teamInfo.name || ('Команда #'+teamInfo.team_id);
+  $('#team-code-text').textContent = teamInfo.join_code || '—';
+
+  const ul = $('#team-members');
+  if (ul){
+    ul.innerHTML = '';
+    if (teamInfo.members && teamInfo.members.length){
       teamInfo.members.forEach(m=>{
         const name = m.username ? '@'+m.username :
           [m.first_name,m.last_name].filter(Boolean).join(' ') || m.tg_id;
@@ -1283,15 +1452,12 @@ async function loadTeamInfo(){
         ul.appendChild(li);
       });
     } else {
-      ul.innerHTML='<li class="muted">Вы пока один в этой команде</li>';
+      ul.innerHTML = '<li class="muted">Вы пока один в этой команде</li>';
     }
-    $('#team-details').style.display='block';
-    updateTeamSideVisibility();
-    updateQuickTeamVisibility();
-  }catch(e){
-    console.log('loadTeamInfo error', e);
-    $('#teams-empty').style.display='block';
   }
+
+  // перерисуем задачи команды внутри карточки
+  renderPlan();
 }
 
 /* плюс и меню */
@@ -1352,9 +1518,17 @@ memHeader.onclick = ()=>{
   memArrow.textContent = isOpen ? '▾' : '▴';
 };
 
-/* расформировать (заглушка, чтобы не падать) */
+/* расформировать (заглушка) */
 $('#btn-team-leave').onclick = ()=>{
   showToast('Расформирование команды пока не реализовано');
+};
+
+/* кнопка "назад к списку команд" */
+$('#team-back').onclick = ()=>{
+  teamDetailOpen = false;
+  updateTeamSideVisibility();
+  const teamBox = $('#team-tasks');
+  if (teamBox) teamBox.innerHTML = '';
 };
 
 /* авто-join по параметру ?join= */
