@@ -91,11 +91,11 @@ section.active{display:grid}
 /*   INPUTS & BUTTONS    */
 /* ===================== */
 label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
-.input, input[type="text"], input[type="datetime-local"]{
-  width:100%; background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px 14px; outline:none;
+.input, input[type="text"], input[type="datetime-local"], select{
+  width:100%; background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px 14px; outline:none;
   transition:border-color .2s, box-shadow .2s;
 }
-.input:focus, input[type="text"]:focus, input[type="datetime-local"]:focus{
+.input:focus, input[type="text"]:focus, input[type="datetime-local"]:focus, select:focus{
   border-color:var(--brand);
   box-shadow:0 0 0 3px rgba(91,108,255,.12);
 }
@@ -110,7 +110,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   background:#fff;color:var(--ink); border:1px solid var(--line); box-shadow:none; font-weight:700;
 }
 .btn.ghost{background:rgba(91,108,255,.10); color:var(--brand); box-shadow:none}
-.btn.icon{padding:10px 12px; border-radius:12px}
+.btn.icon{padding:8px 10px; border-radius:999px}
 
 /* ===================== */
 /*     SEGMENTED CHIP    */
@@ -405,6 +405,67 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .lang-switch{display:flex;gap:8px;margin-top:8px}
 .lang-btn{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;flex:1}
 .lang-btn.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+/* ===== Команды: плюс и меню ===== */
+.team-header-right{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  position:relative;
+}
+#team-plus{
+  width:32px;
+  height:32px;
+  border-radius:999px;
+  padding:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:18px;
+}
+.team-menu{
+  position:absolute;
+  right:0;
+  top:115%;
+  min-width:170px;
+  background:#fff;
+  border-radius:14px;
+  border:1px solid var(--line);
+  box-shadow:0 14px 28px rgba(15,23,42,.22);
+  padding:6px 0;
+  display:none;
+  z-index:50;
+}
+.team-menu.open{display:block;}
+.team-menu-item{
+  padding:8px 14px;
+  font-size:14px;
+  cursor:pointer;
+}
+.team-menu-item:hover{
+  background:#f3f4ff;
+}
+
+/* участники — сворачиваемый блок */
+.team-members-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  cursor:pointer;
+  user-select:none;
+}
+.team-members-arrow{
+  font-size:14px;
+  color:var(--muted);
+}
+
+/* код команды — обрезанный вид */
+.team-code-short{
+  max-width:180px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
 </style>
 </head>
 <body>
@@ -439,6 +500,12 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px">
         <input id="quick-title" class="input" type="text" placeholder="Название задачи" />
         <input id="quick-due" class="input" type="datetime-local" />
+        <div id="quick-team-wrap" style="display:none">
+          <label style="margin-top:2px">Для какой команды</label>
+          <select id="quick-team-select" class="input">
+            <option value="">Текущая команда</option>
+          </select>
+        </div>
         <button id="quick-add" class="btn">Добавить задачу</button>
       </div>
     </div>
@@ -458,8 +525,9 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
           <div id="mode-my" class="chip active">Мои</div>
           <div id="mode-team" class="chip">Команды</div>
         </div>
-        <div class="seg">
-          <div id="f-today" class="chip active">Сегодня</div>
+        <div class="seg" id="time-filters">
+          <div id="f-all" class="chip active">Все</div>
+          <div id="f-today" class="chip">Сегодня</div>
           <div id="f-week" class="chip">Неделя</div>
           <div id="f-month" class="chip">Месяц</div>
         </div>
@@ -471,9 +539,12 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap">
         <h3 style="margin:0">Команды</h3>
-        <div style="display:flex;gap:6px">
-          <button class="btn secondary" id="btn-team-create" style="padding:8px 10px;font-size:12px">Создать</button>
-          <button class="btn secondary" id="btn-team-join" style="padding:8px 10px;font-size:12px">Вступить</button>
+        <div class="team-header-right">
+          <button class="btn secondary icon" id="team-plus" style="display:none">+</button>
+          <div id="team-menu" class="team-menu">
+            <div class="team-menu-item" id="team-menu-create">Создать команду</div>
+            <div class="team-menu-item" id="team-menu-join">Вступить по коду</div>
+          </div>
         </div>
       </div>
 
@@ -490,17 +561,22 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
           <div>
             <div id="team-title" style="font-size:15px;font-weight:600;margin-bottom:2px">Команда</div>
             <div class="muted" style="font-size:11px">
-              Код: <span id="team-code-text" class="mono">—</span>
+              Код: <span id="team-code-text" class="mono team-code-short">—</span>
             </div>
           </div>
-          <button class="btn secondary" id="copy-code" style="padding:8px 10px;font-size:12px">
-            Копировать
+          <button class="btn secondary icon" id="copy-code" style="font-size:16px" title="Копировать код">
+            📋
           </button>
         </div>
 
         <div class="card" style="padding:12px;margin:0 0 10px 0">
-          <label>Участники</label>
-          <ul id="team-members" style="margin:8px 0 0 0; padding-left:16px"></ul>
+          <div class="team-members-header" id="team-members-header">
+            <label style="margin-bottom:0">Участники</label>
+            <span id="team-members-arrow" class="team-members-arrow">▾</span>
+          </div>
+          <div id="team-members-panel" style="display:none;margin-top:6px">
+            <ul id="team-members" style="margin:8px 0 0 0; padding-left:16px"></ul>
+          </div>
         </div>
 
         <button class="btn secondary" id="btn-team-leave"
@@ -820,12 +896,9 @@ $$('.nav .item').forEach(it=>{
 let tasks = [];
 let focus = null;
 let quickPrio = 'today';
-let currentLanguage = 'ru';
-
-let planFilter = 'today';   // today|week|month
-let planMode   = 'my';      // my|team
-
-let teamInfo = null;        // { team_id, name, join_code, members:[] }
+let planFilter = 'all';      // all|today|week|month
+let planMode   = 'my';       // my|team
+let teamInfo   = null;       // { team_id, name, join_code, members:[] }
 
 /* ===== init UI ===== */
 $$('.seg .chip[data-prio]').forEach(ch=>{
@@ -833,27 +906,45 @@ $$('.seg .chip[data-prio]').forEach(ch=>{
     $$('.seg .chip[data-prio]').forEach(x=>x.classList.remove('active'));
     ch.classList.add('active');
     quickPrio = ch.dataset.prio;
+    updateQuickTeamVisibility();
   };
 });
 $$('.seg .chip[data-prio]')[0].classList.add('active');
 
-/* план: фильтры времени */
+/* фильтры времени */
 function updPlanFilterBtns(){
+  $('#f-all').classList.toggle('active', planFilter==='all');
   $('#f-today').classList.toggle('active', planFilter==='today');
   $('#f-week').classList.toggle('active', planFilter==='week');
   $('#f-month').classList.toggle('active', planFilter==='month');
 }
-$('#f-today').onclick=()=>{planFilter='today';updPlanFilterBtns();renderPlan();};
-$('#f-week').onclick =()=>{planFilter='week'; updPlanFilterBtns();renderPlan();};
-$('#f-month').onclick=()=>{planFilter='month';updPlanFilterBtns();renderPlan();};
+$('#f-all').onclick   = ()=>{planFilter='all';   updPlanFilterBtns(); renderPlan();};
+$('#f-today').onclick = ()=>{planFilter='today'; updPlanFilterBtns(); renderPlan();};
+$('#f-week').onclick  = ()=>{planFilter='week';  updPlanFilterBtns(); renderPlan();};
+$('#f-month').onclick = ()=>{planFilter='month'; updPlanFilterBtns(); renderPlan();};
 
-/* план: режим Мои / Команды */
+/* режимы Мои / Команды */
 function updPlanModeBtns(){
   $('#mode-my').classList.toggle('active', planMode==='my');
   $('#mode-team').classList.toggle('active', planMode==='team');
 }
 $('#mode-my').onclick = ()=>{planMode='my'; updPlanModeBtns(); renderPlan(); updateTeamSideVisibility();};
 $('#mode-team').onclick = ()=>{planMode='team'; updPlanModeBtns(); renderPlan(); updateTeamSideVisibility();};
+
+/* показать/спрятать фильтры и плюсик в зависимости от режима */
+function updateTeamSideVisibility(){
+  const hasTeam = !!teamInfo;
+  // time filters только в "Мои"
+  $('#time-filters').style.display = planMode==='my' ? 'flex' : 'none';
+
+  // подсказка / детали
+  $('#teams-hint-my').style.display = planMode==='my' ? 'block' : 'none';
+  $('#team-details').style.display  = (planMode==='team' && hasTeam) ? 'block' : 'none';
+  $('#teams-empty').style.display   = (!hasTeam) ? 'block' : 'none';
+
+  // плюсик только в режиме "Команды"
+  $('#team-plus').style.display = planMode==='team' ? 'flex' : 'none';
+}
 
 /* ===== load ===== */
 async function loadAll(){
@@ -872,7 +963,7 @@ async function loadAll(){
     await loadTeamInfo();
   }catch(e){ console.log('Team load failed:', e); }
 
-  renderHome(); renderPlan(); renderStats(); updateTeamSideVisibility();
+  renderHome(); renderPlan(); renderStats(); updateTeamSideVisibility(); updateQuickTeamVisibility();
 }
 loadAll();
 
@@ -891,6 +982,20 @@ $('#focus-save').onclick = async ()=>{
 };
 
 /* ===== quick add ===== */
+function updateQuickTeamVisibility(){
+  if (quickPrio==='team' && teamInfo && teamInfo.team_id){
+    $('#quick-team-wrap').style.display = 'block';
+    const sel = $('#quick-team-select');
+    sel.innerHTML = '';
+    const opt = document.createElement('option');
+    opt.value = teamInfo.team_id;
+    opt.textContent = teamInfo.name || ('Команда #'+teamInfo.team_id);
+    sel.appendChild(opt);
+  } else {
+    $('#quick-team-wrap').style.display = 'none';
+  }
+}
+
 $('#quick-add').onclick = async ()=>{
   const title = $('#quick-title').value.trim();
   const dueStr = $('#quick-due').value;
@@ -906,13 +1011,23 @@ $('#quick-add').onclick = async ()=>{
     else if (quickPrio==='week')  due_ts = endOfDay(addDays(now,7)).getTime();
     else if (quickPrio==='month') due_ts = endOfDay(addDays(now,30)).getTime();
   }
+
+  let body = { title, due_ts, priority: quickPrio };
+
+  if (quickPrio === 'team') {
+    if (!teamInfo || !teamInfo.team_id){
+      showToast('Сначала создайте или выберите команду');
+      return;
+    }
+    const teamId = Number($('#quick-team-select').value || teamInfo.team_id);
+    body.team_id = teamId;
+  }
   
   try{
-    const body = { title, due_ts, priority: quickPrio };
     const r = await api('/api/tasks','POST', body);
     tasks.unshift(normalizeTask(r.task));
   }catch(e){
-    const fake = { id: 'tmp_'+Date.now(), title, due_ts, is_done:false, priority:quickPrio };
+    const fake = { id: 'tmp_'+Date.now(), title, due_ts, is_done:false, priority:quickPrio, team_id: body.team_id || null };
     tasks.unshift(fake);
   }
   
@@ -984,37 +1099,35 @@ function renderPlan(){
   let arr = tasks.slice();
   const now = new Date();
 
-  // фильтр по режиму
   if (planMode === 'my') {
-    arr = arr.filter(t => !t.team_id);
+    arr = arr.filter(t => !t.team_id);  // только личные
+    if (planFilter==='today') {
+      const dayStart = startOfDay(now).getTime();
+      const dayEnd   = endOfDay(now).getTime();
+      arr = arr.filter(t => {
+        const ms = normalizeDue(t.due_ts);
+        return ms!=null && ms>=dayStart && ms<=dayEnd;
+      });
+    } else if (planFilter==='week') {
+      const weekEnd = endOfDay(addDays(now,7)).getTime();
+      arr = arr.filter(t => {
+        const ms = normalizeDue(t.due_ts);
+        return ms!=null && ms<=weekEnd;
+      });
+    } else if (planFilter==='month') {
+      const monthEnd = endOfDay(addDays(now,30)).getTime();
+      arr = arr.filter(t => {
+        const ms = normalizeDue(t.due_ts);
+        return ms!=null && ms<=monthEnd;
+      });
+    }
   } else {
-    if (teamInfo && teamInfo.team_id) {
+    // режим "Команды" — показываем все задачи текущей команды, без фильтров по сроку
+    if (teamInfo && teamInfo.team_id){
       arr = arr.filter(t => t.team_id === teamInfo.team_id);
     } else {
-      arr = arr.filter(t => t.team_id); // любые командные
+      arr = arr.filter(t => t.team_id); // если что-то есть, но команда не прогружена
     }
-  }
-
-  // фильтр по времени
-  if (planFilter==='today') {
-    const dayStart = startOfDay(now).getTime();
-    const dayEnd   = endOfDay(now).getTime();
-    arr = arr.filter(t => {
-      const ms = normalizeDue(t.due_ts);
-      return ms!=null && ms>=dayStart && ms<=dayEnd;
-    });
-  } else if (planFilter==='week') {
-    const weekEnd = endOfDay(addDays(now,7)).getTime();
-    arr = arr.filter(t => {
-      const ms = normalizeDue(t.due_ts);
-      return ms!=null && ms<=weekEnd;
-    });
-  } else if (planFilter==='month') {
-    const monthEnd = endOfDay(addDays(now,30)).getTime();
-    arr = arr.filter(t => {
-      const ms = normalizeDue(t.due_ts);
-      return ms!=null && ms<=monthEnd;
-    });
   }
 
   arr.sort((a,b)=>(a.is_done-b.is_done)||((normalizeDue(a.due_ts)||1e20)-(normalizeDue(b.due_ts)||1e20)));
@@ -1131,36 +1244,30 @@ $('#btn-consult').onclick = () => showToast('Раздел "Консультац�
 /* ===================== */
 /*      TEAM (План)      */
 /* ===================== */
-function updateTeamSideVisibility(){
-  const hasTeam = !!teamInfo;
-  $('#teams-hint-my').style.display = planMode==='my' ? 'block' : 'none';
-  $('#team-details').style.display  = (planMode==='team' && hasTeam) ? 'block' : 'none';
-}
-
 async function loadTeamInfo(){
   try{
     const r = await api('/api/team/members','GET');
     if (!r.team_id) {
       teamInfo = null;
-      $('#teams-empty').style.display = 'block';
-      $('#team-details').style.display = 'none';
+      $('#team-details').style.display='none';
+      $('#teams-empty').style.display='block';
       const ul = $('#team-members'); ul.innerHTML='';
       updateTeamSideVisibility();
       return;
     }
     teamInfo = { team_id: r.team_id, members: r.members || [] };
-    $('#teams-empty').style.display = 'none';
 
-    // код приглашения
+    // код приглашения + имя
     try{
       const inv = await api('/api/team/invite','GET');
       teamInfo.join_code = inv.join_code || '';
-      teamInfo.name = inv.team_name || inv.name || ('Команда #' + r.team_id);
+      teamInfo.name = inv.team_name || inv.name || ('Команда #'+r.team_id);
     }catch{
       teamInfo.join_code = '';
-      teamInfo.name = 'Команда #' + r.team_id;
+      teamInfo.name = 'Команда #'+r.team_id;
     }
 
+    $('#teams-empty').style.display='none';
     $('#team-title').textContent = teamInfo.name;
     $('#team-code-text').textContent = teamInfo.join_code || '—';
 
@@ -1178,51 +1285,72 @@ async function loadTeamInfo(){
     }
     $('#team-details').style.display='block';
     updateTeamSideVisibility();
+    updateQuickTeamVisibility();
   }catch(e){
     console.log('loadTeamInfo error', e);
     $('#teams-empty').style.display='block';
   }
 }
 
-/* создать свою команду (через /invite — он создаст, если её нет) */
-$('#btn-team-create').onclick = async ()=>{
+/* плюс и меню */
+const teamPlus = $('#team-plus');
+const teamMenu = $('#team-menu');
+
+teamPlus.onclick = (e)=>{
+  e.stopPropagation();
+  teamMenu.classList.toggle('open');
+};
+document.addEventListener('click', ()=>teamMenu.classList.remove('open'));
+
+$('#team-menu-create').onclick = async ()=>{
+  teamMenu.classList.remove('open');
   try{
     await api('/api/team/invite','GET'); // создаст дефолтную, если нет
     await loadTeamInfo();
-    planMode = 'team'; updPlanModeBtns(); renderPlan(); updateTeamSideVisibility();
+    planMode='team'; updPlanModeBtns(); renderPlan(); updateTeamSideVisibility();
     showToast('Команда готова. Код можно скопировать справа.');
   }catch(e){
     showToast('Не удалось создать команду');
   }
 };
 
-/* вступить по коду */
-$('#btn-team-join').onclick = async ()=>{
+$('#team-menu-join').onclick = async ()=>{
+  teamMenu.classList.remove('open');
   const code = prompt('Вставьте код приглашения команды');
   if (!code) return;
   try{
     await api('/api/team/join','POST',{ token: code.trim() });
     await loadTeamInfo();
-    planMode = 'team'; updPlanModeBtns(); renderPlan(); updateTeamSideVisibility();
+    planMode='team'; updPlanModeBtns(); renderPlan(); updateTeamSideVisibility();
     showToast('Вы вступили в команду');
   }catch(e){
     showToast('Не удалось вступить по коду');
   }
 };
 
-/* копирование кода */
+/* копирование кода (показываем коротко, копируем полный) */
 $('#copy-code').onclick = async ()=>{
-  const code = (teamInfo && teamInfo.join_code) ? teamInfo.join_code.trim() : '';
-  if (!code) return showToast('Код недоступен');
+  const full = teamInfo && teamInfo.join_code ? teamInfo.join_code.trim() : '';
+  if (!full) return showToast('Код недоступен');
   try{
-    await navigator.clipboard.writeText(code);
+    await navigator.clipboard.writeText(full);
     showToast('Код скопирован');
   }catch{
     showToast('Не удалось скопировать');
   }
 };
 
-/* расформировать (пока просто заглушка, чтобы не падало) */
+/* сворачивание участников */
+const memHeader = $('#team-members-header');
+const memPanel  = $('#team-members-panel');
+const memArrow  = $('#team-members-arrow');
+memHeader.onclick = ()=>{
+  const isOpen = memPanel.style.display === 'block';
+  memPanel.style.display = isOpen ? 'none' : 'block';
+  memArrow.textContent = isOpen ? '▾' : '▴';
+};
+
+/* расформировать (заглушка, чтобы не падать) */
 $('#btn-team-leave').onclick = ()=>{
   showToast('Расформирование команды пока не реализовано');
 };
