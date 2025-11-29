@@ -1,12 +1,6 @@
 // api/_utils.js
 import { q } from './_db.js';
 
-/**
- * Достаём tg_id из:
- *  - x-telegram-init-data / x-telegram-web-app-init-data (Mini App)
- *  - ?tg_id / ?user_id
- *  - X-TG-ID
- */
 export function getTgId(req) {
   const raw =
     req.headers['x-telegram-init-data'] ||
@@ -33,9 +27,6 @@ export function getTgId(req) {
   return 0;
 }
 
-/**
- * Возвращает id пользователя в таблице users, создавая при необходимости.
- */
 export async function getOrCreateUserId(tg_id) {
   const { rows } = await q(
     `INSERT INTO users(tg_id)
@@ -49,9 +40,6 @@ export async function getOrCreateUserId(tg_id) {
 
 /* ---------- Teams helpers ---------- */
 
-/**
- * Все id команд, в которых состоит пользователь.
- */
 export async function userTeamIds(userId) {
   const { rows } = await q(
     `SELECT team_id FROM team_members WHERE user_id = $1`,
@@ -68,8 +56,8 @@ export function randomToken(len = 32) {
 }
 
 /**
- * ensureDefaultTeamForUser — используется старым кодом (например в /api/tasks),
- * чтобы гарантировать наличие хотя бы одной команды у пользователя.
+ * Старый вариант: создаёт дефолтную команду, если нет ни одной.
+ * Используется в задачах / уведомлениях, можно оставить как есть.
  */
 export async function ensureDefaultTeamForUser(userId, tgId) {
   const { rows } = await q(
@@ -84,7 +72,7 @@ export async function ensureDefaultTeamForUser(userId, tgId) {
   if (rows.length) return rows[0];
 
   const token = randomToken(32);
-  const name = `Команда #${tgId}`;
+  const name = `Команда ${tgId}`;
   const t = await q(
     `INSERT INTO teams(name, join_token)
      VALUES ($1, $2)
@@ -92,24 +80,23 @@ export async function ensureDefaultTeamForUser(userId, tgId) {
     [name, token],
   );
   const team = t.rows[0];
-
   await q(
     `INSERT INTO team_members(team_id, user_id)
      VALUES ($1, $2)
      ON CONFLICT DO NOTHING`,
     [team.id, userId],
   );
-
   return team;
 }
 
 /**
- * getOrEnsureUserTeam — то же самое, но явно гарантирует наличие name.
- * Используется в /api/team/invite.js.
+ * Новый хелпер: либо возвращает первую команду пользователя,
+ * либо создаёт новую (с join_token) и добавляет его как участника.
+ * Используется в /api/team/invite.
  */
 export async function getOrEnsureUserTeam(userId, tgId) {
   const { rows } = await q(
-    `SELECT t.id, t.join_token, t.name
+    `SELECT t.id, t.name, t.join_token
      FROM teams t
      JOIN team_members m ON m.team_id = t.id
      WHERE m.user_id = $1
@@ -120,11 +107,11 @@ export async function getOrEnsureUserTeam(userId, tgId) {
   if (rows.length) return rows[0];
 
   const token = randomToken(32);
-  const name = `Команда #${tgId}`;
+  const name = `Команда ${tgId}`;
   const t = await q(
     `INSERT INTO teams(name, join_token)
      VALUES ($1, $2)
-     RETURNING id, join_token, name`,
+     RETURNING id, name, join_token`,
     [name, token],
   );
   const team = t.rows[0];
@@ -139,10 +126,6 @@ export async function getOrEnsureUserTeam(userId, tgId) {
   return team;
 }
 
-/**
- * Присоединиться к команде по токену приглашения.
- * Возвращает id команды или null.
- */
 export async function joinByToken(userId, token) {
   const { rows } = await q(
     `SELECT id FROM teams WHERE join_token = $1`,
@@ -151,21 +134,15 @@ export async function joinByToken(userId, token) {
   if (!rows.length) return null;
 
   const teamId = rows[0].id;
-
   await q(
     `INSERT INTO team_members(team_id, user_id)
      VALUES ($1,$2)
      ON CONFLICT DO NOTHING`,
     [teamId, userId],
   );
-
   return teamId;
 }
 
-/**
- * Все tg_id, которые должны получить уведомление по задаче:
- * автор + все участники команды (если задача командная).
- */
 export async function getTgIdsForTask(taskId) {
   // автор
   const owner = await q(
@@ -178,14 +155,11 @@ export async function getTgIdsForTask(taskId) {
 
   const list = new Set(owner.rows.map(r => Number(r.tg_id)));
 
-  // участники команды
+  // все участники команды (если командная задача)
   const team = await q(
-    `SELECT t.team_id
-     FROM tasks t
-     WHERE t.id = $1`,
+    `SELECT t.team_id FROM tasks t WHERE t.id = $1`,
     [taskId],
   );
-
   if (team.rows.length && team.rows[0].team_id) {
     const members = await q(
       `SELECT u.tg_id
@@ -196,18 +170,11 @@ export async function getTgIdsForTask(taskId) {
     );
     members.rows.forEach(r => list.add(Number(r.tg_id)));
   }
-
   return Array.from(list);
 }
 
-/**
- * Базовый URL вида https://host
- */
-export function baseUrlFromReq(req) {
+export function getBaseUrl(req) {
   const proto = (req.headers['x-forwarded-proto'] || 'https').toString();
-  const host  = (req.headers['x-forwarded-host'] || req.headers.host || '').toString();
+  const host = (req.headers['x-forwarded-host'] || req.headers.host || '').toString();
   return `${proto}://${host}`;
 }
-
-/** alias для старого кода (если где-то импортируется getBaseUrl) */
-export const getBaseUrl = baseUrlFromReq;
