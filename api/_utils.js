@@ -125,3 +125,48 @@ export function baseUrlFromReq(req) {
   const host = (req.headers['x-forwarded-host'] || req.headers.host || '').toString();
   return `${proto}://${host}`;
 }
+export async function createTeam(userId, tgId, name) {
+  const token = randomToken(32);
+  const t = await q(
+    `INSERT INTO teams(name, join_token, owner_id)
+     VALUES ($1, $2, $3)
+     RETURNING id, name, join_token, owner_id`,
+    [name || `Team ${tgId}`, token, userId],
+  );
+  const team = t.rows[0];
+  await q(
+    `INSERT INTO team_members(team_id, user_id)
+     VALUES ($1, $2)
+     ON CONFLICT DO NOTHING`,
+    [team.id, userId],
+  );
+  return team;
+}
+
+export async function getUserTeams(userId) {
+  const { rows } = await q(
+    `SELECT t.id, t.name, t.join_token, t.owner_id
+     FROM team_members m
+     JOIN teams t ON t.id = m.team_id
+     WHERE m.user_id = $1
+     ORDER BY t.id ASC`,
+    [userId],
+  );
+  return rows;
+}
+
+export async function isTeamOwner(userId, teamId) {
+  const { rows } = await q(
+    `SELECT 1 FROM teams WHERE id = $1 AND owner_id = $2`,
+    [teamId, userId],
+  );
+  return !!rows.length;
+}
+
+export async function assertUserInTeam(userId, teamId) {
+  const { rows } = await q(
+    `SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2`,
+    [teamId, userId],
+  );
+  return !!rows.length;
+}
