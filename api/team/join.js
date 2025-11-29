@@ -1,3 +1,4 @@
+// api/team/join.js
 import { ensureSchema } from '../_db.js';
 import { getTgId, getOrCreateUserId, joinByToken } from '../_utils.js';
 
