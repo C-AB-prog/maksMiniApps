@@ -510,6 +510,46 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     </div>
   </section>
 
+  <!-- Команда (отдельный экран) -->
+  <section id="screen-team" class="grid">
+    <div class="card">
+      <h3>Команда</h3>
+
+      <div class="profile-section">
+        <h4>Команда</h4>
+        <div class="profile-actions" style="gap:12px">
+          <div class="profile-btn" id="btn-team-refresh">
+            <span>Обновить сведения о команде</span>
+            <span class="arrow">↻</span>
+          </div>
+
+          <div class="card" style="padding:12px">
+            <label>Код приглашения</label>
+            <div style="display:flex; gap:8px; align-items:center">
+              <input id="team-code" class="input" type="text" readonly placeholder="—" />
+              <button class="btn secondary" id="copy-code">Копировать код</button>
+              <button class="btn secondary" id="copy-tg-link">TG-ссылка</button>
+            </div>
+            <div class="muted" style="margin-top:6px">Отправь TG-ссылку — Mini App откроется прямо в Telegram и человек автоматически вступит.</div>
+          </div>
+
+          <div class="card" style="padding:12px">
+            <label>Вступить по коду</label>
+            <div style="display:flex; gap:8px">
+              <input id="join-input" class="input" type="text" placeholder="Вставьте код приглашения" />
+              <button class="btn" id="join-btn">Вступить</button>
+            </div>
+          </div>
+
+          <div class="card" style="padding:12px">
+            <label>Участники</label>
+            <ul id="team-members" style="margin:8px 0 0 0; padding-left:16px"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Профиль -->
   <section id="screen-profile" class="grid">
     <div class="card">
@@ -553,40 +593,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
         </div>
       </div>
 
-      <!-- Команда -->
-      <div class="profile-section">
-        <h4>Команда</h4>
-        <div class="profile-actions" style="gap:12px">
-          <div class="profile-btn" id="btn-team-refresh">
-            <span>Обновить сведения о команде</span>
-            <span class="arrow">↻</span>
-          </div>
-
-          <div class="card" style="padding:12px">
-            <label>Код приглашения</label>
-            <div style="display:flex; gap:8px; align-items:center">
-              <input id="team-code" class="input" type="text" readonly placeholder="—" />
-              <button class="btn secondary" id="copy-code">Копировать код</button>
-              <button class="btn secondary" id="copy-tg-link">TG-ссылка</button>
-            </div>
-            <div class="muted" style="margin-top:6px">Отправь TG-ссылку — Mini App откроется прямо в Telegram и человек автоматически вступит.</div>
-          </div>
-
-          <div class="card" style="padding:12px">
-            <label>Вступить по коду</label>
-            <div style="display:flex; gap:8px">
-              <input id="join-input" class="input" type="text" placeholder="Вставьте код приглашения" />
-              <button class="btn" id="join-btn">Вступить</button>
-            </div>
-          </div>
-
-          <div class="card" style="padding:12px">
-            <label>Участники</label>
-            <ul id="team-members" style="margin:8px 0 0 0; padding-left:16px"></ul>
-          </div>
-        </div>
-      </div>
-      <!-- /Команда -->
     </div>
   </section>
 </div>
@@ -639,6 +645,12 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   <div class="item" data-go="stats">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11V3H8v6H2v12h20V11h-6zm-6-6h4v14h-4V5zm-6 6h4v8H4v-8zm16 8h-4v-6h4v6z"/></svg>
     Статистика
+  </div>
+  <div class="item" data-go="team">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 5a3 3 0 11.001 5.999A3 3 0 0112 5zm6 1a2.5 2.5 0 11-.001 4.999A2.5 2.5 0 0118 6zM6 6a2.5 2.5 0 11-.001 4.999A2.5 2.5 0 016 6zm0 7c-2.21 0-4 1.343-4 3v3h4v-3c0-.7.18-1.357.5-1.93C6.8 13.82 6.41 13 6 13zm12 0c-.41 0-.8.82-1.5 2.07.32.573.5 1.23.5 1.93v3h4v-3c0-1.657-1.79-3-4-3zM12 12c-2.67 0-5 1.567-5 3.5V19h10v-3.5C17 13.567 14.67 12 12 12z"/>
+    </svg>
+    Команда
   </div>
   <div class="item" data-go="profile">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4.42 0-8 2.24-8 5v3h16v-3c0-2.76-3.58-5-8-5z"/></svg>
@@ -784,7 +796,6 @@ function openChat(chatId) {
   
   renderChatMessages(chat.messages);
   
-  // Фокус на поле ввода
   setTimeout(() => {
     $('#chat-input').focus();
   }, 100);
@@ -802,7 +813,6 @@ function renderChatList() {
   const container = $('#chat-list');
   container.innerHTML = '';
   
-  // Добавляем существующие чаты
   chats.forEach(chat => {
     const chatEl = document.createElement('div');
     chatEl.className = `chat-item ${currentChatId === chat.id ? 'active' : ''}`;
@@ -816,7 +826,6 @@ function renderChatList() {
     container.appendChild(chatEl);
   });
   
-  // Добавляем кнопку создания нового чата
   const newChatEl = document.createElement('div');
   newChatEl.className = 'chat-item new';
   newChatEl.innerHTML = `
@@ -826,7 +835,6 @@ function renderChatList() {
   newChatEl.onclick = () => $('#new-chat-modal').classList.add('active');
   container.appendChild(newChatEl);
   
-  // Показываем/скрываем сообщение о отсутствии чатов
   $('#no-chats-message').style.display = chats.length === 0 ? 'block' : 'none';
 }
 
@@ -871,6 +879,7 @@ const screens = {
   plan: $('#screen-plan'),
   chat: $('#screen-chat'),
   stats: $('#screen-stats'),
+  team: $('#screen-team'),
   profile: $('#screen-profile'),
 };
 $$('.nav .item').forEach(it=>{
@@ -881,12 +890,10 @@ $$('.nav .item').forEach(it=>{
     Object.values(screens).forEach(s=>s.classList.remove('active'));
     screens[to].classList.add('active');
     
-    // При переходе на вкладку чата загружаем чаты
     if (to === 'chat') {
       loadChats();
     }
-    // При входе в профиль — показываем команду
-    if (to === 'profile') {
+    if (to === 'team') {
       setTimeout(loadTeamBox, 50);
     }
   };
@@ -896,7 +903,21 @@ $$('.nav .item').forEach(it=>{
 let tasks = [];
 let focus = null;
 let quickPrio = 'today';
+let currentTeamId = null;
 let currentLanguage = 'ru';
+
+/* ===== team id helper ===== */
+async function ensureTeamIdLoaded() {
+  if (currentTeamId !== null) return currentTeamId;
+  try {
+    const r = await api('/api/team/current', 'GET');
+    currentTeamId = r && typeof r.team_id !== 'undefined' ? r.team_id : null;
+  } catch (e) {
+    console.log('Team current load failed:', e);
+    currentTeamId = null;
+  }
+  return currentTeamId;
+}
 
 /* ===== init UI ===== */
 $$('.seg .chip[data-prio]').forEach(ch=>{
@@ -931,8 +952,12 @@ async function loadAll(){
   
   try{
     const t = await api('/api/tasks');
-    tasks = (t.items||[]).map(normalizeTask);  // нормализуем даты
+    tasks = (t.items||[]).map(normalizeTask);
   }catch(e){ console.log('Tasks load failed:', e); }
+
+  try{
+    await ensureTeamIdLoaded();
+  }catch(e){ console.log('Team id load failed:', e); }
   
   renderHome(); renderPlan(); renderStats();
 }
@@ -947,7 +972,6 @@ $('#focus-save').onclick = async ()=>{
     focus = r.focus;
     showToast('Фокус сохранён');
   }catch(e){ 
-    // Офлайн режим
     focus = { text, id: 'local_' + Date.now() };
     showToast('Фокус сохранён (офлайн)');
   }
@@ -968,18 +992,22 @@ $('#quick-add').onclick = async ()=>{
     if (quickPrio==='today') due_ts = endOfDay(now).getTime();
     else if (quickPrio==='week') due_ts = endOfDay(addDays(now,7)).getTime();
     else if (quickPrio==='month') due_ts = endOfDay(addDays(now,30)).getTime();
-    // Для "команда" due_ts остается null
   }
   
   try{
-    const r = await api('/api/tasks','POST',{ 
+    const payload = { 
       title, 
       due_ts,
       priority: quickPrio 
-    });
-    tasks.unshift(normalizeTask(r.task)); // нормализуем новую задачу
+    };
+    if (quickPrio === 'team') {
+      const tid = await ensureTeamIdLoaded();
+      if (tid) payload.team_id = tid;
+    }
+
+    const r = await api('/api/tasks','POST', payload);
+    tasks.unshift(normalizeTask(r.task));
   }catch(e){
-    // Офлайн режим
     const fake = { 
       id: 'tmp_'+Date.now(), 
       title, 
@@ -1002,7 +1030,7 @@ $('#quick-add').onclick = async ()=>{
 function rowTask(t){
   const el = document.createElement('div'); 
   el.className='task'+(t.is_done?' done':'');
-  
+
   const chk = document.createElement('button'); 
   chk.className='btn icon'; 
   chk.textContent = t.is_done?'✓':'○';
@@ -1013,9 +1041,7 @@ function rowTask(t){
     renderStats();
     try{ 
       await api('/api/tasks/toggle?id='+t.id,'POST',{}); 
-    } catch(e){ 
-      // Офлайн - изменения остаются локально
-    }
+    } catch(e){ }
   };
   
   const ttl = document.createElement('div'); 
@@ -1090,7 +1116,12 @@ function renderPlan(){
       return ms!=null && ms<=monthEnd;
     });
   } else if (planFilter==='team') {
-    arr = arr.filter(t => t.priority === 'team' || t.team_id); // при наличии team_id с бэка
+    arr = arr.filter(t => {
+      if (t.team_id) {
+        return !currentTeamId || t.team_id === currentTeamId;
+      }
+      return t.priority === 'team';
+    });
   }
   
   arr.sort((a,b)=>(a.is_done-b.is_done)||((normalizeDue(a.due_ts)||1e20)-(normalizeDue(b.due_ts)||1e20)));
@@ -1189,7 +1220,6 @@ $('#chat-send').onclick = async () => {
   const text = $('#chat-input').value.trim(); 
   if (!text) return;
   
-  // Если нет активного чата, создаем новый
   if (!currentChatId) {
     const newChatId = createNewChat('Новый чат');
     openChat(newChatId);
@@ -1213,7 +1243,6 @@ $('#chat-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') $('#chat-send').click(); 
 });
 
-// Закрытие модальных окон при клике вне их
 $('#new-chat-modal').onclick = (e) => {
   if (e.target === $('#new-chat-modal')) {
     $('#new-chat-modal').classList.remove('active');
@@ -1227,7 +1256,6 @@ $('#chat-window-overlay').onclick = (e) => {
 };
 
 /* ===== профиль ===== */
-// Переключение языка
 $$('.lang-btn').forEach(btn => {
   btn.onclick = () => {
     $$('.lang-btn').forEach(b => b.classList.remove('active'));
@@ -1237,7 +1265,6 @@ $$('.lang-btn').forEach(btn => {
   };
 });
 
-// Заглушки для кнопок профиля
 $('#btn-tariff').onclick = () => showToast('Раздел "Тарифы" в разработке');
 $('#btn-help').onclick = () => showToast('Раздел "Помощь" в разработке');
 $('#btn-guide').onclick = () => showToast('Раздел "Как пользоваться" в разработке');
@@ -1275,7 +1302,6 @@ async function loadTeamBox(){
   }
 }
 
-// кнопки команды
 $('#btn-team-refresh').onclick = loadTeamBox;
 $('#copy-code').onclick = async ()=>{
   if (!_invite.join_code) return showToast('Код недоступен');
@@ -1296,12 +1322,12 @@ $('#join-btn').onclick = async ()=>{
     $('#join-input').value = '';
     showToast('Готово! Вы в команде');
     loadTeamBox();
+    ensureTeamIdLoaded();
   }catch(e){
     showToast('Не удалось вступить');
   }
 };
 
-// авто-join если Mini App открыт в Telegram и есть ?join=TOKEN
 (function tryAutoJoin(){
   const params = new URLSearchParams(location.search);
   const token = params.get('join');
@@ -1310,6 +1336,7 @@ $('#join-btn').onclick = async ()=>{
     api('/api/team/join','POST',{ token }).then(()=>{
       showToast('Вы присоединились к команде');
       loadTeamBox();
+      ensureTeamIdLoaded();
     }).catch(()=>{});
   }
 })();
