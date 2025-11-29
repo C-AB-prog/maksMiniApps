@@ -563,9 +563,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
         <input id="quick-due" class="input" type="datetime-local" />
         <div id="quick-team-wrap" style="display:none">
           <label style="margin-top:2px">Для какой команды</label>
-          <select id="quick-team-select" class="input">
-            <option value="">Текущая команда</option>
-          </select>
+          <select id="quick-team-select" class="input"></select>
         </div>
         <button id="quick-add" class="btn">Добавить задачу</button>
       </div>
@@ -1077,18 +1075,34 @@ $('#focus-save').onclick = async ()=>{
 };
 
 /* ===== quick add ===== */
-function updateQuickTeamVisibility(){
-  if (quickPrio==='team' && teamInfo && teamInfo.team_id){
-    $('#quick-team-wrap').style.display = 'block';
-    const sel = $('#quick-team-select');
-    sel.innerHTML = '';
-    const opt = document.createElement('option');
-    opt.value = teamInfo.team_id;
-    opt.textContent = teamInfo.name || ('Команда #'+teamInfo.team_id);
-    sel.appendChild(opt);
-  } else {
-    $('#quick-team-wrap').style.display = 'none';
+function updateQuickTeamVisibility() {
+  const wrap = $('#quick-team-wrap');
+  const sel  = $('#quick-team-select');
+
+  // показываем селект только если выбрана «Команда»
+  if (quickPrio !== 'team') {
+    wrap.style.display = 'none';
+    return;
   }
+
+  // нет команд – селект не нужен
+  if (!teamList || !teamList.length) {
+    wrap.style.display = 'none';
+    return;
+  }
+
+  wrap.style.display = 'block';
+  sel.innerHTML = '';
+
+  teamList.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.team_id;
+    opt.textContent = t.name || ('Команда #'+t.team_id);
+    if (teamInfo && teamInfo.team_id === t.team_id) {
+      opt.selected = true;
+    }
+    sel.appendChild(opt);
+  });
 }
 
 $('#quick-add').onclick = async ()=>{
@@ -1107,21 +1121,34 @@ $('#quick-add').onclick = async ()=>{
     else if (quickPrio==='month') due_ts = endOfDay(addDays(now,30)).getTime();
   }
 
-  let body = { title, due_ts, priority: quickPrio };
+  const body = { title, due_ts, priority: quickPrio };
+
   if (quickPrio === 'team') {
-    if (!teamInfo || !teamInfo.team_id){
+    if (!teamList || !teamList.length) {
       showToast('Сначала создайте или выберите команду');
       return;
     }
-    const teamId = Number($('#quick-team-select').value || teamInfo.team_id);
-    body.team_id = teamId;
+    const sel = $('#quick-team-select');
+    const selectedId = Number(sel.value || (teamInfo && teamInfo.team_id));
+    if (!selectedId) {
+      showToast('Не удалось определить команду');
+      return;
+    }
+    body.team_id = selectedId;
   }
   
   try{
     const r = await api('/api/tasks','POST', body);
     tasks.unshift(normalizeTask(r.task));
   }catch(e){
-    const fake = { id:'tmp_'+Date.now(), title, due_ts, is_done:false, priority:quickPrio, team_id:body.team_id||null };
+    const fake = { 
+      id:'tmp_'+Date.now(), 
+      title, 
+      due_ts, 
+      is_done:false,
+      priority:quickPrio,
+      team_id: body.team_id || null
+    };
     tasks.unshift(fake);
   }
   
