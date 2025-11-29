@@ -619,7 +619,11 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
         <div id="team-details">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:8px">
             <div>
-              <div id="team-title" style="font-size:15px;font-weight:600;margin-bottom:2px">Команда</div>
+              <div id="team-title"
+                   style="font-size:15px;font-weight:600;margin-bottom:2px;cursor:pointer"
+                   title="Нажмите, чтобы переименовать команду">
+                Команда
+              </div>
               <div class="muted" style="font-size:11px">
                 Код: <span id="team-code-text" class="mono team-code-short">—</span>
               </div>
@@ -1381,10 +1385,11 @@ async function loadTeamInfo(){
 
     const base = { team_id: r.team_id, members: r.members || [] };
 
+    // подтягиваем код + имя с /invite
     try{
       const inv = await api('/api/team/invite','GET');
       base.join_code = inv.join_code || '';
-      base.name = inv.team_name || inv.name || ('Команда #'+r.team_id);
+      base.name = inv.name || ('Команда #'+r.team_id);
     }catch{
       base.join_code = '';
       base.name = 'Команда #'+r.team_id;
@@ -1472,12 +1477,26 @@ document.addEventListener('click', ()=>teamMenu.classList.remove('open'));
 
 $('#team-menu-create').onclick = async ()=>{
   teamMenu.classList.remove('open');
+
+  const nameInput = prompt('Введите название команды (например: Отдел продаж)');
+
   try{
-    await api('/api/team/invite','GET'); // создаст дефолтную, если нет
+    // создаём/получаем команду
+    const inv = await api('/api/team/invite','GET');
+
+    // если пользователь ввёл название — переименуем
+    if (nameInput && nameInput.trim()) {
+      await api('/api/team/rename','POST',{
+        team_id: inv.team_id,
+        name: nameInput.trim()
+      });
+    }
+
     await loadTeamInfo();
     planMode='team'; updPlanModeBtns(); renderPlan(); updateTeamSideVisibility();
-    showToast('Команда готова. Код можно скопировать справа.');
+    showToast('Команда создана');
   }catch(e){
+    console.error(e);
     showToast('Не удалось создать команду');
   }
 };
@@ -1518,9 +1537,35 @@ memHeader.onclick = ()=>{
   memArrow.textContent = isOpen ? '▾' : '▴';
 };
 
-/* расформировать (заглушка) */
-$('#btn-team-leave').onclick = ()=>{
-  showToast('Расформирование команды пока не реализовано');
+/* расформировать команду */
+$('#btn-team-leave').onclick = async ()=>{
+  if (!teamInfo || !teamInfo.team_id) return;
+  if (!confirm('Расформировать эту команду? Задачи перестанут быть командными.')) return;
+
+  try{
+    await api('/api/team/delete','POST',{ team_id: teamInfo.team_id });
+
+    showToast('Команда расформирована');
+
+    teamInfo = null;
+    teamDetailOpen = false;
+
+    // перезагружаем команды
+    await loadTeamInfo();
+
+    // перезагружаем задачи, чтобы убрать team_id
+    try{
+      const t = await api('/api/tasks');
+      tasks = (t.items||[]).map(normalizeTask);
+    }catch(e){}
+
+    renderHome(); renderPlan(); renderStats();
+    updateTeamSideVisibility();
+    updateQuickTeamVisibility();
+  }catch(e){
+    console.error(e);
+    showToast('Не удалось расформировать команду');
+  }
 };
 
 /* кнопка "назад к списку команд" */
@@ -1529,6 +1574,26 @@ $('#team-back').onclick = ()=>{
   updateTeamSideVisibility();
   const teamBox = $('#team-tasks');
   if (teamBox) teamBox.innerHTML = '';
+};
+
+/* переименование по клику на названии */
+$('#team-title').onclick = async ()=>{
+  if (!teamInfo || !teamInfo.team_id) return;
+  const current = teamInfo.name || '';
+  const name = prompt('Новое название команды', current);
+  if (!name || !name.trim()) return;
+  try{
+    await api('/api/team/rename','POST',{
+      team_id: teamInfo.team_id,
+      name: name.trim()
+    });
+    teamInfo.name = name.trim();
+    renderTeamList();
+    fillTeamDetail();
+    showToast('Название обновлено');
+  }catch(e){
+    showToast('Не удалось переименовать');
+  }
 };
 
 /* авто-join по параметру ?join= */
