@@ -1,5 +1,5 @@
 import { q, ensureSchema } from '../_db.js';
-import { getTgId, getOrCreateUserId, userTeamIds, ensureDefaultTeamForUser } from '../_utils.js';
+import { getTgId, getOrCreateUserId, userTeamIds } from '../_utils.js';
 
 export default async function handler(req, res) {
   await ensureSchema();
@@ -8,8 +8,10 @@ export default async function handler(req, res) {
   if (!tgId) return res.status(400).json({ ok: false, error: 'tg_id required' });
   const userId = await getOrCreateUserId(tgId);
 
+  // ---------- Список задач ----------
   if (req.method === 'GET') {
     const teams = await userTeamIds(userId);
+
     const { rows } = await q(
       `SELECT id, title, due_ts, is_done, created_at, team_id
        FROM tasks
@@ -22,17 +24,23 @@ export default async function handler(req, res) {
     return res.json({ ok: true, items: rows });
   }
 
+  // ---------- Создание задачи ----------
   if (req.method === 'POST') {
     const title = (req.body?.title || '').trim();
     if (!title) return res.status(400).json({ ok: false, error: 'title required' });
 
     const due_ts = req.body?.due_ts ?? null; // ms или null
-    const priority = (req.body?.priority || '').toString().toLowerCase();
     let team_id = req.body?.team_id ? Number(req.body.team_id) : null;
 
-    if (priority === 'team' || team_id) {
-      const def = await ensureDefaultTeamForUser(userId, tgId);
-      team_id = team_id || def.id;
+    // Если явно передали team_id — проверяем, что пользователь действительно в этой команде
+    if (team_id) {
+      const teams = await userTeamIds(userId);
+      if (!teams.includes(team_id)) {
+        return res.status(403).json({ ok: false, error: 'forbidden' });
+      }
+    } else {
+      // Нет team_id → это личная задача
+      team_id = null;
     }
 
     const { rows } = await q(
