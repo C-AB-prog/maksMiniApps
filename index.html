@@ -414,14 +414,14 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   position:relative;
 }
 #team-plus{
-  width:32px;
-  height:32px;
+  width:36px;
+  height:36px;
   border-radius:999px;
   padding:0;
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:18px;
+  font-size:20px;
 }
 .team-menu{
   position:absolute;
@@ -535,25 +535,14 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       <div id="tasks-plan" class="list"></div>
     </div>
 
-    <!-- Правая колонка: команды -->
-    <div class="card">
+    <!-- Правая колонка: команды (только в режиме "Команды") -->
+    <div class="card" id="team-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap">
         <h3 style="margin:0">Команды</h3>
-        <div class="team-header-right">
-          <button class="btn secondary icon" id="team-plus" style="display:none">+</button>
-          <div id="team-menu" class="team-menu">
-            <div class="team-menu-item" id="team-menu-create">Создать команду</div>
-            <div class="team-menu-item" id="team-menu-join">Вступить по коду</div>
-          </div>
-        </div>
       </div>
 
       <div id="teams-empty" class="muted" style="margin-bottom:12px;display:none">
         У вас пока нет команды. Создайте её или вступите по коду.
-      </div>
-
-      <div id="teams-hint-my" class="muted" style="margin-bottom:12px;display:none">
-        Вы в режиме <b>Мои задачи</b>. Переключитесь в «Команды», чтобы видеть командные задачи и участников.
       </div>
 
       <div id="team-details" style="display:none">
@@ -583,6 +572,17 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
           style="width:100%;background:#fff;color:#b91c1c;border-color:#fecaca">
           Расформировать команду
         </button>
+      </div>
+
+      <!-- плюсик снизу карточки -->
+      <div style="display:flex;justify-content:flex-end;margin-top:12px">
+        <div class="team-header-right">
+          <button class="btn secondary icon" id="team-plus">+</button>
+          <div id="team-menu" class="team-menu">
+            <div class="team-menu-item" id="team-menu-create">Создать команду</div>
+            <div class="team-menu-item" id="team-menu-join">Вступить по коду</div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -931,19 +931,18 @@ function updPlanModeBtns(){
 $('#mode-my').onclick = ()=>{planMode='my'; updPlanModeBtns(); renderPlan(); updateTeamSideVisibility();};
 $('#mode-team').onclick = ()=>{planMode='team'; updPlanModeBtns(); renderPlan(); updateTeamSideVisibility();};
 
-/* показать/спрятать фильтры и плюсик в зависимости от режима */
+/* показать/спрятать фильтры и карточку команд */
 function updateTeamSideVisibility(){
   const hasTeam = !!teamInfo;
-  // time filters только в "Мои"
   $('#time-filters').style.display = planMode==='my' ? 'flex' : 'none';
 
-  // подсказка / детали
-  $('#teams-hint-my').style.display = planMode==='my' ? 'block' : 'none';
-  $('#team-details').style.display  = (planMode==='team' && hasTeam) ? 'block' : 'none';
-  $('#teams-empty').style.display   = (!hasTeam) ? 'block' : 'none';
+  const teamCard = $('#team-card');
+  teamCard.style.display = planMode==='team' ? 'block' : 'none';
 
-  // плюсик только в режиме "Команды"
-  $('#team-plus').style.display = planMode==='team' ? 'flex' : 'none';
+  if (planMode==='team') {
+    $('#team-details').style.display = hasTeam ? 'block' : 'none';
+    $('#teams-empty').style.display  = hasTeam ? 'none' : 'block';
+  }
 }
 
 /* ===== load ===== */
@@ -1013,7 +1012,6 @@ $('#quick-add').onclick = async ()=>{
   }
 
   let body = { title, due_ts, priority: quickPrio };
-
   if (quickPrio === 'team') {
     if (!teamInfo || !teamInfo.team_id){
       showToast('Сначала создайте или выберите команду');
@@ -1027,7 +1025,7 @@ $('#quick-add').onclick = async ()=>{
     const r = await api('/api/tasks','POST', body);
     tasks.unshift(normalizeTask(r.task));
   }catch(e){
-    const fake = { id: 'tmp_'+Date.now(), title, due_ts, is_done:false, priority:quickPrio, team_id: body.team_id || null };
+    const fake = { id:'tmp_'+Date.now(), title, due_ts, is_done:false, priority:quickPrio, team_id:body.team_id||null };
     tasks.unshift(fake);
   }
   
@@ -1082,10 +1080,12 @@ function renderHome(){
   const s = startOfDay(new Date()).getTime();
   const e = endOfDay(new Date()).getTime();
   const today = tasks
-    .filter(t => {
-      const ms = normalizeDue(t.due_ts);
-      return ms!=null && ms>=s && ms<=e;
-    })
+    .filter(t => !t.team_id && ( // только личные
+      (() => {
+        const ms = normalizeDue(t.due_ts);
+        return ms!=null && ms>=s && ms<=e;
+      })()
+    ))
     .sort((a,b)=> (a.is_done-b.is_done) || ((normalizeDue(a.due_ts)||0)-(normalizeDue(b.due_ts)||0)));
   const box = $('#tasks-today'); box.innerHTML='';
   if (!today.length){ 
@@ -1100,7 +1100,7 @@ function renderPlan(){
   const now = new Date();
 
   if (planMode === 'my') {
-    arr = arr.filter(t => !t.team_id);  // только личные
+    arr = arr.filter(t => !t.team_id);  // только личные задачи
     if (planFilter==='today') {
       const dayStart = startOfDay(now).getTime();
       const dayEnd   = endOfDay(now).getTime();
@@ -1122,11 +1122,11 @@ function renderPlan(){
       });
     }
   } else {
-    // режим "Команды" — показываем все задачи текущей команды, без фильтров по сроку
+    // режим "Команды": все задачи текущей команды, без фильтров по сроку
     if (teamInfo && teamInfo.team_id){
       arr = arr.filter(t => t.team_id === teamInfo.team_id);
     } else {
-      arr = arr.filter(t => t.team_id); // если что-то есть, но команда не прогружена
+      arr = arr.filter(t => t.team_id);
     }
   }
 
@@ -1139,11 +1139,12 @@ function renderPlan(){
   arr.forEach(t=> box.appendChild(rowTask(t)));
 }
 
-/* ===== статистика ===== */
+/* ===== статистика (только личные задачи) ===== */
 function renderStats(){
-  const total = tasks.length;
-  const done = tasks.filter(t=>t.is_done).length;
-  const overdue = tasks.filter(t=>{
+  const personal = tasks.filter(t=>!t.team_id);
+  const total = personal.length;
+  const done = personal.filter(t=>t.is_done).length;
+  const overdue = personal.filter(t=>{
     const ms = normalizeDue(t.due_ts);
     return !t.is_done && ms!=null && ms < Date.now();
   }).length;
@@ -1154,15 +1155,16 @@ function renderStats(){
   $('#m-rate').textContent  = rate+'%';
   $('#m-over').textContent  = overdue;
   
-  renderWeekChart();
+  renderWeekChart(personal);
 }
-function renderWeekChart(){
+function renderWeekChart(personalTasks){
   const chart = $('#week-chart'); chart.innerHTML = '';
+  const list = personalTasks || tasks.filter(t=>!t.team_id);
   for (let i = 6; i >= 0; i--) {
     const day = addDays(new Date(), -i);
     const dayStart = startOfDay(day).getTime();
     const dayEnd = endOfDay(day).getTime();
-    const dayTasks = tasks.filter(t => {
+    const dayTasks = list.filter(t => {
       const ms = normalizeDue(t.due_ts);
       return ms!=null && ms>=dayStart && ms<=dayEnd;
     });
