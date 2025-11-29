@@ -452,8 +452,8 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     </div>
   </section>
 
-  <!-- План -->
-  <section id="screen-plan" class="grid">
+  <!-- План (теперь с колонкой Команда) -->
+  <section id="screen-plan" class="grid grid-2">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <h3 style="margin:0">План задач</h3>
@@ -465,6 +465,45 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
         </div>
       </div>
       <div id="tasks-plan" class="list"></div>
+    </div>
+
+    <div class="card">
+      <h3>Команда</h3>
+
+      <div class="profile-section">
+        <h4>Команда</h4>
+        <div class="profile-actions" style="gap:12px">
+          <div class="profile-btn" id="btn-team-refresh">
+            <span>Обновить сведения о команде</span>
+            <span class="arrow">↻</span>
+          </div>
+
+          <div class="card" style="padding:12px">
+            <label>Код приглашения</label>
+            <div style="display:flex; gap:8px; align-items:center">
+              <input id="team-code" class="input" type="text" readonly placeholder="—" />
+              <button class="btn secondary" id="copy-code">Копировать код</button>
+              <button class="btn secondary" id="copy-tg-link">Скопировать ссылку</button>
+            </div>
+            <div class="muted" style="margin-top:6px">
+              Отправь код или ссылку — человек откроет Mini App и автоматически вступит в команду.
+            </div>
+          </div>
+
+          <div class="card" style="padding:12px">
+            <label>Вступить по коду</label>
+            <div style="display:flex; gap:8px">
+              <input id="join-input" class="input" type="text" placeholder="Вставьте код приглашения" />
+              <button class="btn" id="join-btn">Вступить</button>
+            </div>
+          </div>
+
+          <div class="card" style="padding:12px">
+            <label>Участники</label>
+            <ul id="team-members" style="margin:8px 0 0 0; padding-left:16px"></ul>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -506,46 +545,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       <h3>Прогресс за неделю</h3>
       <div id="week-chart" style="height:200px;display:flex;align-items:end;gap:4px;margin-top:20px">
         <!-- График будет генерироваться JS -->
-      </div>
-    </div>
-  </section>
-
-  <!-- Команда (отдельный экран) -->
-  <section id="screen-team" class="grid">
-    <div class="card">
-      <h3>Команда</h3>
-
-      <div class="profile-section">
-        <h4>Команда</h4>
-        <div class="profile-actions" style="gap:12px">
-          <div class="profile-btn" id="btn-team-refresh">
-            <span>Обновить сведения о команде</span>
-            <span class="arrow">↻</span>
-          </div>
-
-          <div class="card" style="padding:12px">
-            <label>Код приглашения</label>
-            <div style="display:flex; gap:8px; align-items:center">
-              <input id="team-code" class="input" type="text" readonly placeholder="—" />
-              <button class="btn secondary" id="copy-code">Копировать код</button>
-              <button class="btn secondary" id="copy-tg-link">TG-ссылка</button>
-            </div>
-            <div class="muted" style="margin-top:6px">Отправь TG-ссылку — Mini App откроется прямо в Telegram и человек автоматически вступит.</div>
-          </div>
-
-          <div class="card" style="padding:12px">
-            <label>Вступить по коду</label>
-            <div style="display:flex; gap:8px">
-              <input id="join-input" class="input" type="text" placeholder="Вставьте код приглашения" />
-              <button class="btn" id="join-btn">Вступить</button>
-            </div>
-          </div>
-
-          <div class="card" style="padding:12px">
-            <label>Участники</label>
-            <ul id="team-members" style="margin:8px 0 0 0; padding-left:16px"></ul>
-          </div>
-        </div>
       </div>
     </div>
   </section>
@@ -646,12 +645,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11V3H8v6H2v12h20V11h-6zm-6-6h4v14h-4V5zm-6 6h4v8H4v-8zm16 8h-4v-6h4v6z"/></svg>
     Статистика
   </div>
-  <div class="item" data-go="team">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 5a3 3 0 11.001 5.999A3 3 0 0112 5zm6 1a2.5 2.5 0 11-.001 4.999A2.5 2.5 0 0118 6zM6 6a2.5 2.5 0 11-.001 4.999A2.5 2.5 0 016 6zm0 7c-2.21 0-4 1.343-4 3v3h4v-3c0-.7.18-1.357.5-1.93C6.8 13.82 6.41 13 6 13zm12 0c-.41 0-.8.82-1.5 2.07.32.573.5 1.23.5 1.93v3h4v-3c0-1.657-1.79-3-4-3zM12 12c-2.67 0-5 1.567-5 3.5V19h10v-3.5C17 13.567 14.67 12 12 12z"/>
-    </svg>
-    Команда
-  </div>
   <div class="item" data-go="profile">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4.42 0-8 2.24-8 5v3h16v-3c0-2.76-3.58-5-8-5z"/></svg>
     Профиль
@@ -669,13 +662,13 @@ const startOfDay = d => { const x = new Date(d); x.setHours(0,0,0,0); return x; 
 const endOfDay = d => { const x = new Date(d); x.setHours(23,59,59,999); return x; }
 const addDays = (d,n)=>{const x=new Date(d); x.setDate(x.getDate()+n); return x;}
 
-/* --- SAFE DATE HELPERS (исправляет Invalid Date) --- */
+/* --- SAFE DATE HELPERS --- */
 function normalizeDue(v){
   if (v === null || v === undefined) return null;
   if (typeof v === 'string' && v.trim().toLowerCase() === 'null') return null;
   const num = Number(v);
   if (!Number.isNaN(num) && v !== '' && v !== true && v !== false) {
-    const ms = num < 1e12 ? num * 1000 : num; // секунды -> миллисекунды
+    const ms = num < 1e12 ? num * 1000 : num;
     return ms;
   }
   let ms = Date.parse(v);
@@ -709,110 +702,74 @@ $('#profile-id').textContent = tgId || '–';
 
 const HEADERS = () => tgId ? { 'Content-Type':'application/json', 'X-TG-ID': String(tgId) } : { 'Content-Type':'application/json' };
 
-/* ===== API functions ===== */
+/* ===== API ===== */
 async function api(path, method='GET', body=null) {
   const opt = { method, headers: HEADERS() };
   if (body) opt.body = JSON.stringify(body);
-  try {
-    const r = await fetch(path, opt);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const data = await r.json();
-    return data;
-  } catch (error) {
-    console.error('API Error:', error);
-    throw error;
-  }
+  const r = await fetch(path, opt);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return await r.json();
 }
 
-/* ===== CHAT SYSTEM ===== */
+/* ===== CHAT SYSTEM (без изменений логики) ===== */
 let chats = [];
 let currentChatId = null;
 
-// Загрузка чатов из localStorage
 function loadChats() {
   try {
     const saved = localStorage.getItem('growth_assistant_chats');
-    if (saved) {
-      chats = JSON.parse(saved);
-    } else {
-      chats = [];
-    }
-  } catch (e) {
-    console.error('Error loading chats:', e);
-    chats = [];
-  }
+    chats = saved ? JSON.parse(saved) : [];
+  } catch { chats = []; }
   renderChatList();
 }
 
-// Сохранение чатов в localStorage
 function saveChats() {
-  try {
-    localStorage.setItem('growth_assistant_chats', JSON.stringify(chats));
-  } catch (e) {
-    console.error('Error saving chats:', e);
-  }
+  try { localStorage.setItem('growth_assistant_chats', JSON.stringify(chats)); } catch {}
 }
 
-// Создание нового чата
 function createNewChat(title = 'Новый чат') {
   const newChat = {
     id: 'chat_' + Date.now(),
-    title: title,
+    title,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     messages: [
-      {
-        role: 'assistant',
-        content: 'Привет! Я твой ассистент по продуктивности. Чем могу помочь?',
-        timestamp: new Date().toISOString()
-      }
+      { role:'assistant', content:'Привет! Я твой ассистент по продуктивности. Чем могу помочь?', timestamp:new Date().toISOString() }
     ]
   };
-  
   chats.unshift(newChat);
   saveChats();
   renderChatList();
   return newChat.id;
 }
 
-// Удаление чата
 function deleteChat(chatId) {
-  chats = chats.filter(chat => chat.id !== chatId);
-  if (currentChatId === chatId) {
-    closeChat();
-  }
+  chats = chats.filter(c => c.id !== chatId);
+  if (currentChatId === chatId) closeChat();
   saveChats();
   renderChatList();
 }
 
-// Открытие чата в отдельном окне
 function openChat(chatId) {
   const chat = chats.find(c => c.id === chatId);
   if (!chat) return;
-  
   currentChatId = chatId;
   $('#current-chat-title').textContent = chat.title;
   $('#chat-window-overlay').classList.add('active');
-  
   renderChatMessages(chat.messages);
-  
-  setTimeout(() => {
-    $('#chat-input').focus();
-  }, 100);
+  setTimeout(()=>$('#chat-input').focus(),100);
 }
 
-// Закрытие чата
 function closeChat() {
   currentChatId = null;
   $('#chat-window-overlay').classList.remove('active');
   $('#chat-body').innerHTML = '';
 }
 
-// Рендер списка чатов
 function renderChatList() {
   const container = $('#chat-list');
   container.innerHTML = '';
-  
+
   chats.forEach(chat => {
     const chatEl = document.createElement('div');
     chatEl.className = `chat-item ${currentChatId === chat.id ? 'active' : ''}`;
@@ -825,50 +782,34 @@ function renderChatList() {
     chatEl.onclick = () => openChat(chat.id);
     container.appendChild(chatEl);
   });
-  
+
   const newChatEl = document.createElement('div');
   newChatEl.className = 'chat-item new';
-  newChatEl.innerHTML = `
-    <div class="chat-icon">+</div>
-    <div class="chat-title">Новый чат</div>
-  `;
+  newChatEl.innerHTML = `<div class="chat-icon">+</div><div class="chat-title">Новый чат</div>`;
   newChatEl.onclick = () => $('#new-chat-modal').classList.add('active');
   container.appendChild(newChatEl);
-  
+
   $('#no-chats-message').style.display = chats.length === 0 ? 'block' : 'none';
 }
 
-// Рендер сообщений в чате
 function renderChatMessages(messages) {
   const container = $('#chat-body');
   container.innerHTML = '';
-  
   messages.forEach(msg => {
     const bubble = document.createElement('div');
     bubble.className = `bubble ${msg.role === 'user' ? 'me' : 'bot'}`;
     bubble.textContent = msg.content;
     container.appendChild(bubble);
   });
-  
   container.scrollTop = container.scrollHeight;
 }
 
-// Добавление сообщения в текущий чат
 function addMessageToChat(role, content) {
   if (!currentChatId) return;
-  
   const chat = chats.find(c => c.id === currentChatId);
   if (!chat) return;
-  
-  const newMessage = {
-    role: role,
-    content: content,
-    timestamp: new Date().toISOString()
-  };
-  
-  chat.messages.push(newMessage);
+  chat.messages.push({ role, content, timestamp:new Date().toISOString() });
   chat.updatedAt = new Date().toISOString();
-  
   saveChats();
   renderChatMessages(chat.messages);
 }
@@ -879,7 +820,6 @@ const screens = {
   plan: $('#screen-plan'),
   chat: $('#screen-chat'),
   stats: $('#screen-stats'),
-  team: $('#screen-team'),
   profile: $('#screen-profile'),
 };
 $$('.nav .item').forEach(it=>{
@@ -889,13 +829,9 @@ $$('.nav .item').forEach(it=>{
     const to = it.dataset.go;
     Object.values(screens).forEach(s=>s.classList.remove('active'));
     screens[to].classList.add('active');
-    
-    if (to === 'chat') {
-      loadChats();
-    }
-    if (to === 'team') {
-      setTimeout(loadTeamBox, 50);
-    }
+
+    if (to === 'chat') loadChats();
+    if (to === 'plan') setTimeout(loadTeamBox, 50);
   };
 });
 
@@ -906,14 +842,13 @@ let quickPrio = 'today';
 let currentTeamId = null;
 let currentLanguage = 'ru';
 
-/* ===== team id helper ===== */
+/* team id helper */
 async function ensureTeamIdLoaded() {
   if (currentTeamId !== null) return currentTeamId;
   try {
-    const r = await api('/api/team/current', 'GET');
-    currentTeamId = r && typeof r.team_id !== 'undefined' ? r.team_id : null;
-  } catch (e) {
-    console.log('Team current load failed:', e);
+    const r = await api('/api/team/current','GET');
+    currentTeamId = (r && typeof r.team_id !== 'undefined') ? r.team_id : null;
+  } catch {
     currentTeamId = null;
   }
   return currentTeamId;
@@ -931,10 +866,10 @@ $$('.seg .chip[data-prio]')[0].classList.add('active');
 
 /* план фильтр */
 let planFilter='today';
-$('#f-today').onclick=()=>{planFilter='today'; updPlanBtns(); renderPlan();}
-$('#f-week').onclick=()=>{planFilter='week'; updPlanBtns(); renderPlan();}
-$('#f-month').onclick=()=>{planFilter='month'; updPlanBtns(); renderPlan();}
-$('#f-team').onclick=()=>{planFilter='team'; updPlanBtns(); renderPlan();}
+$('#f-today').onclick=()=>{planFilter='today'; updPlanBtns(); renderPlan();};
+$('#f-week').onclick=()=>{planFilter='week'; updPlanBtns(); renderPlan();};
+$('#f-month').onclick=()=>{planFilter='month'; updPlanBtns(); renderPlan();};
+$('#f-team').onclick=()=>{planFilter='team'; updPlanBtns(); renderPlan();};
 function updPlanBtns(){
   $('#f-today').classList.toggle('active', planFilter==='today');
   $('#f-week').classList.toggle('active', planFilter==='week');
@@ -948,17 +883,16 @@ async function loadAll(){
     const f = await api('/api/focus');
     focus = f.focus||null;
     $('#focus-input').value = focus?.text || '';
-  }catch(e){ console.log('Focus load failed:', e); }
-  
+  }catch{}
+
   try{
     const t = await api('/api/tasks');
     tasks = (t.items||[]).map(normalizeTask);
-  }catch(e){ console.log('Tasks load failed:', e); }
+  }catch{}
 
-  try{
-    await ensureTeamIdLoaded();
-  }catch(e){ console.log('Team id load failed:', e); }
-  
+  await ensureTeamIdLoaded();
+  loadTeamBox();
+
   renderHome(); renderPlan(); renderStats();
 }
 loadAll();
@@ -971,8 +905,8 @@ $('#focus-save').onclick = async ()=>{
     const r = await api('/api/focus','POST',{ text });
     focus = r.focus;
     showToast('Фокус сохранён');
-  }catch(e){ 
-    focus = { text, id: 'local_' + Date.now() };
+  }catch{
+    focus = { text, id:'local_'+Date.now() };
     showToast('Фокус сохранён (офлайн)');
   }
 };
@@ -982,51 +916,37 @@ $('#quick-add').onclick = async ()=>{
   const title = $('#quick-title').value.trim();
   const dueStr = $('#quick-due').value;
   if (!title) return showToast('Введите название');
-  
+
   let due_ts = null;
-  if (dueStr){ 
-    const ms = Date.parse(dueStr); 
-    if (!isNaN(ms)) due_ts = ms; 
+  if (dueStr){
+    const ms = Date.parse(dueStr);
+    if (!isNaN(ms)) due_ts = ms;
   } else {
     const now = new Date();
     if (quickPrio==='today') due_ts = endOfDay(now).getTime();
     else if (quickPrio==='week') due_ts = endOfDay(addDays(now,7)).getTime();
     else if (quickPrio==='month') due_ts = endOfDay(addDays(now,30)).getTime();
   }
-  
+
   try{
-    const payload = { 
-      title, 
-      due_ts,
-      priority: quickPrio 
-    };
+    const payload = { title, due_ts, priority: quickPrio };
     if (quickPrio === 'team') {
       const tid = await ensureTeamIdLoaded();
       if (tid) payload.team_id = tid;
     }
-
-    const r = await api('/api/tasks','POST', payload);
+    const r = await api('/api/tasks','POST',payload);
     tasks.unshift(normalizeTask(r.task));
-  }catch(e){
-    const fake = { 
-      id: 'tmp_'+Date.now(), 
-      title, 
-      due_ts, 
-      is_done: false,
-      priority: quickPrio
-    };
-    tasks.unshift(fake);
+  }catch{
+    tasks.unshift({ id:'tmp_'+Date.now(), title, due_ts, is_done:false, priority:quickPrio });
   }
-  
+
   $('#quick-title').value=''; 
   $('#quick-due').value='';
-  renderHome(); 
-  renderPlan(); 
-  renderStats();
+  renderHome(); renderPlan(); renderStats();
   showToast('Задача добавлена');
 };
 
-/* ===== render: tasks ===== */
+/* ===== render tasks ===== */
 function rowTask(t){
   const el = document.createElement('div'); 
   el.className='task'+(t.is_done?' done':'');
@@ -1035,19 +955,15 @@ function rowTask(t){
   chk.className='btn icon'; 
   chk.textContent = t.is_done?'✓':'○';
   chk.onclick = async ()=>{
-    t.is_done = !t.is_done; 
-    renderHome(); 
-    renderPlan(); 
-    renderStats();
-    try{ 
-      await api('/api/tasks/toggle?id='+t.id,'POST',{}); 
-    } catch(e){ }
+    t.is_done = !t.is_done;
+    renderHome(); renderPlan(); renderStats();
+    try{ await api('/api/tasks/toggle?id='+t.id,'POST',{}); }catch{}
   };
-  
+
   const ttl = document.createElement('div'); 
   ttl.className='ttl'; 
   ttl.textContent = t.title;
-  
+
   const badge = document.createElement('div');
   if (t.due_ts==null){ 
     badge.className='badge'; 
@@ -1057,20 +973,16 @@ function rowTask(t){
     badge.className = 'badge ' + (past ? (t.is_done?'ok':'dead') : 'due');
     badge.textContent = (t.is_done?'сделано • ':'до ') + fmt(t.due_ts);
   }
-  
+
   const del = document.createElement('button'); 
   del.className='btn secondary icon'; 
   del.textContent='✕';
   del.onclick = async ()=>{
     tasks = tasks.filter(x=>x.id!==t.id);
-    renderHome(); 
-    renderPlan(); 
-    renderStats();
-    try{ 
-      await api('/api/tasks/delete?id='+t.id,'POST',{}); 
-    } catch(e){}
+    renderHome(); renderPlan(); renderStats();
+    try{ await api('/api/tasks/delete?id='+t.id,'POST',{}); }catch{}
   };
-  
+
   el.append(chk, ttl, badge, del);
   return el;
 }
@@ -1079,62 +991,61 @@ function renderHome(){
   const s = startOfDay(new Date()).getTime();
   const e = endOfDay(new Date()).getTime();
   const today = tasks.filter(t => {
-      const ms = normalizeDue(t.due_ts);
-      return ms!=null && ms>=s && ms<=e;
-    })
-    .sort((a,b)=> (a.is_done-b.is_done) || ((normalizeDue(a.due_ts)||0)-(normalizeDue(b.due_ts)||0)));
-  const box = $('#tasks-today'); 
+    const ms = normalizeDue(t.due_ts);
+    return ms!=null && ms>=s && ms<=e;
+  }).sort((a,b)=>(a.is_done-b.is_done)||((normalizeDue(a.due_ts)||0)-(normalizeDue(b.due_ts)||0)));
+  const box = $('#tasks-today');
   box.innerHTML='';
-  if (!today.length){ 
-    box.innerHTML='<div class="muted">На сегодня нет задач.</div>'; 
-    return; 
+  if (!today.length){
+    box.innerHTML='<div class="muted">На сегодня нет задач.</div>';
+    return;
   }
-  today.forEach(t=> box.appendChild(rowTask(t)));
+  today.forEach(t=>box.appendChild(rowTask(t)));
 }
 
 function renderPlan(){
   let arr = tasks.slice();
   const now = new Date();
-  
+
   if (planFilter==='today') {
     const dayStart = startOfDay(now).getTime();
     const dayEnd = endOfDay(now).getTime();
-    arr = arr.filter(t => {
+    arr = arr.filter(t=>{
       const ms = normalizeDue(t.due_ts);
-      return ms!=null && ms>=dayStart && ms<=dayEnd;
+      return !t.team_id && ms!=null && ms>=dayStart && ms<=dayEnd;
     });
   } else if (planFilter==='week') {
     const weekEnd = endOfDay(addDays(now,7)).getTime();
-    arr = arr.filter(t => {
+    arr = arr.filter(t=>{
       const ms = normalizeDue(t.due_ts);
-      return ms!=null && ms<=weekEnd;
+      return !t.team_id && ms!=null && ms<=weekEnd;
     });
   } else if (planFilter==='month') {
     const monthEnd = endOfDay(addDays(now,30)).getTime();
-    arr = arr.filter(t => {
+    arr = arr.filter(t=>{
       const ms = normalizeDue(t.due_ts);
-      return ms!=null && ms<=monthEnd;
+      return !t.team_id && ms!=null && ms<=monthEnd;
     });
   } else if (planFilter==='team') {
-    arr = arr.filter(t => {
+    arr = arr.filter(t=>{
       if (t.team_id) {
         return !currentTeamId || t.team_id === currentTeamId;
       }
       return t.priority === 'team';
     });
   }
-  
+
   arr.sort((a,b)=>(a.is_done-b.is_done)||((normalizeDue(a.due_ts)||1e20)-(normalizeDue(b.due_ts)||1e20)));
-  const box = $('#tasks-plan'); 
+  const box = $('#tasks-plan');
   box.innerHTML='';
-  if (!arr.length){ 
-    box.innerHTML='<div class="muted">Нет задач для отображения.</div>'; 
-    return; 
+  if (!arr.length){
+    box.innerHTML='<div class="muted">Нет задач для отображения.</div>';
+    return;
   }
-  arr.forEach(t=> box.appendChild(rowTask(t)));
+  arr.forEach(t=>box.appendChild(rowTask(t)));
 }
 
-/* ===== статистика ===== */
+/* ===== stats ===== */
 function renderStats(){
   const total = tasks.length;
   const done = tasks.filter(t=>t.is_done).length;
@@ -1143,161 +1054,130 @@ function renderStats(){
     return !t.is_done && ms!=null && ms < Date.now();
   }).length;
   const rate = total ? Math.round(done*100/total) : 0;
-  
+
   $('#m-total').textContent = total;
   $('#m-done').textContent  = done;
   $('#m-rate').textContent  = rate+'%';
   $('#m-over').textContent  = overdue;
-  
+
   renderWeekChart();
 }
 
 function renderWeekChart(){
   const chart = $('#week-chart');
-  chart.innerHTML = '';
-  
-  for (let i = 6; i >= 0; i--) {
-    const day = addDays(new Date(), -i);
+  chart.innerHTML='';
+
+  for (let i=6;i>=0;i--){
+    const day = addDays(new Date(),-i);
     const dayStart = startOfDay(day).getTime();
     const dayEnd = endOfDay(day).getTime();
-    const dayTasks = tasks.filter(t => {
+    const dayTasks = tasks.filter(t=>{
       const ms = normalizeDue(t.due_ts);
       return ms!=null && ms>=dayStart && ms<=dayEnd;
     });
-    const doneCount = dayTasks.filter(t => t.is_done).length;
+    const doneCount = dayTasks.filter(t=>t.is_done).length;
     const totalCount = dayTasks.length;
-    const height = totalCount > 0 ? (doneCount / totalCount) * 100 : 10;
-    
+    const height = totalCount>0 ? (doneCount/totalCount)*100 : 10;
+
     const bar = document.createElement('div');
     bar.style.cssText = `
-      flex: 1;
-      background: linear-gradient(to top, var(--brand), var(--brand-2));
-      border-radius: 4px 4px 0 0;
-      height: ${height}%;
-      min-height: 8px;
-      position: relative;
+      flex:1;
+      background:linear-gradient(to top,var(--brand),var(--brand-2));
+      border-radius:4px 4px 0 0;
+      height:${height}%;
+      min-height:8px;
+      position:relative;
     `;
-    
     const label = document.createElement('div');
-    label.style.cssText = `
-      position: absolute;
-      bottom: -20px;
-      left: 0;
-      right: 0;
-      text-align: center;
-      font-size: 10px;
-      color: var(--muted);
+    label.style.cssText=`
+      position:absolute;
+      bottom:-20px;
+      left:0;right:0;
+      text-align:center;
+      font-size:10px;
+      color:var(--muted);
     `;
-    label.textContent = day.toLocaleDateString('ru-RU', { weekday: 'short' });
-    
+    label.textContent = day.toLocaleDateString('ru-RU',{weekday:'short'});
     bar.appendChild(label);
     chart.appendChild(bar);
   }
 }
 
-/* ===== chat system events ===== */
+/* ===== chat events ===== */
 $('#close-chat').onclick = closeChat;
-
-$('#create-first-chat').onclick = () => {
-  $('#new-chat-modal').classList.add('active');
-};
-
-$('#cancel-new-chat').onclick = () => {
+$('#create-first-chat').onclick = ()=>$('#new-chat-modal').classList.add('active');
+$('#cancel-new-chat').onclick = ()=>{
   $('#new-chat-modal').classList.remove('active');
-  $('#new-chat-title').value = '';
+  $('#new-chat-title').value='';
 };
-
-$('#confirm-new-chat').onclick = () => {
+$('#confirm-new-chat').onclick = ()=>{
   const title = $('#new-chat-title').value.trim() || 'Новый чат';
-  const newChatId = createNewChat(title);
+  const id = createNewChat(title);
   $('#new-chat-modal').classList.remove('active');
-  $('#new-chat-title').value = '';
-  openChat(newChatId);
+  $('#new-chat-title').value='';
+  openChat(id);
   showToast('Чат создан');
 };
-
-$('#chat-send').onclick = async () => {
-  const text = $('#chat-input').value.trim(); 
+$('#chat-send').onclick = async ()=>{
+  const text = $('#chat-input').value.trim();
   if (!text) return;
-  
-  if (!currentChatId) {
-    const newChatId = createNewChat('Новый чат');
-    openChat(newChatId);
+  if (!currentChatId){
+    const id = createNewChat('Новый чат');
+    openChat(id);
   }
-  
-  $('#chat-input').value = ''; 
+  $('#chat-input').value='';
   addMessageToChat('user', text);
-  
-  try {
-    const r = await api('/api/chat','POST',{ 
-      text,
-      chat_id: currentChatId 
-    });
+  try{
+    const r = await api('/api/chat','POST',{ text, chat_id: currentChatId });
     addMessageToChat('assistant', r.reply || 'Я обработал ваш запрос и готов помочь!');
-  } catch(e) {
-    addMessageToChat('assistant', 'В настоящее время я не могу подключиться к серверу. Вот что я могу сделать офлайн:\n\n• Помочь разбить большие задачи на шаги\n• Подсказать методы тайм-менеджмента\n• Составить примерный план выполнения задач');
+  }catch{
+    addMessageToChat('assistant','Сервер недоступен, но я могу помочь офлайн: разбить задачи, подсказать методики, составить план.');
   }
 };
-
-$('#chat-input').addEventListener('keydown', e => { 
-  if (e.key === 'Enter') $('#chat-send').click(); 
-});
-
-$('#new-chat-modal').onclick = (e) => {
-  if (e.target === $('#new-chat-modal')) {
-    $('#new-chat-modal').classList.remove('active');
-  }
-};
-
-$('#chat-window-overlay').onclick = (e) => {
-  if (e.target === $('#chat-window-overlay')) {
-    closeChat();
-  }
-};
+$('#chat-input').addEventListener('keydown',e=>{ if (e.key==='Enter') $('#chat-send').click(); });
+$('#new-chat-modal').onclick = e=>{ if (e.target===$('#new-chat-modal')) $('#new-chat-modal').classList.remove('active'); };
+$('#chat-window-overlay').onclick = e=>{ if (e.target===$('#chat-window-overlay')) closeChat(); };
 
 /* ===== профиль ===== */
-$$('.lang-btn').forEach(btn => {
-  btn.onclick = () => {
-    $$('.lang-btn').forEach(b => b.classList.remove('active'));
+$$('.lang-btn').forEach(btn=>{
+  btn.onclick = ()=>{
+    $$('.lang-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    const map = {ru:'Русский', en:'English'};
-    showToast(`Язык изменен на ${map[btn.dataset.lang] || btn.textContent}`);
+    const map={ru:'Русский',en:'English'};
+    showToast(`Язык изменен на ${map[btn.dataset.lang]||btn.textContent}`);
   };
 });
+$('#btn-tariff').onclick = ()=>showToast('Раздел "Тарифы" в разработке');
+$('#btn-help').onclick = ()=>showToast('Раздел "Помощь" в разработке');
+$('#btn-guide').onclick = ()=>showToast('Раздел "Как пользоваться" в разработке');
+$('#btn-consult').onclick = ()=>showToast('Раздел "Консультация" в разработке');
 
-$('#btn-tariff').onclick = () => showToast('Раздел "Тарифы" в разработке');
-$('#btn-help').onclick = () => showToast('Раздел "Помощь" в разработке');
-$('#btn-guide').onclick = () => showToast('Раздел "Как пользоваться" в разработке');
-$('#btn-consult').onclick = () => showToast('Раздел "Консультация" в разработке');
-
-/* ===================== */
-/*        TEAM UI        */
-/* ===================== */
-let _invite = { join_code: null, invite_link_tg: null };
+/* ===== TEAM UI ===== */
+let _invite = { join_code:null, invite_link_tg:null, invite_link_http:null };
 
 async function loadTeamBox(){
   try{
     const inv = await api('/api/team/invite','GET');
     _invite = inv || {};
     $('#team-code').value = inv.join_code || '';
-  }catch(e){
+  }catch{
     $('#team-code').value = '';
   }
 
   try{
     const r = await api('/api/team/members','GET');
-    const ul = $('#team-members'); ul.innerHTML = '';
+    const ul = $('#team-members'); ul.innerHTML='';
     (r.members||[]).forEach(m=>{
       const name = m.username ? '@'+m.username :
-                   [m.first_name, m.last_name].filter(Boolean).join(' ') || m.tg_id;
+        [m.first_name,m.last_name].filter(Boolean).join(' ') || m.tg_id;
       const li = document.createElement('li');
       li.textContent = name;
       ul.appendChild(li);
     });
-    if (!r.members?.length) {
-      $('#team-members').innerHTML = '<li class="muted">Вы пока один в команде</li>';
+    if (!r.members?.length){
+      ul.innerHTML = '<li class="muted">Вы пока один в команде</li>';
     }
-  }catch(e){
+  }catch{
     $('#team-members').innerHTML = '<li class="muted">Не удалось загрузить</li>';
   }
 }
@@ -1309,21 +1189,21 @@ $('#copy-code').onclick = async ()=>{
   showToast('Код скопирован');
 };
 $('#copy-tg-link').onclick = async ()=>{
-  const link = _invite.invite_link_tg || '';
-  if (!link) return showToast('Укажите BOT_USERNAME в переменных окружения');
+  const link = _invite.invite_link_tg || _invite.invite_link_http || '';
+  if (!link) return showToast('Сначала обновите команду');
   await navigator.clipboard.writeText(link);
-  showToast('TG-ссылка скопирована');
+  showToast('Ссылка скопирована');
 };
 $('#join-btn').onclick = async ()=>{
   const token = $('#join-input').value.trim();
   if (!token) return;
   try{
     await api('/api/team/join','POST',{ token });
-    $('#join-input').value = '';
+    $('#join-input').value='';
     showToast('Готово! Вы в команде');
     loadTeamBox();
     ensureTeamIdLoaded();
-  }catch(e){
+  }catch{
     showToast('Не удалось вступить');
   }
 };
@@ -1341,14 +1221,13 @@ $('#join-btn').onclick = async ()=>{
   }
 })();
 
-// синк ника/имени из Telegram (один раз)
 (function syncProfile(){
   const u = window.Telegram?.WebApp?.initDataUnsafe?.user;
   if (!u) return;
   api('/api/user/profile','POST',{
-    username: u.username || null,
-    first_name: u.first_name || null,
-    last_name: u.last_name || null
+    username:u.username||null,
+    first_name:u.first_name||null,
+    last_name:u.last_name||null
   }).catch(()=>{});
 })();
 </script>
