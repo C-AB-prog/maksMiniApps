@@ -1,6 +1,6 @@
 // api/team/members.js
 import { ensureSchema, q } from '../_db.js';
-import { getTgId, getOrCreateUserId } from '../_utils.js';
+import { getTgId, getOrCreateUserId, getUserTeams, assertUserInTeam } from '../_utils.js';
 
 export default async function handler(req, res) {
   await ensureSchema();
@@ -10,19 +10,19 @@ export default async function handler(req, res) {
   if (!tgId) return res.status(400).json({ ok: false, error: 'tg_id required' });
   const userId = await getOrCreateUserId(tgId);
 
-  const r = await q(
-    `SELECT m.team_id
-     FROM team_members m
-     WHERE m.user_id = $1
-     LIMIT 1`,
-    [userId]
-  );
+  let teamId = Number(req.query?.team_id || 0);
 
-  if (!r.rows.length) {
-    return res.json({ ok: true, team_id: null, members: [] });
+  if (!teamId) {
+    const list = await getUserTeams(userId);
+    if (!list.length) {
+      return res.json({ ok: true, team_id: null, members: [] });
+    }
+    teamId = list[0].id;
+  } else {
+    const ok = await assertUserInTeam(userId, teamId);
+    if (!ok) return res.status(403).json({ ok:false, error:'not_in_team' });
   }
 
-  const teamId = r.rows[0].team_id;
   const u = await q(
     `SELECT u.tg_id, u.username, u.first_name, u.last_name
      FROM team_members m
