@@ -7,24 +7,27 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
 
   const tgId = getTgId(req);
-  if (!tgId) return res.status(400).json({ ok: false, error: 'tg_id required' });
+  if (!tgId) {
+    return res.status(400).json({ ok: false, error: 'tg_id required' });
+  }
   const userId = await getOrCreateUserId(tgId);
 
+  // ВАЖНО: берём ВСЕ команды, где пользователь есть в team_members
   const r = await q(
-    `SELECT t.id, t.name, t.join_token
-     FROM team_members m
-     JOIN teams t ON t.id = m.team_id
-     WHERE m.user_id = $1
-     ORDER BY t.id ASC`,
-    [userId]
+    `
+    SELECT t.id,
+           t.name,
+           t.join_token AS join_code
+    FROM teams t
+    JOIN team_members m ON m.team_id = t.id
+    WHERE m.user_id = $1
+    ORDER BY t.id ASC
+    `,
+    [userId],
   );
 
   res.json({
     ok: true,
-    teams: r.rows.map(row => ({
-      id: row.id,
-      name: row.name,
-      join_code: row.join_token,
-    })),
+    teams: r.rows,
   });
 }
