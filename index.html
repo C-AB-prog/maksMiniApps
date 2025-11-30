@@ -1274,7 +1274,7 @@ async function loadTeamInfo(){
       join_code: t.join_code,
       is_owner: !!t.is_owner,
       members: []
-    }));
+    ));
 
     if (!teamList.length) {
       teamInfo = null;
@@ -1400,8 +1400,7 @@ $('#team-delete').onclick = async ()=>{
   if (!confirm('Расформировать команду "'+(teamInfo.name||'')+'"?')) return;
   try{
     await api('/api/team/delete','POST',{
-      team_id: teamInfo.team_id,
-      id:      teamInfo.team_id
+      team_id: teamInfo.team_id
     });
     await loadTeamInfo();
     teamDetailOpen = false;
@@ -1436,39 +1435,34 @@ async function loadChatsFromServer() {
   renderChatList();
 }
 
-function renderChatList() {
-  const container = $('#chat-list');
+function renderChatMessages() {
+  const container = $('#chat-body');
   container.innerHTML = '';
-
-  if (!chats.length) {
-    $('#no-chats-message').style.display = 'block';
-  } else {
-    $('#no-chats-message').style.display = 'none';
-  }
-
-  chats.forEach(chat => {
-    const chatEl = document.createElement('div');
-    chatEl.className = 'chat-item';
-    const dateStr = chat.updated_at
-      ? new Date(chat.updated_at).toLocaleDateString('ru-RU')
-      : '';
-    chatEl.innerHTML = `
-      <div class="chat-icon">💬</div>
-      <div class="chat-title">${chat.title || 'Чат'}</div>
-      <div class="chat-date">${dateStr}</div>
-    `;
-    chatEl.onclick = () => openChat(chat.id, chat.title || 'Чат');
-    container.appendChild(chatEl);
+  currentMessages.forEach(msg => {
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble ' + (msg.role === 'user' ? 'me' : 'bot');
+    bubble.textContent = msg.content;
+    container.appendChild(bubble);
   });
+  container.scrollTop = container.scrollHeight;
+}
 
-  const newChatEl = document.createElement('div');
-  newChatEl.className = 'chat-item new';
-  newChatEl.innerHTML = `
-    <div class="chat-icon">+</div>
-    <div class="chat-title">Новый чат</div>
-  `;
-  newChatEl.onclick = () => $('#new-chat-modal').classList.add('active');
-  container.appendChild(newChatEl);
+function addMessage(role, content) {
+  currentMessages.push({ role, content, timestamp: new Date().toISOString() });
+  renderChatMessages();
+}
+
+function openNewChatWindow(title) {
+  pendingChatTitle = (title || 'Новый чат').trim() || 'Новый чат';
+  currentChatId = null;
+  currentMessages = [{
+    role: 'assistant',
+    content: 'Привет! Я твой ассистент по продуктивности. Чем могу помочь?'
+  }];
+  $('#current-chat-title').textContent = pendingChatTitle;
+  $('#chat-window-overlay').classList.add('active');
+  renderChatMessages();
+  setTimeout(() => $('#chat-input').focus(), 50);
 }
 
 async function openChat(chatId, title) {
@@ -1496,44 +1490,112 @@ async function openChat(chatId, title) {
   setTimeout(() => $('#chat-input').focus(), 50);
 }
 
-function openNewChatWindow(title) {
-  pendingChatTitle = (title || 'Новый чат').trim() || 'Новый чат';
-  currentChatId = null;
-  currentMessages = [{
-    role: 'assistant',
-    content: 'Привет! Я твой ассистент по продуктивности. Чем могу помочь?'
-  }];
-  $('#current-chat-title').textContent = pendingChatTitle;
-  $('#chat-window-overlay').classList.add('active');
-  renderChatMessages();
-  setTimeout(() => $('#chat-input').focus(), 50);
-}
-
 function closeChat() {
   currentChatId = null;
   pendingChatTitle = null;
   currentMessages = [];
   $('#chat-window-overlay').classList.remove('active');
   $('#chat-body').innerHTML = '';
-  // обновим список чатов, чтобы новый чат появился
   loadChatsFromServer().catch(()=>{});
 }
 
-function renderChatMessages() {
-  const container = $('#chat-body');
-  container.innerHTML = '';
-  currentMessages.forEach(msg => {
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble ' + (msg.role === 'user' ? 'me' : 'bot');
-    bubble.textContent = msg.content;
-    container.appendChild(bubble);
-  });
-  container.scrollTop = container.scrollHeight;
+/* удаление чата через долгий тап / правый клик */
+async function deleteChat(chatId, title) {
+  if (!confirm(`Удалить чат "${title}"?`)) return;
+  try {
+    await api('/api/chat_delete','POST',{ chat_id: chatId });
+    if (currentChatId === chatId) {
+      closeChat();
+    } else {
+      await loadChatsFromServer();
+    }
+    showToast('Чат удалён');
+  } catch (e) {
+    console.error('deleteChat error', e);
+    showToast('Не удалось удалить чат');
+  }
 }
 
-function addMessage(role, content) {
-  currentMessages.push({ role, content, timestamp: new Date().toISOString() });
-  renderChatMessages();
+function renderChatList() {
+  const container = $('#chat-list');
+  container.innerHTML = '';
+
+  if (!chats.length) {
+    $('#no-chats-message').style.display = 'block';
+  } else {
+    $('#no-chats-message').style.display = 'none';
+  }
+
+  chats.forEach(chat => {
+    const chatEl = document.createElement('div');
+    chatEl.className = 'chat-item';
+    const dateStr = chat.updated_at
+      ? new Date(chat.updated_at).toLocaleDateString('ru-RU')
+      : '';
+    const title = chat.title || 'Чат';
+
+    chatEl.innerHTML = `
+      <div class="chat-icon">💬</div>
+      <div class="chat-title">${title}</div>
+      <div class="chat-date">${dateStr}</div>
+    `;
+
+    // обычный клик — открыть чат
+    chatEl.onclick = () => {
+      if (chatEl._skipClickOnce) {
+        chatEl._skipClickOnce = false;
+        return;
+      }
+      openChat(chat.id, title);
+    };
+
+    // долгий тап (mobile)
+    let pressTimer = null;
+    const startPress = (ev) => {
+      // не даём всплыть "клику"
+      ev.preventDefault();
+      if (pressTimer) clearTimeout(pressTimer);
+      pressTimer = setTimeout(() => {
+        pressTimer = null;
+        chatEl._skipClickOnce = true;
+        deleteChat(chat.id, title);
+      }, 500); // 0.5 секунды
+    };
+    const cancelPress = () => {
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+    };
+
+    chatEl.addEventListener('touchstart', startPress);
+    chatEl.addEventListener('touchend', cancelPress);
+    chatEl.addEventListener('touchcancel', cancelPress);
+    chatEl.addEventListener('mousedown', (ev) => {
+      if (ev.button !== 0) return; // только левая кнопка
+      startPress(ev);
+    });
+    chatEl.addEventListener('mouseup', cancelPress);
+    chatEl.addEventListener('mouseleave', cancelPress);
+
+    // правый клик (desktop)
+    chatEl.addEventListener('contextmenu', (ev) => {
+      ev.preventDefault();
+      chatEl._skipClickOnce = true;
+      deleteChat(chat.id, title);
+    });
+
+    container.appendChild(chatEl);
+  });
+
+  const newChatEl = document.createElement('div');
+  newChatEl.className = 'chat-item new';
+  newChatEl.innerHTML = `
+    <div class="chat-icon">+</div>
+    <div class="chat-title">Новый чат</div>
+  `;
+  newChatEl.onclick = () => $('#new-chat-modal').classList.add('active');
+  container.appendChild(newChatEl);
 }
 
 async function sendChatMessage() {
@@ -1559,7 +1621,7 @@ async function sendChatMessage() {
     if (r.chat_id && !currentChatId) {
       currentChatId = r.chat_id;
     }
-    loadChatsFromServer(); // после ответа обновляем список сессий
+    loadChatsFromServer(); // обновляем список чатов после ответа
   } catch (e) {
     console.error('sendChatMessage error', e);
     addMessage(
