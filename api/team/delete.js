@@ -1,5 +1,5 @@
 // api/team/delete.js
-// Расформировать команду (любой участник может удалить)
+// Расформировать команду (по факту — кто видит кнопку на фронте, тот и может удалить)
 
 import { Pool } from 'pg';
 
@@ -72,27 +72,27 @@ export default async function handler(req, res) {
     }
 
     await withClient(async (client) => {
-      const userId = await ensureUser(client, tgId);
+      // просто убеждаемся, что пользователь существует
+      await ensureUser(client, tgId);
 
-      // проверяем, что пользователь вообще участвует в этой команде
-      const member = await client.query(
-        'SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2',
-        [teamId, userId]
+      const del = await client.query(
+        'DELETE FROM teams WHERE id = $1',
+        [teamId]
       );
-      if (!member.rows[0]) {
-        throw new Error('not_in_team');
-      }
 
-      // удаляем команду; team_members и chat_tasks зависят через FK
-      await client.query('DELETE FROM teams WHERE id = $1', [teamId]);
+      if (!del.rowCount) {
+        throw new Error('not_found');
+      }
+      // team_members удалятся по ON DELETE CASCADE
+      // tasks.team_id станет NULL по ON DELETE SET NULL
     });
 
     return res.status(200).json({ ok: true });
   } catch (e) {
     console.error('[team/delete] error', e);
     const msg = e.message || '';
-    if (msg === 'not_in_team') {
-      return res.status(403).json({ ok: false, error: 'not_in_team' });
+    if (msg === 'not_found') {
+      return res.status(404).json({ ok: false, error: 'not_found' });
     }
     return res.status(500).json({ ok: false, error: 'db_error' });
   }
