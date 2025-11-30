@@ -1469,19 +1469,42 @@ $('#confirm-new-chat').onclick = () => {
   showToast('Чат создан');
 };
 $('#chat-send').onclick = async () => {
-  const text = $('#chat-input').value.trim(); 
+  const text = $('#chat-input').value.trim();
   if (!text) return;
+
+  // если чата ещё нет — создаём новый
   if (!currentChatId) {
     const newChatId = createNewChat('Новый чат');
     openChat(newChatId);
   }
-  $('#chat-input').value = ''; 
+
+  // берём историю сообщений текущего чата (для памяти на бэке)
+  const chat = chats.find(c => c.id === currentChatId);
+  const history = chat
+    ? chat.messages.map(m => ({
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: m.content
+      })).slice(-16) // последние 16 сообщений
+    : [];
+
+  $('#chat-input').value = '';
   addMessageToChat('user', text);
+
   try {
-    const r = await api('/api/chat','POST',{ text, chat_id: currentChatId });
+    const r = await api('/api/chat', 'POST', {
+      text,
+      chat_id: currentChatId,
+      history
+    });
     addMessageToChat('assistant', r.reply || 'Я обработал ваш запрос и готов помочь!');
-  } catch(e) {
-    addMessageToChat('assistant', 'Сервер недоступен. Могу офлайн подсказать, как разбить задачи или спланировать день.');
+  } catch (e) {
+    addMessageToChat(
+      'assistant',
+      'В настоящее время я не могу подключиться к серверу. Вот что я могу сделать офлайн:\n\n' +
+      '• Помочь разбить большие задачи на шаги\n' +
+      '• Подсказать методы тайм-менеджмента\n' +
+      '• Составить примерный план выполнения задач'
+    );
   }
 };
 $('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('#chat-send').click(); });
