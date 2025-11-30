@@ -1,4 +1,6 @@
 // api/team/delete.js
+// Расформировать команду (любой участник может удалить)
+
 import { Pool } from 'pg';
 
 const pool = new Pool({
@@ -72,7 +74,7 @@ export default async function handler(req, res) {
     await withClient(async (client) => {
       const userId = await ensureUser(client, tgId);
 
-      // проверяем, что пользователь вообще в этой команде
+      // проверяем, что пользователь вообще участвует в этой команде
       const member = await client.query(
         'SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2',
         [teamId, userId]
@@ -81,21 +83,7 @@ export default async function handler(req, res) {
         throw new Error('not_in_team');
       }
 
-      // определяем владельца — первый участник по joined_at
-      const owner = await client.query(
-        `SELECT user_id
-         FROM team_members
-         WHERE team_id = $1
-         ORDER BY joined_at ASC
-         LIMIT 1`,
-        [teamId]
-      );
-      const ownerId = owner.rows[0]?.user_id;
-      if (!ownerId || Number(ownerId) !== userId) {
-        throw new Error('forbidden');
-      }
-
-      // удаляем команду
+      // удаляем команду; team_members и chat_tasks зависят через FK
       await client.query('DELETE FROM teams WHERE id = $1', [teamId]);
     });
 
@@ -105,9 +93,6 @@ export default async function handler(req, res) {
     const msg = e.message || '';
     if (msg === 'not_in_team') {
       return res.status(403).json({ ok: false, error: 'not_in_team' });
-    }
-    if (msg === 'forbidden') {
-      return res.status(403).json({ ok: false, error: 'not_owner' });
     }
     return res.status(500).json({ ok: false, error: 'db_error' });
   }
