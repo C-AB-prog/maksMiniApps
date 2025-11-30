@@ -1612,7 +1612,7 @@ async function sendChatMessage() {
   try {
     const payload = { text };
     if (currentChatId) payload.chat_id = currentChatId;
-    if (!currentChatId && pendingChatTitle) payload.title = pendingChatTitle;
+    if (!currentChatId && pendingChatTitle) payload.chat_title = pendingChatTitle;
 
     const r = await api('/api/chat', 'POST', payload);
     const replyText = r.reply || 'Я обработал запрос и готов помочь дальше!';
