@@ -139,47 +139,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .badge.dead{color:#991b1b;border-color:#ef4444;background:#fef2f2}
 .badge.team{margin-left:6px; font-size:10px; background:#eef2ff; border-color:#c7d2fe; color:#4f46e5}
 
-/* ФОКУС */
-.focus-header{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  margin-bottom:8px;
-}
-.focus-header-icon{
-  width:26px;
-  height:26px;
-  border-radius:999px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:radial-gradient(circle at 0 0,#f97316,transparent 55%), #fef3c7;
-  font-size:16px;
-}
-.focus-current{
-  margin-top:4px;
-  padding:12px 14px;
-  border-radius:16px;
-  border:1px dashed #c7d2fe;
-  background:linear-gradient(135deg,#f5f7ff,#eef2ff);
-  display:flex;
-  align-items:flex-start;
-  gap:10px;
-}
-.focus-current.empty{opacity:.75}
-.focus-label{
-  font-size:11px;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  color:var(--muted);
-  margin-bottom:4px;
-}
-.focus-text{
-  font-weight:600;
-  font-size:14px;
-}
-
-/* CHAT (как было) */
+/* CHAT – список чатов */
 .chat-container{display:flex;flex-direction:column;gap:14px}
 .chat-list{
   display:grid;
@@ -224,29 +184,18 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .chat-item:hover .chat-icon{opacity:1}
 .chat-title{font-weight:600;font-size:13px;line-height:1.3;margin-bottom:4px}
 .chat-date{font-size:11px;color:var(--muted)}
-.chat-delete{
-  position:absolute;top:6px;right:6px;
-  width:20px;height:20px;border-radius:50%;
-  background:var(--danger);color:#fff;border:none;font-size:12px;
-  cursor:pointer;opacity:0;transition:opacity .2s;
-  display:flex;align-items:center;justify-content:center;
-}
-.chat-item:hover .chat-delete{opacity:1}
 
-/* CHAT WINDOW */
+/* CHAT WINDOW – ПОЛНОЭКРАННЫЙ */
 .chat-window-overlay{
   display:none;position:fixed;top:0;left:0;right:0;bottom:0;
-  background:rgba(0,0,0,.5);z-index:1000;
-  align-items:center;justify-content:center;padding:20px;
+  background:rgba(0,0,0,.35);z-index:1000;
 }
 .chat-window-overlay.active{display:flex}
 .chat-window{
   display:flex;flex-direction:column;
-  width:100%;max-width:800px;
-  height:80vh;max-height:700px;
-  background:#fff;border-radius:20px;
-  box-shadow:0 25px 50px rgba(0,0,0,.25);
-  overflow:hidden;
+  width:100%;height:100%;
+  background:#fff;border-radius:0;
+  box-shadow:none;
 }
 .chat-header{
   display:flex;justify-content:space-between;align-items:center;
@@ -276,7 +225,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   border-top:1px solid var(--line);background:#fff;flex-shrink:0;
 }
 
-/* MODAL (универсальный input + модал для чата) */
+/* MODAL */
 .modal{
   display:none;position:fixed;top:0;left:0;right:0;bottom:0;
   background:rgba(0,0,0,.5);z-index:1100;align-items:center;justify-content:center;
@@ -450,19 +399,11 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   <!-- HOME -->
   <section id="screen-home" class="active grid-2">
     <div class="card">
-      <div class="focus-header">
-        <div class="focus-header-icon">🎯</div>
-        <div>
-          <div style="font-size:14px;font-weight:700">Фокус</div>
-          <div class="muted" style="font-size:12px">Самое главное на сегодня</div>
-        </div>
-      </div>
-      <div id="focus-current-block" class="focus-current empty">
-        <div>
-          <div class="focus-label">Текущий фокус</div>
-          <div id="focus-current-text" class="focus-text muted">Фокус ещё не задан</div>
-        </div>
-        <button id="focus-edit-btn" class="btn secondary icon" title="Изменить фокус">✎</button>
+      <h3>Фокус</h3>
+      <label>Самое главное сегодня</label>
+      <div style="display:flex; gap:10px; flex-wrap:wrap">
+        <input id="focus-input" class="input" type="text" placeholder="Например: закрыть отчёт" />
+        <button id="focus-save" class="btn" style="white-space:nowrap">Сохранить</button>
       </div>
     </div>
 
@@ -648,7 +589,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   </section>
 </div>
 
-<!-- CHAT WINDOW -->
+<!-- CHAT WINDOW (полноэкранный) -->
 <div id="chat-window-overlay" class="chat-window-overlay">
   <div class="chat-window">
     <div class="chat-header">
@@ -675,18 +616,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     <div style="display: flex; gap: 10px;">
       <button class="btn secondary" id="cancel-new-chat" style="flex: 1;">Отмена</button>
       <button class="btn" id="confirm-new-chat" style="flex: 1;">Создать</button>
-    </div>
-  </div>
-</div>
-
-<!-- UNIVERSAL INPUT MODAL (фокус + команды) -->
-<div id="input-modal" class="modal">
-  <div class="modal-content">
-    <h3 class="modal-title" id="input-modal-title">Заголовок</h3>
-    <input type="text" id="input-modal-field" class="input" placeholder="" style="margin-bottom:16px;">
-    <div style="display:flex;gap:10px;">
-      <button class="btn secondary" id="input-modal-cancel" style="flex:1;">Отмена</button>
-      <button class="btn" id="input-modal-confirm" style="flex:1;">Сохранить</button>
     </div>
   </div>
 </div>
@@ -794,7 +723,7 @@ let teamInfo = null;
 let teamDetailOpen = false;
 let teamMembersOpen = false;
 
-/* helpers team owner */
+/* team owner helpers */
 function isOwnerOfTeam(teamId){
   const t = teamList.find(x => x.team_id === teamId);
   return !!(t && t.is_owner);
@@ -802,36 +731,6 @@ function isOwnerOfTeam(teamId){
 function hasOwnedTeams(){
   return teamList.some(t => t.is_owner);
 }
-
-/* UNIVERSAL INPUT MODAL (фокус + команды) */
-const inputModal = {
-  onConfirm: null,
-  open({ title, placeholder, confirmText = 'Сохранить', initialValue = '', onConfirm }) {
-    $('#input-modal-title').textContent = title;
-    const field = $('#input-modal-field');
-    field.value = initialValue || '';
-    field.placeholder = placeholder || '';
-    $('#input-modal-confirm').textContent = confirmText;
-    this.onConfirm = onConfirm || null;
-    $('#input-modal').classList.add('active');
-    setTimeout(()=>field.focus(), 40);
-  },
-  close() {
-    $('#input-modal').classList.remove('active');
-    $('#input-modal-field').value = '';
-    this.onConfirm = null;
-  }
-};
-$('#input-modal-cancel').onclick = () => inputModal.close();
-$('#input-modal-confirm').onclick = () => {
-  const val = $('#input-modal-field').value.trim();
-  if (!val) { showToast('Поле не может быть пустым'); return; }
-  if (inputModal.onConfirm) inputModal.onConfirm(val);
-  inputModal.close();
-};
-$('#input-modal').onclick = (e) => {
-  if (e.target === $('#input-modal')) inputModal.close();
-};
 
 /* NAV */
 const screens = {
@@ -848,7 +747,7 @@ $$('.nav .item').forEach(it=>{
     const to = it.dataset.go;
     Object.values(screens).forEach(s=>s.classList.remove('active'));
     screens[to].classList.add('active');
-    if (to === 'chat') loadChats();
+    if (to === 'chat') loadChatsFromServer();
     if (to === 'plan') {
       renderPlan();
       syncQuickTeamChip();
@@ -856,39 +755,18 @@ $$('.nav .item').forEach(it=>{
   };
 });
 
-/* FOCUS */
-function renderFocus() {
-  const block = $('#focus-current-block');
-  const textEl = $('#focus-current-text');
-  const text = (focus && focus.text || '').trim();
-  if (text) {
-    textEl.textContent = text;
-    textEl.classList.remove('muted');
-    block.classList.remove('empty');
-  } else {
-    textEl.textContent = 'Фокус ещё не задан';
-    textEl.classList.add('muted');
-    block.classList.add('empty');
+/* focus */
+$('#focus-save').onclick = async ()=>{
+  const text = $('#focus-input').value.trim();
+  if (!text) return showToast('Пустой фокус');
+  try{
+    const r = await api('/api/focus','POST',{ text });
+    focus = r.focus;
+    showToast('Фокус сохранён');
+  }catch(e){
+    focus = { text, id:'local_'+Date.now() };
+    showToast('Фокус сохранён (офлайн)');
   }
-}
-$('#focus-edit-btn').onclick = () => {
-  const initial = focus?.text || '';
-  inputModal.open({
-    title: 'Фокус на сегодня',
-    placeholder: 'Например: закрыть отчёт',
-    confirmText: 'Сохранить',
-    initialValue: initial,
-    onConfirm: async (text) => {
-      try{
-        const r = await api('/api/focus','POST',{ text });
-        focus = r.focus || { text };
-      }catch(e){
-        focus = { text, id:'local_'+Date.now() };
-      }
-      renderFocus();
-      showToast('Фокус сохранён');
-    }
-  });
 };
 
 /* quick add */
@@ -1367,53 +1245,41 @@ $('#team-fab-btn').onclick = ()=>{
 
 $('#team-menu-create').onclick = async ()=>{
   teamMenu.classList.remove('open');
-  inputModal.open({
-    title: 'Название команды',
-    placeholder: 'Например: Отдел продаж',
-    confirmText: 'Создать',
-    initialValue: '',
-    onConfirm: async (name) => {
-      try{
-        const resp = await api('/api/team/create','POST', name ? { name } : {});
-        await loadTeamInfo();
-        if (resp.team && resp.team.id){
-          const found = teamList.find(t => t.team_id === resp.team.id);
-          if (found){
-            teamInfo = found;
-            teamDetailOpen = true;
-            teamMembersOpen = false;
-            fillTeamDetail();
-          }
-        }
-        setPlanMode('team');
-        showToast('Команда создана');
-      }catch(e){
-        console.error(e);
-        showToast('Не удалось создать команду');
+  const nameInput = prompt('Введите название команды (например: Отдел продаж)');
+  const name = nameInput && nameInput.trim() ? nameInput.trim() : '';
+  try{
+    const resp = await api('/api/team/create','POST', name ? { name } : {});
+    await loadTeamInfo();
+    if (resp.team && resp.team.id){
+      const found = teamList.find(t => t.team_id === resp.team.id);
+      if (found){
+        teamInfo = found;
+        teamDetailOpen = true;
+        teamMembersOpen = false;
+        fillTeamDetail();
       }
     }
-  });
+    setPlanMode('team');
+    showToast('Команда создана');
+  }catch(e){
+    console.error(e);
+    showToast('Не удалось создать команду');
+  }
 };
 
 $('#team-menu-join').onclick = async ()=>{
   teamMenu.classList.remove('open');
-  inputModal.open({
-    title: 'Вступить по коду',
-    placeholder: 'Код приглашения',
-    confirmText: 'Вступить',
-    initialValue: '',
-    onConfirm: async (token) => {
-      try{
-        await api('/api/team/join','POST',{ token: token.trim() });
-        await loadTeamInfo();
-        setPlanMode('team');
-        showToast('Вы присоединились к команде');
-      }catch(e){
-        console.error(e);
-        showToast('Не удалось вступить в команду');
-      }
-    }
-  });
+  const token = prompt('Введите код приглашения');
+  if (!token || !token.trim()) return;
+  try{
+    await api('/api/team/join','POST',{ token: token.trim() });
+    await loadTeamInfo();
+    setPlanMode('team');
+    showToast('Вы присоединились к команде');
+  }catch(e){
+    console.error(e);
+    showToast('Не удалось вступить в команду');
+  }
 };
 
 $('#team-back').onclick = ()=>{
@@ -1425,27 +1291,21 @@ $('#team-back').onclick = ()=>{
 
 $('#team-rename').onclick = async ()=>{
   if (!teamInfo || !teamInfo.is_owner) return;
-  inputModal.open({
-    title: 'Новое название команды',
-    placeholder: '',
-    confirmText: 'Сохранить',
-    initialValue: teamInfo.name || '',
-    onConfirm: async (name) => {
-      try{
-        await api('/api/team/rename','POST',{
-          team_id: teamInfo.team_id,
-          name: name.trim()
-        });
-        await loadTeamInfo();
-        teamDetailOpen = true;
-        fillTeamDetail();
-        showToast('Название обновлено');
-      }catch(e){
-        console.error(e);
-        showToast('Не удалось переименовать');
-      }
-    }
-  });
+  const nameInput = prompt('Новое название команды', teamInfo.name || '');
+  if (!nameInput || !nameInput.trim()) return;
+  try{
+    await api('/api/team/rename','POST',{
+      team_id: teamInfo.team_id,
+      name: nameInput.trim()
+    });
+    await loadTeamInfo();
+    teamDetailOpen = true;
+    fillTeamDetail();
+    showToast('Название обновлено');
+  }catch(e){
+    console.error(e);
+    showToast('Не удалось переименовать');
+  }
 };
 
 $('#team-code-copy').onclick = async ()=>{
@@ -1478,80 +1338,49 @@ $('#team-members-toggle').onclick = ()=>{
   $('#team-members-arrow').textContent = teamMembersOpen ? '▴' : '▾';
 };
 
-/* CHAT (локальный, как раньше) */
-let chats = [];
-let currentChatId = null;
-function loadChats() {
+/* ======================= CHAT: БД-сессии ======================= */
+
+let chats = [];              // список чатов из БД
+let currentChatId = null;    // id сессии в БД
+let currentMessages = [];    // сообщения текущего чата
+let pendingChatTitle = null; // название для нового чата до первого сообщения
+
+async function loadChatsFromServer() {
   try {
-    const saved = localStorage.getItem('growth_assistant_chats');
-    chats = saved ? JSON.parse(saved) : [];
+    const data = await api('/api/chat?mode=sessions', 'GET');
+    chats = data.sessions || [];
   } catch (e) {
-    console.error('Error loading chats:', e);
+    console.error('loadChatsFromServer error', e);
     chats = [];
   }
   renderChatList();
 }
-function saveChats() {
-  try {
-    localStorage.setItem('growth_assistant_chats', JSON.stringify(chats));
-  } catch (e) {
-    console.error('Error saving chats:', e);
-  }
-}
-function createNewChat(title = 'Новый чат') {
-  const newChat = {
-    id: 'chat_' + Date.now(),
-    title,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    messages: [
-      {
-        role: 'assistant',
-        content: 'Привет! Я твой ассистент по продуктивности. Чем могу помочь?',
-        timestamp: new Date().toISOString()
-      }
-    ]
-  };
-  chats.unshift(newChat);
-  saveChats();
-  renderChatList();
-  return newChat.id;
-}
-function deleteChat(chatId) {
-  chats = chats.filter(chat => chat.id !== chatId);
-  if (currentChatId === chatId) closeChat();
-  saveChats();
-  renderChatList();
-}
-function openChat(chatId) {
-  const chat = chats.find(c => c.id === chatId);
-  if (!chat) return;
-  currentChatId = chatId;
-  $('#current-chat-title').textContent = chat.title;
-  $('#chat-window-overlay').classList.add('active');
-  renderChatMessages(chat.messages);
-  setTimeout(()=>$('#chat-input').focus(),100);
-}
-function closeChat() {
-  currentChatId = null;
-  $('#chat-window-overlay').classList.remove('active');
-  $('#chat-body').innerHTML = '';
-}
+
 function renderChatList() {
   const container = $('#chat-list');
   container.innerHTML = '';
+
+  if (!chats.length) {
+    $('#no-chats-message').style.display = 'block';
+  } else {
+    $('#no-chats-message').style.display = 'none';
+  }
+
   chats.forEach(chat => {
     const chatEl = document.createElement('div');
-    chatEl.className = `chat-item ${currentChatId === chat.id ? 'active' : ''}`;
+    chatEl.className = 'chat-item';
+    const dateStr = chat.updated_at
+      ? new Date(chat.updated_at).toLocaleDateString('ru-RU')
+      : '';
     chatEl.innerHTML = `
-      <button class="chat-delete" onclick="event.stopPropagation(); deleteChat('${chat.id}')">×</button>
       <div class="chat-icon">💬</div>
-      <div class="chat-title">${chat.title}</div>
-      <div class="chat-date">${new Date(chat.updatedAt).toLocaleDateString('ru-RU')}</div>
+      <div class="chat-title">${chat.title || 'Чат'}</div>
+      <div class="chat-date">${dateStr}</div>
     `;
-    chatEl.onclick = () => openChat(chat.id);
+    chatEl.onclick = () => openChat(chat.id, chat.title || 'Чат');
     container.appendChild(chatEl);
   });
+
   const newChatEl = document.createElement('div');
   newChatEl.className = 'chat-item new';
   newChatEl.innerHTML = `
@@ -1560,29 +1389,108 @@ function renderChatList() {
   `;
   newChatEl.onclick = () => $('#new-chat-modal').classList.add('active');
   container.appendChild(newChatEl);
-  $('#no-chats-message').style.display = chats.length === 0 ? 'block' : 'none';
 }
-function renderChatMessages(messages) {
+
+async function openChat(chatId, title) {
+  currentChatId = chatId;
+  pendingChatTitle = null;
+  $('#current-chat-title').textContent = title || 'Чат';
+  $('#chat-window-overlay').classList.add('active');
+  currentMessages = [];
+
+  try {
+    const data = await api('/api/chat?mode=history&chat_id=' + encodeURIComponent(chatId), 'GET');
+    currentMessages = (data.messages || []).map(m => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.content
+    }));
+  } catch (e) {
+    console.error('openChat history error', e);
+    currentMessages = [{
+      role: 'assistant',
+      content: 'Не получилось загрузить историю чата, но я всё равно могу помочь 🙂'
+    }];
+  }
+
+  renderChatMessages();
+  setTimeout(() => $('#chat-input').focus(), 50);
+}
+
+function openNewChatWindow(title) {
+  pendingChatTitle = (title || 'Новый чат').trim() || 'Новый чат';
+  currentChatId = null;
+  currentMessages = [{
+    role: 'assistant',
+    content: 'Привет! Я твой ассистент по продуктивности. Чем могу помочь?'
+  }];
+  $('#current-chat-title').textContent = pendingChatTitle;
+  $('#chat-window-overlay').classList.add('active');
+  renderChatMessages();
+  setTimeout(() => $('#chat-input').focus(), 50);
+}
+
+function closeChat() {
+  currentChatId = null;
+  pendingChatTitle = null;
+  currentMessages = [];
+  $('#chat-window-overlay').classList.remove('active');
+  $('#chat-body').innerHTML = '';
+}
+
+function renderChatMessages() {
   const container = $('#chat-body');
   container.innerHTML = '';
-  messages.forEach(msg => {
+  currentMessages.forEach(msg => {
     const bubble = document.createElement('div');
-    bubble.className = `bubble ${msg.role === 'user' ? 'me' : 'bot'}`;
+    bubble.className = 'bubble ' + (msg.role === 'user' ? 'me' : 'bot');
     bubble.textContent = msg.content;
     container.appendChild(bubble);
   });
   container.scrollTop = container.scrollHeight;
 }
-function addMessageToChat(role, content) {
-  if (!currentChatId) return;
-  const chat = chats.find(c => c.id === currentChatId);
-  if (!chat) return;
-  const newMessage = { role, content, timestamp: new Date().toISOString() };
-  chat.messages.push(newMessage);
-  chat.updatedAt = new Date().toISOString();
-  saveChats();
-  renderChatMessages(chat.messages);
+
+function addMessage(role, content) {
+  currentMessages.push({ role, content, timestamp: new Date().toISOString() });
+  renderChatMessages();
 }
+
+async function sendChatMessage() {
+  const text = $('#chat-input').value.trim();
+  if (!text) return;
+
+  if (!currentChatId && !pendingChatTitle) {
+    // если вдруг пользователь нажал "Отправить" без явного создания чата
+    pendingChatTitle = 'Новый чат';
+  }
+
+  $('#chat-input').value = '';
+  addMessage('user', text);
+
+  try {
+    const payload = { text };
+    if (currentChatId) payload.chat_id = currentChatId;
+    if (!currentChatId && pendingChatTitle) payload.chat_title = pendingChatTitle;
+
+    const r = await api('/api/chat', 'POST', payload);
+    const replyText = r.reply || 'Я обработал запрос и готов помочь дальше!';
+    addMessage('assistant', replyText);
+
+    if (r.chat_id && !currentChatId) {
+      currentChatId = r.chat_id;
+    }
+    // обновляем список чатов (для синка между устройствами)
+    loadChatsFromServer();
+  } catch (e) {
+    console.error('sendChatMessage error', e);
+    addMessage(
+      'assistant',
+      'Сейчас не могу подключиться к серверу. Но могу помочь офлайн: ' +
+      'разбить задачи на шаги, предложить план и техники продуктивности.'
+    );
+  }
+}
+
+/* CHAT handlers */
 $('#close-chat').onclick = closeChat;
 $('#create-first-chat').onclick = () => { $('#new-chat-modal').classList.add('active'); };
 $('#cancel-new-chat').onclick = () => {
@@ -1591,50 +1499,13 @@ $('#cancel-new-chat').onclick = () => {
 };
 $('#confirm-new-chat').onclick = () => {
   const title = $('#new-chat-title').value.trim() || 'Новый чат';
-  const newChatId = createNewChat(title);
   $('#new-chat-modal').classList.remove('active');
   $('#new-chat-title').value = '';
-  openChat(newChatId);
+  openNewChatWindow(title);
   showToast('Чат создан');
 };
-$('#chat-send').onclick = async () => {
-  const text = $('#chat-input').value.trim();
-  if (!text) return;
-
-  if (!currentChatId) {
-    const newChatId = createNewChat('Новый чат');
-    openChat(newChatId);
-  }
-
-  const chat = chats.find(c => c.id === currentChatId);
-  const history = chat
-    ? chat.messages.map(m => ({
-        role: m.role === 'assistant' ? 'assistant' : 'user',
-        content: m.content
-      })).slice(-16)
-    : [];
-
-  $('#chat-input').value = '';
-  addMessageToChat('user', text);
-
-  try {
-    const r = await api('/api/chat', 'POST', {
-      text,
-      chat_id: currentChatId,
-      history
-    });
-    addMessageToChat('assistant', r.reply || 'Я обработал ваш запрос и готов помочь!');
-  } catch (e) {
-    addMessageToChat(
-      'assistant',
-      'В настоящее время я не могу подключиться к серверу. Вот что я могу сделать офлайн:\n\n' +
-      '• Помочь разбить большие задачи на шаги\n' +
-      '• Подсказать методы тайм-менеджмента\n' +
-      '• Составить примерный план выполнения задач'
-    );
-  }
-};
-$('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('#chat-send').click(); });
+$('#chat-send').onclick = sendChatMessage;
+$('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChatMessage(); });
 $('#new-chat-modal').onclick = (e) => { if (e.target === $('#new-chat-modal')) $('#new-chat-modal').classList.remove('active'); };
 $('#chat-window-overlay').onclick = (e) => { if (e.target === $('#chat-window-overlay')) closeChat(); };
 
@@ -1657,8 +1528,8 @@ async function loadAll(){
   try{
     const f = await api('/api/focus','GET');
     focus = f.focus || null;
+    $('#focus-input').value = focus?.text || '';
   }catch(e){}
-  renderFocus();
 
   try{
     const t = await api('/api/tasks','GET');
