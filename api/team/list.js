@@ -12,12 +12,20 @@ export default async function handler(req, res) {
   }
   const userId = await getOrCreateUserId(tgId);
 
-  // ВАЖНО: берём ВСЕ команды, где пользователь есть в team_members
+  // ВСЕ команды, где пользователь состоит + флаг, владелец ли он
   const r = await q(
     `
-    SELECT t.id,
-           t.name,
-           t.join_token AS join_code
+    SELECT
+      t.id,
+      t.name,
+      t.join_token AS join_code,
+      (
+        SELECT user_id
+        FROM team_members m2
+        WHERE m2.team_id = t.id
+        ORDER BY m2.joined_at ASC
+        LIMIT 1
+      ) = $1 AS is_owner
     FROM teams t
     JOIN team_members m ON m.team_id = t.id
     WHERE m.user_id = $1
