@@ -1,121 +1,213 @@
 // api/chat.js
-// Growth Assistant — LLM-чат с инструментами
+// Growth Assistant — LLM-чат с хранением в БД, привязанным к tg_id
 
-import { getClient } from './_db.js';
+import { ensureSchema, q } from './_db.js';
+import { getTgId, getOrCreateUserId } from './_utils.js';
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
+  await ensureSchema();
+
+  const tgId = getTgId(req);
+  if (!tgId) {
+    return res.status(400).json({ ok: false, error: 'tg_id required' });
+  }
+  const userId = await getOrCreateUserId(tgId);
+
+  if (req.method === 'GET') {
+    return handleGet(req, res, userId);
   }
 
+  if (req.method === 'POST') {
+    return handlePost(req, res, tgId, userId);
+  }
+
+  res.setHeader('Allow', 'GET, POST');
+  return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
+}
+
+/* ========================= GET: sessions / history ========================= */
+
+async function handleGet(req, res, userId) {
+  const mode = (req.query?.mode || 'sessions').toString();
+
+  // Список чатов пользователя
+  if (mode === 'sessions') {
+    const { rows } = await q(
+      `
+      SELECT
+        s.id,
+        s.title,
+        s.created_at,
+        s.updated_at,
+        (
+          SELECT m.content
+          FROM chat_messages m
+          WHERE m.session_id = s.id
+          ORDER BY m.id DESC
+          LIMIT 1
+        ) AS last_message
+      FROM chat_sessions s
+      WHERE s.user_id = $1
+      ORDER BY s.updated_at DESC
+      LIMIT 50
+      `,
+      [userId],
+    );
+
+    return res.json({ ok: true, sessions: rows });
+  }
+
+  // История конкретного чата
+  if (mode === 'history') {
+    const chatId = Number(req.query?.chat_id);
+    if (!chatId) {
+      return res.status(400).json({ ok: false, error: 'chat_id required' });
+    }
+
+    // проверяем, что чат принадлежит пользователю
+    const own = await q(
+      `SELECT 1 FROM chat_sessions WHERE id = $1 AND user_id = $2`,
+      [chatId, userId],
+    );
+    if (!own.rows.length) {
+      return res.status(404).json({ ok: false, error: 'not_found' });
+    }
+
+    const { rows } = await q(
+      `
+      SELECT id, role, content, created_at
+      FROM chat_messages
+      WHERE session_id = $1
+      ORDER BY id ASC
+      LIMIT 200
+      `,
+      [chatId],
+    );
+
+    return res.json({ ok: true, messages: rows });
+  }
+
+  return res.status(400).json({ ok: false, error: 'unknown_mode' });
+}
+
+/* ========================= POST: сообщение в чат ========================= */
+
+async function handlePost(req, res, tgId, userId) {
   try {
-    const { text, message, tg_id, chat_id, history } = await readJson(req);
-    const userText = (text || message || '').toString().trim();
-    if (!userText) {
+    const body = await readJson(req);
+    const text = (body.text || body.message || '').toString().trim();
+    if (!text) {
       return res.status(400).json({ ok: false, error: 'Empty message' });
     }
 
-    const tgIdHeader = (req.headers['x-tg-id'] || '').toString();
-    const tgId = (tg_id || tgIdHeader || '').toString();
-
-    const proto   = (req.headers['x-forwarded-proto'] || 'https').toString();
-    const host    = (req.headers['x-forwarded-host']  || req.headers.host || '').toString();
+    const proto = (req.headers['x-forwarded-proto'] || 'https').toString();
+    const host  = (req.headers['x-forwarded-host']  || req.headers.host || '').toString();
     const baseUrl = `${proto}://${host}`;
 
-    // контекст пользователя (фокус + задачи)
-    const ctx = await getContextSnapshot(baseUrl, tgId);
+    let chatId = Number(body.chat_id || 0) || null;
+    const explicitTitle = (body.chat_title || '').toString().trim();
 
-    // системный промпт
-    const sys = buildSystemPrompt(ctx);
+    // 1) Гарантируем, что сессия существует и принадлежит пользователю
+    if (chatId) {
+      const own = await q(
+        `SELECT id FROM chat_sessions WHERE id = $1 AND user_id = $2`,
+        [chatId, userId],
+      );
+      if (!own.rows.length) {
+        // чужой / несуществующий чат — создаём новый
+        chatId = null;
+      }
+    }
 
-    // история из фронта (последние 16 сообщений)
-    const safeHistory = Array.isArray(history)
-      ? history.slice(-16).map(m => ({
-          role: m.role === 'assistant' ? 'assistant' : 'user',
-          content: (m.content || '').toString()
-        }))
-      : [];
+    if (!chatId) {
+      const title = explicitTitle || makeTitleFromText(text);
+      const ins = await q(
+        `
+        INSERT INTO chat_sessions(user_id, title)
+        VALUES ($1, $2)
+        RETURNING id
+        `,
+        [userId, title],
+      );
+      chatId = ins.rows[0].id;
+    }
 
-    const messages = [
-      { role: 'system', content: sys },
-      ...safeHistory,
-      { role: 'user', content: userText }
-    ];
-
-    // запускаем агента
-    const replyText = await runAgent(messages, baseUrl, tgId);
-
-    // мягко логируем переписку в БД (но ошибки не ломают ответ)
-    logChatToDb(tgId, chat_id, userText, replyText).catch(e =>
-      console.error('[chat] log error:', e)
+    // 2) Записываем пользовательское сообщение
+    await q(
+      `
+      INSERT INTO chat_messages(session_id, role, content)
+      VALUES ($1, 'user', $2)
+      `,
+      [chatId, text],
     );
 
-    return res.status(200).json({
+    // 3) Снимаем контекст задач/фокуса + историю чата из БД
+    const ctx = await getContextSnapshot(baseUrl, tgId);
+    const historyRows = await q(
+      `
+      SELECT role, content
+      FROM chat_messages
+      WHERE session_id = $1
+      ORDER BY id ASC
+      LIMIT 30
+      `,
+      [chatId],
+    );
+    const dialog = historyRows.rows.map(r => ({
+      role: r.role === 'assistant' ? 'assistant' : 'user',
+      content: r.content,
+    }));
+
+    // 4) Запускаем агента (LLM + функции)
+    const reply = await runAgent(dialog, baseUrl, tgId, ctx);
+
+    // 5) Сохраняем ответ ассистента
+    const finalReply = reply || 'Готово.';
+    await q(
+      `
+      INSERT INTO chat_messages(session_id, role, content)
+      VALUES ($1, 'assistant', $2)
+      `,
+      [chatId, finalReply],
+    );
+    await q(
+      `UPDATE chat_sessions SET updated_at = now() WHERE id = $1`,
+      [chatId],
+    );
+
+    return res.json({
       ok: true,
-      reply: replyText || 'Готово.',
-      chat_id: chat_id || null
+      reply: finalReply,
+      chat_id: chatId,
     });
   } catch (e) {
     console.error('[chat] error:', e);
-    // не даём фронту свалиться — возвращаем «мягкий» ответ
     return res.status(200).json({
       ok: true,
       reply:
-        'Сейчас сервер LLM недоступен 😅 Но я всё равно могу помочь с планированием: ' +
-        'сформулируй задачу и срок, а я подскажу, как её разбить и куда лучше поставить.',
-      chat_id: null
+        'Я на секунду задумался 😅 Скажи, что сделать: «добавь задачу … завтра в 15:00», «фокус: …», «покажи задачи на неделю», «удали задачу …».',
+      chat_id: null,
     });
   }
 }
 
-/* ============ логирование чата в БД (best effort) ============ */
+/* ========================= Агент (LLM + функции) ========================= */
 
-async function logChatToDb(tgId, chatId, userText, assistantText) {
-  if (!tgId || !chatId) return;
-
-  const db = await getClient();
-
-  // находим или создаём пользователя
-  const uRes = await db.query(
-    `INSERT INTO users (tg_id)
-     VALUES ($1)
-     ON CONFLICT (tg_id) DO UPDATE SET tg_id = EXCLUDED.tg_id
-     RETURNING id`,
-    [Number(tgId)]
-  );
-  const userId = uRes.rows[0].id;
-
-  // убеждаемся, что поток (чат) существует
-  const thRes = await db.query(
-    `SELECT id FROM chat_threads WHERE id = $1 AND user_id = $2`,
-    [chatId, userId]
-  );
-  if (!thRes.rows.length) {
-    // если такого чата нет — тихо выходим, не создаём новый
-    return;
-  }
-
-  await db.query(
-    `INSERT INTO chat_messages (thread_id, role, content)
-     VALUES ($1, 'user', $2),
-            ($1, 'assistant', $3)`,
-    [chatId, userText, assistantText]
-  );
-}
-
-/* ========================= Агент и инструменты ========================= */
-
-async function runAgent(messages, baseUrl, tgId) {
+async function runAgent(dialog, baseUrl, tgId, ctxFromOutside = null) {
   const apiKey = process.env.OPENAI_API_KEY || '';
-  if (!apiKey) {
-    // без ключа просто возвращаем заглушку
-    return 'LLM сейчас недоступен (нет ключа API). Можем всё равно накидать план задач вручную 👍';
-  }
+  const model  = 'gpt-4o-mini';
 
   const OpenAI = (await import('openai')).default;
   const openai = new OpenAI({ apiKey });
-  const model  = 'gpt-4o-mini';
+
+  const ctx = ctxFromOutside || (await getContextSnapshot(baseUrl, tgId));
+  const sys = buildSystemPrompt(ctx);
+
+  // собираем сообщения: system + история из БД
+  const messages = [
+    { role: 'system', content: sys },
+    ...dialog,
+  ];
 
   const tools = [
     fnDef('add_task', 'Создать новую задачу', {
@@ -154,13 +246,16 @@ async function runAgent(messages, baseUrl, tgId) {
   ];
 
   let steps = 0;
-  while (steps < 3) {
+  const maxSteps = 3;
+  const msgs = [...messages];
+
+  while (steps < maxSteps) {
     const r = await openai.chat.completions.create({
       model,
       temperature: 0.2,
-      messages,
+      messages: msgs,
       tools,
-      tool_choice: 'auto'
+      tool_choice: 'auto',
     });
 
     const msg = r.choices?.[0]?.message;
@@ -168,7 +263,7 @@ async function runAgent(messages, baseUrl, tgId) {
 
     const calls = msg.tool_calls || [];
     if (calls.length) {
-      messages.push({ role: 'assistant', tool_calls: calls, content: msg.content || '' });
+      msgs.push({ role: 'assistant', tool_calls: calls, content: msg.content || '' });
 
       for (const c of calls) {
         const name = c.function?.name;
@@ -193,10 +288,10 @@ async function runAgent(messages, baseUrl, tgId) {
           toolResult = JSON.stringify({ ok: false, error: String(e?.message || e) });
         }
 
-        messages.push({
+        msgs.push({
           role: 'tool',
           tool_call_id: c.id,
-          content: toolResult
+          content: toolResult,
         });
       }
 
@@ -209,10 +304,16 @@ async function runAgent(messages, baseUrl, tgId) {
     break;
   }
 
-  return 'Готово. Можешь сказать: «добавь задачу ... завтра в 10:00» или «покажи задачи на неделю».';
+  return `Готово. Если нужно — скажи «покажи задачи на неделю» или «добавь задачу … завтра в 10:00».`;
 }
 
-/* ===== инструменты (как у тебя были) ===== */
+/* ========================= Инструменты чата ========================= */
+
+function headersJson(tgId) {
+  const h = { 'Content-Type': 'application/json' };
+  if (tgId) h['X-TG-ID'] = String(tgId);
+  return h;
+}
 
 async function tool_add_task(baseUrl, tgId, args) {
   const title = (args?.title || '').toString().slice(0, 120);
@@ -221,7 +322,7 @@ async function tool_add_task(baseUrl, tgId, args) {
   const r = await fetch(`${baseUrl}/api/tasks`, {
     method: 'POST',
     headers: headersJson(tgId),
-    body: JSON.stringify({ title, due_ts })
+    body: JSON.stringify({ title, due_ts }),
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) return JSON.stringify({ ok: false, error: j?.error || String(r.status) });
@@ -235,7 +336,7 @@ async function tool_set_focus(baseUrl, tgId, args) {
   const r = await fetch(`${baseUrl}/api/focus`, {
     method: 'POST',
     headers: headersJson(tgId),
-    body: JSON.stringify({ text })
+    body: JSON.stringify({ text }),
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) return JSON.stringify({ ok: false, error: j?.error || String(r.status) });
@@ -255,11 +356,13 @@ async function tool_list_tasks(baseUrl, tgId, args) {
   } else if (period === 'overdue') {
     filtered = items.filter(t => t.due_ts != null && t.due_ts < now && !t.is_done);
   } else if (range) {
-    filtered = items.filter(t => t.due_ts != null && t.due_ts >= range.start && t.due_ts <= range.end);
+    filtered = items.filter(
+      t => t.due_ts != null && t.due_ts >= range.start && t.due_ts <= range.end,
+    );
   }
 
   filtered.sort(
-    (a, b) => a.is_done - b.is_done || (a.due_ts ?? 1e18) - (b.due_ts ?? 1e18)
+    (a, b) => (a.is_done - b.is_done) || ((a.due_ts ?? 1e18) - (b.due_ts ?? 1e18)),
   );
   return JSON.stringify({ ok: true, period, items: filtered.slice(0, 50) });
 }
@@ -274,7 +377,7 @@ async function tool_delete_task(baseUrl, tgId, args) {
     return JSON.stringify({
       ok: false,
       error: 'ambiguous',
-      sample: matched.slice(0, 5).map(t => t.title)
+      sample: matched.slice(0, 5).map(t => t.title),
     });
   }
 
@@ -284,10 +387,11 @@ async function tool_delete_task(baseUrl, tgId, args) {
     {
       method: 'POST',
       headers: headersJson(tgId),
-      body: JSON.stringify({})
-    }
+      body: JSON.stringify({}),
+    },
   );
-  if (!r.ok) return JSON.stringify({ ok: false, error: String(await safeErr(r)) });
+  const err = await safeErr(r);
+  if (!r.ok) return JSON.stringify({ ok: false, error: err });
   return JSON.stringify({ ok: true, deleted: t.title });
 }
 
@@ -301,7 +405,7 @@ async function tool_complete_task(baseUrl, tgId, args) {
     return JSON.stringify({
       ok: false,
       error: 'ambiguous',
-      sample: matched.slice(0, 5).map(t => t.title)
+      sample: matched.slice(0, 5).map(t => t.title),
     });
   }
 
@@ -311,14 +415,15 @@ async function tool_complete_task(baseUrl, tgId, args) {
     {
       method: 'POST',
       headers: headersJson(tgId),
-      body: JSON.stringify({})
-    }
+      body: JSON.stringify({}),
+    },
   );
-  if (!r.ok) return JSON.stringify({ ok: false, error: String(await safeErr(r)) });
+  const err = await safeErr(r);
+  if (!r.ok) return JSON.stringify({ ok: false, error: err });
   return JSON.stringify({ ok: true, completed: t.title });
 }
 
-/* ===== контекст пользователя, утилиты (как раньше) ===== */
+/* ========================= Контекст пользователя ========================= */
 
 async function getContextSnapshot(baseUrl, tgId) {
   const ctx = { focus: null, tasks: [] };
@@ -329,7 +434,6 @@ async function getContextSnapshot(baseUrl, tgId) {
       ctx.focus = j.focus || null;
     }
   } catch {}
-
   try {
     const t = await fetch(`${baseUrl}/api/tasks`, { headers: headersJson(tgId) });
     if (t.ok) {
@@ -337,7 +441,6 @@ async function getContextSnapshot(baseUrl, tgId) {
       ctx.tasks = (j.items || []).slice(0, 50);
     }
   } catch {}
-
   return ctx;
 }
 
@@ -353,28 +456,31 @@ function buildSystemPrompt(ctx) {
     .join('\n');
 
   return [
-    'Ты — деловой ассистент Growth Assistant. Отвечай кратко и по делу, структурируй.',
-    'Если нужно — используй функции (инструменты), чтобы создавать/показывать/закрывать/удалять задачи и изменять фокус.',
-    'Формат финального ответа: 1–3 предложения + маркированный список до 5 пунктов (если уместно).',
-    'Избегай воды. Предлагай конкретные сроки. Всегда считай, что сейчас реальная текущая дата (по системным часам).',
+    'Ты — деловой ассистент Growth Assistant в Telegram Mini App.',
+    'Отвечай по-деловому, дружелюбно, но без воды.',
+    'Структура ответа: 1–3 предложения + при необходимости маркированный список до 5 пунктов.',
+    'Если пользователь просит создать / изменить задачи или фокус — используй инструменты.',
+    'Обязательно учитывай контекст: текущий фокус и верхние задачи.',
+    'Если пользователь говорит «сделай напоминание», «создай задачу к вечеру» и т.п. — сам предлагай конкретное время.',
     '',
     'Контекст пользователя:',
     focusStr,
-    topTasks ? `ЗАДАЧИ:\n${topTasks}` : 'ЗАДАЧ нет'
+    topTasks ? `ЗАДАЧИ:\n${topTasks}` : 'ЗАДАЧ нет',
   ].join('\n');
 }
 
-/* общие утилиты */
+/* ========================= Утилиты ========================= */
 
 function fnDef(name, description, parameters) {
   return { type: 'function', function: { name, description, parameters } };
 }
-function safeParseJson(s) { try { return JSON.parse(s || '{}'); } catch { return {}; } }
 
-function headersJson(tgId) {
-  const h = { 'Content-Type': 'application/json' };
-  if (tgId) h['X-TG-ID'] = String(tgId);
-  return h;
+function safeParseJson(s) {
+  try {
+    return JSON.parse(s || '{}');
+  } catch {
+    return {};
+  }
 }
 
 async function readJson(req) {
@@ -385,6 +491,7 @@ async function readJson(req) {
     return {};
   }
 }
+
 function getRawBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -403,29 +510,45 @@ async function safeErr(r) {
   }
 }
 
-function startOfDay(ts) { const d = new Date(ts); d.setHours(0,0,0,0); return d.getTime(); }
-function endOfDay(ts)   { const d = new Date(ts); d.setHours(23,59,59,999); return d.getTime(); }
-function addDays(ts, n) { const d = new Date(ts); d.setDate(d.getDate()+n); return d.getTime(); }
+function startOfDay(ts) {
+  const d = new Date(ts);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+function endOfDay(ts) {
+  const d = new Date(ts);
+  d.setHours(23, 59, 59, 999);
+  return d.getTime();
+}
+function addDays(ts, n) {
+  const d = new Date(ts);
+  d.setDate(d.getDate() + n);
+  return d.getTime();
+}
 
 function calcRange(period) {
   const now = Date.now();
-  if (period === 'today')    return { start: startOfDay(now), end: endOfDay(now) };
-  if (period === 'tomorrow') { const t = addDays(now, 1); return { start: startOfDay(t), end: endOfDay(t) }; }
-  if (period === 'week')     return { start: startOfDay(now), end: endOfDay(addDays(now, 7)) };
+  if (period === 'today') return { start: startOfDay(now), end: endOfDay(now) };
+  if (period === 'tomorrow') {
+    const t = addDays(now, 1);
+    return { start: startOfDay(t), end: endOfDay(t) };
+  }
+  if (period === 'week') return { start: startOfDay(now), end: endOfDay(addDays(now, 7)) };
   return null;
 }
 function normPeriod(p) {
   const v = (p || '').toString().toLowerCase();
-  if (['today','tomorrow','week','backlog','overdue','all'].includes(v)) return v;
+  if (['today', 'tomorrow', 'week', 'backlog', 'overdue', 'all'].includes(v)) return v;
   return 'today';
 }
 
 function fmtDate(ms) {
   try {
-    const d = new Date(ms);
-    return d.toLocaleString('ru-RU', {
-      day:'2-digit', month:'2-digit',
-      hour:'2-digit', minute:'2-digit'
+    return new Date(ms).toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   } catch {
     return '';
@@ -455,4 +578,11 @@ function fuzzyFind(items, q) {
 
 function tidy(s) {
   return s.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function makeTitleFromText(text) {
+  const t = text.trim().replace(/\s+/g, ' ');
+  if (!t) return 'Новый чат';
+  if (t.length <= 40) return t;
+  return t.slice(0, 37) + '…';
 }
