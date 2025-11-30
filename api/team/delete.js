@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ ok: false, error: 'team_id required' });
   }
 
-  // проверяем, что пользователь — первый участник (создатель)
+  // только создатель (первый участник) может удалить команду
   const own = await q(
     `
     SELECT user_id
@@ -35,6 +35,5 @@ export default async function handler(req, res) {
 
   await q(`DELETE FROM teams WHERE id = $1`, [teamId]);
 
-  // благодаря FK ON DELETE CASCADE/SET NULL подтянутся остальные записи
   res.json({ ok: true });
 }
