@@ -139,6 +139,34 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .badge.dead{color:#991b1b;border-color:#ef4444;background:#fef2f2}
 .badge.team{margin-left:6px; font-size:10px; background:#eef2ff; border-color:#c7d2fe; color:#4f46e5}
 
+/* FOCUS CARD */
+.focus-current{
+  border-radius:16px;
+  border:1px dashed #c7d2fe;
+  background:#f5f7ff;
+  padding:10px 12px;
+  margin-bottom:10px;
+}
+.focus-current-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:4px;
+  font-size:11px;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.focus-current-text{
+  font-weight:600;
+  font-size:14px;
+}
+.focus-edit-fields{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
 /* CHAT – список чатов */
 .chat-container{display:flex;flex-direction:column;gap:14px}
 .chat-list{
@@ -400,10 +428,23 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   <section id="screen-home" class="active grid-2">
     <div class="card">
       <h3>Фокус</h3>
-      <label>Самое главное сегодня</label>
-      <div style="display:flex; gap:10px; flex-wrap:wrap">
-        <input id="focus-input" class="input" type="text" placeholder="Например: закрыть отчёт" />
-        <button id="focus-save" class="btn" style="white-space:nowrap">Сохранить</button>
+
+      <!-- текущий фокус -->
+      <div id="focus-current" class="focus-current" style="display:none">
+        <div class="focus-current-top">
+          <span>Текущий фокус</span>
+          <button id="focus-edit-btn" class="btn secondary icon" title="Изменить">✎</button>
+        </div>
+        <div id="focus-current-text" class="focus-current-text"></div>
+      </div>
+
+      <!-- режим редактирования -->
+      <div id="focus-edit-row">
+        <label id="focus-edit-label">Самое главное сегодня</label>
+        <div class="focus-edit-fields">
+          <input id="focus-input" class="input" type="text" placeholder="Например: закрыть отчёт" />
+          <button id="focus-save" class="btn" style="white-space:nowrap">Сохранить</button>
+        </div>
       </div>
     </div>
 
@@ -713,6 +754,7 @@ async function api(path, method='GET', body=null) {
 /* global state */
 let tasks = [];
 let focus = null;
+let focusEditing = false;
 let quickPrio = 'today';
 
 let planMode   = 'my';
@@ -755,16 +797,51 @@ $$('.nav .item').forEach(it=>{
   };
 });
 
-/* focus */
+/* FOCUS UI */
+function renderFocus(){
+  const curBlock = $('#focus-current');
+  const curText  = $('#focus-current-text');
+  const editRow  = $('#focus-edit-row');
+  const label    = $('#focus-edit-label');
+
+  if (focus && focus.text){
+    curBlock.style.display = 'block';
+    curText.textContent = focus.text;
+    if (focusEditing){
+      editRow.style.display = 'block';
+      label.textContent = 'Обновить фокус на сегодня';
+      $('#focus-input').value = focus.text;
+    } else {
+      editRow.style.display = 'none';
+    }
+  } else {
+    curBlock.style.display = 'none';
+    editRow.style.display = 'block';
+    label.textContent = 'Самое главное сегодня';
+  }
+}
+
+$('#focus-edit-btn').onclick = () => {
+  focusEditing = true;
+  renderFocus();
+  const inp = $('#focus-input');
+  inp.focus();
+  inp.select();
+};
+
 $('#focus-save').onclick = async ()=>{
   const text = $('#focus-input').value.trim();
   if (!text) return showToast('Пустой фокус');
   try{
     const r = await api('/api/focus','POST',{ text });
     focus = r.focus;
+    focusEditing = false;
+    renderFocus();
     showToast('Фокус сохранён');
   }catch(e){
     focus = { text, id:'local_'+Date.now() };
+    focusEditing = false;
+    renderFocus();
     showToast('Фокус сохранён (офлайн)');
   }
 };
@@ -1322,7 +1399,10 @@ $('#team-delete').onclick = async ()=>{
   if (!teamInfo || !teamInfo.is_owner) return;
   if (!confirm('Расформировать команду "'+(teamInfo.name||'')+'"?')) return;
   try{
-    await api('/api/team/delete','POST',{ team_id: teamInfo.team_id });
+    await api('/api/team/delete','POST',{
+      team_id: teamInfo.team_id,
+      id:      teamInfo.team_id
+    });
     await loadTeamInfo();
     teamDetailOpen = false;
     showToast('Команда расформирована');
@@ -1347,7 +1427,7 @@ let pendingChatTitle = null; // название для нового чата д
 
 async function loadChatsFromServer() {
   try {
-    const data = await api('/api/chat?mode=sessions', 'GET');
+    const data = await api('/api/chat_sessions','GET');
     chats = data.sessions || [];
   } catch (e) {
     console.error('loadChatsFromServer error', e);
@@ -1399,7 +1479,7 @@ async function openChat(chatId, title) {
   currentMessages = [];
 
   try {
-    const data = await api('/api/chat?mode=history&chat_id=' + encodeURIComponent(chatId), 'GET');
+    const data = await api('/api/chat_history?chat_id=' + encodeURIComponent(chatId),'GET');
     currentMessages = (data.messages || []).map(m => ({
       role: m.role === 'assistant' ? 'assistant' : 'user',
       content: m.content
@@ -1435,6 +1515,8 @@ function closeChat() {
   currentMessages = [];
   $('#chat-window-overlay').classList.remove('active');
   $('#chat-body').innerHTML = '';
+  // обновим список чатов, чтобы новый чат появился
+  loadChatsFromServer().catch(()=>{});
 }
 
 function renderChatMessages() {
@@ -1459,7 +1541,6 @@ async function sendChatMessage() {
   if (!text) return;
 
   if (!currentChatId && !pendingChatTitle) {
-    // если вдруг пользователь нажал "Отправить" без явного создания чата
     pendingChatTitle = 'Новый чат';
   }
 
@@ -1478,8 +1559,7 @@ async function sendChatMessage() {
     if (r.chat_id && !currentChatId) {
       currentChatId = r.chat_id;
     }
-    // обновляем список чатов (для синка между устройствами)
-    loadChatsFromServer();
+    loadChatsFromServer(); // после ответа обновляем список сессий
   } catch (e) {
     console.error('sendChatMessage error', e);
     addMessage(
@@ -1528,13 +1608,17 @@ async function loadAll(){
   try{
     const f = await api('/api/focus','GET');
     focus = f.focus || null;
-    $('#focus-input').value = focus?.text || '';
-  }catch(e){}
+  }catch(e){
+    focus = null;
+  }
+  renderFocus();
 
   try{
     const t = await api('/api/tasks','GET');
     tasks = t.items || [];
-  }catch(e){}
+  }catch(e){
+    tasks = [];
+  }
 
   await loadTeamInfo();
   renderHome();
