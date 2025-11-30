@@ -7,9 +7,7 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
-/* ===================== */
-/*       DESIGN TOKENS   */
-/* ===================== */
+/* ==== дизайн токены, базовые стили (как раньше) ==== */
 :root{
   --ink: #0E1220;
   --muted:#6B7280;
@@ -48,9 +46,7 @@ body{
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ===================== */
-/*        APP BAR        */
-/* ===================== */
+/* APPBAR */
 .appbar{
   position:sticky; top:0; z-index:20;
   padding: calc(8px + var(--safe-top)) 18px 12px;
@@ -65,9 +61,7 @@ body{
 }
 .appbar .sub{color:var(--muted); font-size:12px}
 
-/* ===================== */
-/*        LAYOUT         */
-/* ===================== */
+/* LAYOUT */
 .container{max-width:940px;margin:0 auto;padding:16px 14px 110px}
 .card{
   background:var(--card);
@@ -86,9 +80,7 @@ section.active{display:grid}
   .grid-2{grid-template-columns:1.15fr .85fr}
 }
 
-/* ===================== */
-/*   INPUTS & BUTTONS    */
-/* ===================== */
+/* INPUTS/BUTTONS */
 label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .input, input[type="text"], input[type="datetime-local"], select{
   width:100%; background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px 14px; outline:none;
@@ -112,9 +104,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .btn.ghost{background:rgba(91,108,255,.10); color:var(--brand); box-shadow:none}
 .btn.icon{padding:8px 10px; border-radius:999px; min-width:34px; display:inline-flex; align-items:center; justify-content:center}
 
-/* ===================== */
-/*       CHIPS           */
-/* ===================== */
+/* CHIPS */
 .seg{display:flex;gap:8px;flex-wrap:wrap}
 .seg .chip,
 .plan-filters .chip{
@@ -135,9 +125,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   box-shadow:0 8px 22px rgba(91,108,255,.28)
 }
 
-/* ===================== */
-/*         LISTS         */
-/* ===================== */
+/* TASK LIST */
 .list{display:flex;flex-direction:column;gap:10px}
 .task{
   display:flex;align-items:flex-start;gap:10px;padding:10px 10px;
@@ -151,9 +139,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .badge.dead{color:#991b1b;border-color:#ef4444;background:#fef2f2}
 .badge.team{margin-left:6px; font-size:10px; background:#eef2ff; border-color:#c7d2fe; color:#4f46e5}
 
-/* ===================== */
-/*      CHAT SYSTEM      */
-/* ===================== */
+/* CHAT (как было) */
 .chat-container{display:flex;flex-direction:column;gap:14px}
 .chat-list{
   display:grid;
@@ -207,7 +193,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 }
 .chat-item:hover .chat-delete{opacity:1}
 
-/* ОКНО ЧАТА */
+/* CHAT WINDOW */
 .chat-window-overlay{
   display:none;position:fixed;top:0;left:0;right:0;bottom:0;
   background:rgba(0,0,0,.5);z-index:1000;
@@ -250,7 +236,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   border-top:1px solid var(--line);background:#fff;flex-shrink:0;
 }
 
-/* Modal */
+/* MODAL */
 .modal{
   display:none;position:fixed;top:0;left:0;right:0;bottom:0;
   background:rgba(0,0,0,.5);z-index:1100;align-items:center;justify-content:center;
@@ -262,9 +248,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 }
 .modal-title{margin:0 0 16px 0;font-size:18px;font-weight:700}
 
-/* ===================== */
-/*      BOTTOM NAV       */
-/* ===================== */
+/* NAV */
 .nav{
   position:fixed;left:0;right:0;bottom:0;z-index:25;
   padding:10px 10px calc(10px + var(--safe-bottom));
@@ -284,9 +268,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   filter:drop-shadow(0 4px 8px rgba(91,108,255,.35))
 }
 
-/* ===================== */
-/*         TOAST         */
-/* ===================== */
+/* TOAST */
 .toast{
   position:fixed;left:50%;bottom:calc(78px + var(--safe-bottom));
   transform:translateX(-50%);background:#111827;color:#fff;
@@ -297,9 +279,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace}
 .muted{color:var(--muted)}
 
-/* ===================== */
-/*       PROFILE         */
-/* ===================== */
+/* PROFILE */
 .profile-section{margin-bottom:20px}
 .profile-section h4{margin:0 0 12px 0;font-size:15px;color:var(--ink)}
 .profile-actions{display:flex;flex-direction:column;gap:8px}
@@ -317,9 +297,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 }
 .lang-btn.active{background:var(--brand);color:#fff;border-color:var(--brand)}
 
-/* ===================== */
-/*        PLAN UI        */
-/* ===================== */
+/* PLAN UI */
 .plan-top{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .plan-mode{display:flex;gap:6px}
 .plan-mode .pill{
@@ -375,7 +353,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .team-members-box ul{margin:4px 0 0 14px;padding:0}
 .team-members-box li{font-size:13px;margin-bottom:2px}
 
-/* FAB для команд */
+/* FAB */
 .team-fab{position:absolute;right:6px;bottom:6px}
 .team-fab button{
   width:40px;height:40px;border-radius:999px;
@@ -421,7 +399,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 </head>
 <body>
 
-<!-- Top bar -->
+<!-- APP BAR -->
 <div class="appbar">
   <h1>Growth Assistant</h1>
   <div class="sub">Фокус • задачи • план • чат • статистика</div>
@@ -429,7 +407,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 
 <div class="container">
 
-  <!-- Главная -->
+  <!-- HOME -->
   <section id="screen-home" class="active grid-2">
     <div class="card">
       <h3>Фокус</h3>
@@ -466,7 +444,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     </div>
   </section>
 
-  <!-- План -->
+  <!-- PLAN -->
   <section id="screen-plan" class="grid-2">
     <div class="card">
       <div class="plan-top">
@@ -479,7 +457,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
         </div>
       </div>
 
-      <!-- Фильтры для МОИХ задач -->
       <div id="my-filters" class="plan-filters">
         <div class="chip" data-plan-filter="all">Все</div>
         <div class="chip" data-plan-filter="today">Сегодня</div>
@@ -489,12 +466,10 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 
       <div id="plan-my-list" class="list"></div>
 
-      <!-- Блок команд -->
+      <!-- TEAM BLOCK -->
       <div id="plan-team-block" class="plan-team-wrapper" style="display:none;">
-        <!-- список команд -->
         <div id="team-list-box" class="team-list"></div>
 
-        <!-- детали команды -->
         <div id="team-detail-box" class="team-detail" style="display:none">
           <button id="team-back" class="btn ghost icon" style="align-self:flex-start; margin-bottom:4px">←</button>
 
@@ -530,7 +505,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
           </div>
         </div>
 
-        <!-- плавающий плюсик -->
         <div class="team-fab">
           <button id="team-fab-btn" class="btn icon">+</button>
           <div id="team-menu" class="team-menu">
@@ -542,7 +516,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     </div>
   </section>
 
-  <!-- Чат -->
+  <!-- CHAT -->
   <section id="screen-chat" class="grid">
     <div class="card">
       <h3>Мои чаты с ассистентом</h3>
@@ -559,7 +533,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     </div>
   </section>
 
-  <!-- Статистика -->
+  <!-- STATS -->
   <section id="screen-stats" class="grid grid-2">
     <div class="card">
       <h3>Статистика продуктивности</h3>
@@ -580,7 +554,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     </div>
   </section>
 
-  <!-- Профиль -->
+  <!-- PROFILE -->
   <section id="screen-profile" class="grid">
     <div class="card">
       <h3>Профиль</h3>
@@ -626,7 +600,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   </section>
 </div>
 
-<!-- ОКНО ЧАТА -->
+<!-- CHAT WINDOW -->
 <div id="chat-window-overlay" class="chat-window-overlay">
   <div class="chat-window">
     <div class="chat-header">
@@ -645,7 +619,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   </div>
 </div>
 
-<!-- Modal для создания нового чата -->
+<!-- NEW CHAT MODAL -->
 <div id="new-chat-modal" class="modal">
   <div class="modal-content">
     <h3 class="modal-title">Название чата</h3>
@@ -657,7 +631,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   </div>
 </div>
 
-<!-- Bottom navigation -->
+<!-- NAV -->
 <nav class="nav">
   <div class="item active" data-go="home">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7v10a1 1 0 0 1-1 1h-6v-6H10v6H4a1 1 0 0 1-1-1V10l9-7z"/></svg>
@@ -684,7 +658,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 <div id="toast" class="toast" style="display:none"></div>
 
 <script>
-/* ===== helpers ===== */
+/* helpers */
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const showToast = (t) => {
@@ -694,12 +668,10 @@ const showToast = (t) => {
   clearTimeout(showToast._t);
   showToast._t = setTimeout(()=>el.style.display='none',2000);
 };
-
 const startOfDay = d => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
 const endOfDay   = d => { const x = new Date(d); x.setHours(23,59,59,999); return x; };
 const addDays    = (d,n)=>{const x=new Date(d); x.setDate(x.getDate()+n); return x;};
 
-/* SAFE DATE HELPERS */
 function normalizeDue(v){
   if (v === null || v === undefined) return null;
   if (typeof v === 'string' && v.trim().toLowerCase() === 'null') return null;
@@ -725,7 +697,7 @@ function fmt(ts){
   return d.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
 }
 
-/* ===== telegram id ===== */
+/* tg id */
 let tgId = 0;
 try {
   const qid = new URLSearchParams(location.search).get('tg_id');
@@ -740,32 +712,38 @@ const HEADERS = () => tgId
   ? { 'Content-Type':'application/json', 'X-TG-ID': String(tgId) }
   : { 'Content-Type':'application/json' };
 
-/* ===== API helper ===== */
 async function api(path, method='GET', body=null) {
   const opt = { method, headers: HEADERS() };
   if (body) opt.body = JSON.stringify(body);
   const r = await fetch(path, opt);
   const data = await r.json().catch(()=> ({}));
-  if (!r.ok || data?.ok === false) {
-    throw new Error(data?.error || ('HTTP '+r.status));
-  }
+  if (!r.ok || data?.ok === false) throw new Error(data?.error || ('HTTP '+r.status));
   return data;
 }
 
-/* ===== GLOBAL STATE ===== */
+/* global state */
 let tasks = [];
 let focus = null;
 let quickPrio = 'today';
 
-let planMode   = 'my';     // 'my' | 'team'
-let planFilter = 'all';    // all/today/week/month
+let planMode   = 'my';
+let planFilter = 'all';
 
-let teamList = [];         // [{team_id,name,join_code,members:[]}]
-let teamInfo = null;       // активная команда
+let teamList = [];     // {team_id,name,join_code,is_owner,members:[]}
+let teamInfo = null;
 let teamDetailOpen = false;
 let teamMembersOpen = false;
 
-/* ===== NAV ===== */
+/* helpers team owner */
+function isOwnerOfTeam(teamId){
+  const t = teamList.find(x => x.team_id === teamId);
+  return !!(t && t.is_owner);
+}
+function hasOwnedTeams(){
+  return teamList.some(t => t.is_owner);
+}
+
+/* NAV */
 const screens = {
   home: $('#screen-home'),
   plan: $('#screen-plan'),
@@ -780,16 +758,15 @@ $$('.nav .item').forEach(it=>{
     const to = it.dataset.go;
     Object.values(screens).forEach(s=>s.classList.remove('active'));
     screens[to].classList.add('active');
-
     if (to === 'chat') loadChats();
     if (to === 'plan') {
       renderPlan();
-      updateQuickTeamVisibility();
+      syncQuickTeamChip();
     }
   };
 });
 
-/* ===== FOCUS ===== */
+/* focus */
 $('#focus-save').onclick = async ()=>{
   const text = $('#focus-input').value.trim();
   if (!text) return showToast('Пустой фокус');
@@ -803,28 +780,44 @@ $('#focus-save').onclick = async ()=>{
   }
 };
 
-/* ===== QUICK ADD ===== */
+/* quick add */
 const quickChips = $$('.seg .chip[data-prio]');
 quickChips.forEach(ch=>{
   ch.onclick = ()=>{
     quickChips.forEach(x=>x.classList.remove('active'));
     ch.classList.add('active');
     quickPrio = ch.dataset.prio;
-    updateQuickTeamVisibility();
+    syncQuickTeamChip();
   };
 });
 quickChips[0].classList.add('active');
 
+function syncQuickTeamChip(){
+  const chipTeam = document.querySelector('.seg .chip[data-prio="team"]');
+  if (!chipTeam) return;
+  const owned = hasOwnedTeams();
+  chipTeam.style.display = owned ? 'inline-flex' : 'none';
+  if (!owned && quickPrio === 'team') {
+    quickPrio = 'today';
+    quickChips.forEach(x=>{
+      const pr = x.dataset.prio;
+      x.classList.toggle('active', pr === quickPrio);
+    });
+  }
+  updateQuickTeamVisibility();
+}
+
 function updateQuickTeamVisibility(){
   const row = $('#quick-team-row');
   if (!row) return;
-  const need = quickPrio === 'team';
+  const ownedTeams = teamList.filter(t => t.is_owner);
+  const need = quickPrio === 'team' && ownedTeams.length;
   row.classList.toggle('visible', need);
 
   const sel = $('#quick-team-select');
   if (!sel) return;
   sel.innerHTML = '<option value="">Выберите команду</option>';
-  teamList.forEach(t=>{
+  ownedTeams.forEach(t=>{
     const opt = document.createElement('option');
     opt.value = String(t.team_id);
     opt.textContent = t.name;
@@ -851,7 +844,8 @@ $('#quick-add').onclick = async ()=>{
   let team_id = null;
   if (quickPrio === 'team') {
     const selVal = $('#quick-team-select').value;
-    if (selVal) team_id = Number(selVal);
+    if (!selVal) return showToast('Выберите команду');
+    team_id = Number(selVal);
   }
 
   try{
@@ -879,21 +873,26 @@ $('#quick-add').onclick = async ()=>{
   showToast('Задача добавлена');
 };
 
-/* ===== TASK RENDERING ===== */
-function rowTask(t, showTeamBadge=false){
+/* task row */
+function rowTask(t, showTeamBadge=false, readonly=false){
   const el = document.createElement('div'); 
   el.className='task'+(t.is_done?' done':'');
 
   const left = document.createElement('button');
   left.className='btn icon';
   left.textContent = t.is_done?'✓':'○';
-  left.onclick = async ()=>{
-    t.is_done = !t.is_done;
-    renderHome(); renderPlan(); renderStats();
-    try{
-      await api('/api/tasks/toggle?id='+encodeURIComponent(t.id),'POST',{});
-    }catch(e){}
-  };
+  if (readonly){
+    left.disabled = true;
+    left.style.opacity = '0.4';
+  } else {
+    left.onclick = async ()=>{
+      t.is_done = !t.is_done;
+      renderHome(); renderPlan(); renderStats();
+      try{
+        await api('/api/tasks/toggle?id='+encodeURIComponent(t.id),'POST',{});
+      }catch(e){}
+    };
+  }
 
   const center = document.createElement('div');
   center.className='ttl';
@@ -922,13 +921,17 @@ function rowTask(t, showTeamBadge=false){
   const right = document.createElement('button');
   right.className='btn secondary icon';
   right.textContent='✕';
-  right.onclick = async ()=>{
-    tasks = tasks.filter(x=>x.id!==t.id);
-    renderHome(); renderPlan(); renderStats();
-    try{
-      await api('/api/tasks/delete?id='+encodeURIComponent(t.id),'POST',{});
-    }catch(e){}
-  };
+  if (readonly){
+    right.style.display='none';
+  } else {
+    right.onclick = async ()=>{
+      tasks = tasks.filter(x=>x.id!==t.id);
+      renderHome(); renderPlan(); renderStats();
+      try{
+        await api('/api/tasks/delete?id='+encodeURIComponent(t.id),'POST',{});
+      }catch(e){}
+    };
+  }
 
   const rightColumn = document.createElement('div');
   rightColumn.style.display='flex';
@@ -941,6 +944,7 @@ function rowTask(t, showTeamBadge=false){
   return el;
 }
 
+/* render home */
 function renderHome(){
   const s = startOfDay(new Date()).getTime();
   const e = endOfDay(new Date()).getTime();
@@ -957,10 +961,13 @@ function renderHome(){
     box.innerHTML='<div class="muted">На сегодня нет задач.</div>';
     return;
   }
-  today.forEach(t=> box.appendChild(rowTask(t, !!t.team_id)));
+  today.forEach(t=>{
+    const readonly = t.team_id && !isOwnerOfTeam(t.team_id);
+    box.appendChild(rowTask(t, !!t.team_id, !!readonly));
+  });
 }
 
-/* ===== PLAN RENDER ===== */
+/* PLAN */
 function setPlanMode(mode){
   planMode = mode;
   $('#mode-my').classList.toggle('active', mode==='my');
@@ -975,7 +982,6 @@ function setPlanMode(mode){
 $('#mode-my').onclick   = ()=>setPlanMode('my');
 $('#mode-team').onclick = ()=>setPlanMode('team');
 
-/* фильтры "мои" */
 const myFilterChips = $$('#my-filters .chip');
 myFilterChips.forEach(ch=>{
   ch.onclick = ()=>{
@@ -985,13 +991,12 @@ myFilterChips.forEach(ch=>{
     renderPlan();
   };
 });
-const allChip = myFilterChips.find(c=>c.dataset.planFilter==='all');
-if (allChip) allChip.classList.add('active');
+(myFilterChips.find(c=>c.dataset.planFilter==='all')||{}).classList?.add('active');
 
 function renderPlanMy(){
-  let arr = tasks.filter(t => !t.team_id); // только мои
-
+  let arr = tasks.filter(t => !t.team_id); // только личные
   const now = new Date();
+
   if (planFilter === 'today'){
     const s = startOfDay(now).getTime();
     const e = endOfDay(now).getTime();
@@ -1020,7 +1025,7 @@ function renderPlanMy(){
     box.innerHTML='<div class="muted">Нет задач для отображения.</div>';
     return;
   }
-  arr.forEach(t=> box.appendChild(rowTask(t,false)));
+  arr.forEach(t=> box.appendChild(rowTask(t,false,false)));
 }
 
 function renderTeamList(){
@@ -1079,11 +1084,19 @@ function fillTeamDetail(){
   listBox.style.display='none';
   detailBox.style.display='flex';
 
+  const isOwner = !!teamInfo.is_owner;
+
   $('#team-name-label').textContent = teamInfo.name || ('Команда '+teamInfo.team_id);
 
   const fullCode = teamInfo.join_code || '';
   const short = fullCode ? (fullCode.slice(0,4)+'••••') : '••••';
   $('#team-code-short').textContent = short;
+
+  // права
+  $('#team-rename').style.display   = isOwner ? 'inline-flex' : 'none';
+  $('#team-delete').style.display   = isOwner ? 'block'      : 'none';
+  // код копировать можно всем
+  $('#team-code-copy').style.display = 'inline-flex';
 
   const ul = $('#team-members-list');
   ul.innerHTML='';
@@ -1109,7 +1122,7 @@ function fillTeamDetail(){
   if (!arr.length){
     box.innerHTML='<div class="muted">В этой команде пока нет задач.</div>';
   } else {
-    arr.forEach(t => box.appendChild(rowTask(t,true)));
+    arr.forEach(t => box.appendChild(rowTask(t,true,!isOwner)));
   }
 }
 
@@ -1123,14 +1136,11 @@ function renderPlanTeam(){
 }
 
 function renderPlan(){
-  if (planMode === 'my') {
-    renderPlanMy();
-  } else {
-    renderPlanTeam();
-  }
+  if (planMode === 'my') renderPlanMy();
+  else renderPlanTeam();
 }
 
-/* ===== STATS ===== */
+/* stats */
 function renderStats(){
   const total   = tasks.length;
   const done    = tasks.filter(t=>t.is_done).length;
@@ -1147,11 +1157,9 @@ function renderStats(){
 
   renderWeekChart();
 }
-
 function renderWeekChart(){
   const chart = $('#week-chart');
   chart.innerHTML = '';
-  
   for (let i = 6; i >= 0; i--) {
     const day = addDays(new Date(), -i);
     const dayStart = startOfDay(day).getTime();
@@ -1163,7 +1171,6 @@ function renderWeekChart(){
     const doneCount   = dayTasks.filter(t => t.is_done).length;
     const totalCount  = dayTasks.length;
     const height      = totalCount > 0 ? (doneCount / totalCount) * 100 : 10;
-    
     const bar = document.createElement('div');
     bar.style.cssText = `
       flex: 1;
@@ -1189,7 +1196,7 @@ function renderWeekChart(){
   }
 }
 
-/* ===== TEAM API & LOGIC ===== */
+/* TEAM API */
 async function loadTeamInfo(){
   try{
     const listResp = await api('/api/team/list','GET');
@@ -1199,6 +1206,7 @@ async function loadTeamInfo(){
       team_id: t.id,
       name: t.name,
       join_code: t.join_code,
+      is_owner: !!t.is_owner,
       members: []
     }));
 
@@ -1207,7 +1215,7 @@ async function loadTeamInfo(){
       teamDetailOpen = false;
       teamMembersOpen = false;
       renderTeamList();
-      updateQuickTeamVisibility();
+      syncQuickTeamChip();
       return;
     }
 
@@ -1218,7 +1226,6 @@ async function loadTeamInfo(){
       if (found) teamInfo = found;
     }
 
-    // участники для активной команды
     try{
       const r = await api('/api/team/members?team_id='+encodeURIComponent(teamInfo.team_id),'GET');
       teamInfo.members = r.members || [];
@@ -1229,7 +1236,7 @@ async function loadTeamInfo(){
 
     renderTeamList();
     if (teamDetailOpen) fillTeamDetail();
-    updateQuickTeamVisibility();
+    syncQuickTeamChip();
   }catch(e){
     console.log('loadTeamInfo error', e);
     teamList = [];
@@ -1237,11 +1244,11 @@ async function loadTeamInfo(){
     teamDetailOpen = false;
     teamMembersOpen = false;
     renderTeamList();
-    updateQuickTeamVisibility();
+    syncQuickTeamChip();
   }
 }
 
-/* team UI buttons */
+/* TEAM UI buttons */
 const teamMenu = $('#team-menu');
 $('#team-fab-btn').onclick = ()=>{
   teamMenu.classList.toggle('open');
@@ -1251,11 +1258,9 @@ $('#team-menu-create').onclick = async ()=>{
   teamMenu.classList.remove('open');
   const nameInput = prompt('Введите название команды (например: Отдел продаж)');
   const name = nameInput && nameInput.trim() ? nameInput.trim() : '';
-
   try{
     const resp = await api('/api/team/create','POST', name ? { name } : {});
     await loadTeamInfo();
-
     if (resp.team && resp.team.id){
       const found = teamList.find(t => t.team_id === resp.team.id);
       if (found){
@@ -1265,7 +1270,6 @@ $('#team-menu-create').onclick = async ()=>{
         fillTeamDetail();
       }
     }
-
     setPlanMode('team');
     showToast('Команда создана');
   }catch(e){
@@ -1278,7 +1282,6 @@ $('#team-menu-join').onclick = async ()=>{
   teamMenu.classList.remove('open');
   const token = prompt('Введите код приглашения');
   if (!token || !token.trim()) return;
-
   try{
     await api('/api/team/join','POST',{ token: token.trim() });
     await loadTeamInfo();
@@ -1298,7 +1301,7 @@ $('#team-back').onclick = ()=>{
 };
 
 $('#team-rename').onclick = async ()=>{
-  if (!teamInfo) return;
+  if (!teamInfo || !teamInfo.is_owner) return;
   const nameInput = prompt('Новое название команды', teamInfo.name || '');
   if (!nameInput || !nameInput.trim()) return;
   try{
@@ -1327,7 +1330,7 @@ $('#team-code-copy').onclick = async ()=>{
 };
 
 $('#team-delete').onclick = async ()=>{
-  if (!teamInfo) return;
+  if (!teamInfo || !teamInfo.is_owner) return;
   if (!confirm('Расформировать команду "'+(teamInfo.name||'')+'"?')) return;
   try{
     await api('/api/team/delete','POST',{ team_id: teamInfo.team_id });
@@ -1336,7 +1339,7 @@ $('#team-delete').onclick = async ()=>{
     showToast('Команда расформирована');
   }catch(e){
     console.error(e);
-    showToast('Не удалось удалить команду');
+    showToast('Не удалось удалить');
   }
 };
 
@@ -1346,10 +1349,9 @@ $('#team-members-toggle').onclick = ()=>{
   $('#team-members-arrow').textContent = teamMembersOpen ? '▴' : '▾';
 };
 
-/* ===== CHAT SYSTEM (localStorage) ===== */
+/* CHAT (как раньше) */
 let chats = [];
 let currentChatId = null;
-
 function loadChats() {
   try {
     const saved = localStorage.getItem('growth_assistant_chats');
@@ -1452,7 +1454,6 @@ function addMessageToChat(role, content) {
   saveChats();
   renderChatMessages(chat.messages);
 }
-
 $('#close-chat').onclick = closeChat;
 $('#create-first-chat').onclick = () => { $('#new-chat-modal').classList.add('active'); };
 $('#cancel-new-chat').onclick = () => {
@@ -1467,7 +1468,6 @@ $('#confirm-new-chat').onclick = () => {
   openChat(newChatId);
   showToast('Чат создан');
 };
-
 $('#chat-send').onclick = async () => {
   const text = $('#chat-input').value.trim(); 
   if (!text) return;
@@ -1488,7 +1488,7 @@ $('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('#c
 $('#new-chat-modal').onclick = (e) => { if (e.target === $('#new-chat-modal')) $('#new-chat-modal').classList.remove('active'); };
 $('#chat-window-overlay').onclick = (e) => { if (e.target === $('#chat-window-overlay')) closeChat(); };
 
-/* ===== PROFILE small stuff ===== */
+/* profile */
 $$('.lang-btn').forEach(btn => {
   btn.onclick = () => {
     $$('.lang-btn').forEach(b => b.classList.remove('active'));
@@ -1502,21 +1502,19 @@ $('#btn-help').onclick   = () => showToast('Раздел "Помощь" в ра�
 $('#btn-guide').onclick  = () => showToast('Раздел "Как пользоваться" в разработке');
 $('#btn-consult').onclick= () => showToast('Раздел "Консультация" в разработке');
 
-/* ===== INIT ===== */
+/* init */
 async function loadAll(){
   try{
     const f = await api('/api/focus','GET');
     focus = f.focus || null;
     $('#focus-input').value = focus?.text || '';
-  }catch(e){
-    console.log('focus load fail', e);
-  }
+  }catch(e){}
+
   try{
     const t = await api('/api/tasks','GET');
     tasks = t.items || [];
-  }catch(e){
-    console.log('tasks load fail', e);
-  }
+  }catch(e){}
+
   await loadTeamInfo();
   renderHome();
   renderPlan();
@@ -1524,7 +1522,7 @@ async function loadAll(){
 }
 loadAll();
 
-// sync профиля из Telegram (мягко)
+/* sync profile to backend */
 (function syncProfile(){
   const u = window.Telegram?.WebApp?.initDataUnsafe?.user;
   if (!u) return;
