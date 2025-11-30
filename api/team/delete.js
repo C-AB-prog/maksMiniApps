@@ -1,5 +1,5 @@
 // api/team/delete.js
-import { getClient } from '../_db.js'; // путь такой же, как в других team-эндпойнтах
+import { getClient } from '../_db.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
     const db = await getClient();
 
-    // находим пользователя
+    // --- 1. Находим пользователя ---
     const uRes = await db.query(
       'SELECT id FROM users WHERE tg_id = $1',
       [tgId]
@@ -31,22 +31,37 @@ export default async function handler(req, res) {
     }
     const userId = uRes.rows[0].id;
 
-    // проверяем, что он владелец команды
+    // --- 2. Узнаём команду и владельца ---
     const tRes = await db.query(
-      'SELECT id FROM teams WHERE id = $1 AND owner_id = $2',
-      [teamId, userId]
+      'SELECT id, owner_id FROM teams WHERE id = $1',
+      [teamId]
     );
     if (!tRes.rows.length) {
+      return res.status(404).json({ ok: false, error: 'team_not_found' });
+    }
+    const teamRow = tRes.rows[0];
+
+    // Если владелец задан и это не текущий пользователь — запрещаем
+    if (teamRow.owner_id && Number(teamRow.owner_id) !== Number(userId)) {
       return res.status(403).json({ ok: false, error: 'not_owner' });
     }
 
-    // 1) отвязываем задачи от команды (на всякий случай, даже если FK уже ON DELETE SET NULL)
+    // --- 3. (опционально) убеждаемся, что юзер хотя бы член команды ---
+    const mRes = await db.query(
+      'SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2',
+      [teamId, userId]
+    );
+    if (!mRes.rows.length) {
+      return res.status(403).json({ ok: false, error: 'not_member' });
+    }
+
+    // --- 4. Отвязываем задачи от команды ---
     await db.query(
       'UPDATE tasks SET team_id = NULL WHERE team_id = $1',
       [teamId]
     );
 
-    // 2) удаляем команду — team_members уберётся через ON DELETE CASCADE
+    // --- 5. Удаляем команду (участники удалятся по ON DELETE CASCADE) ---
     await db.query('DELETE FROM teams WHERE id = $1', [teamId]);
 
     return res.status(200).json({ ok: true });
