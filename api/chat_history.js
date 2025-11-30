@@ -6,19 +6,30 @@ const pool = new Pool({
   max: 5,
 });
 
-async function dbQuery(text, params = []) {
+async function withClient(fn) {
   const client = await pool.connect();
   try {
-    const res = await client.query(text, params);
-    return res.rows;
+    return await fn(client);
   } finally {
     client.release();
   }
 }
 
-async function dbOne(text, params = []) {
-  const rows = await dbQuery(text, params);
-  return rows[0] || null;
+async function ensureUser(client, tgId) {
+  const idNum = Number(tgId);
+  if (!idNum) throw new Error('tg_id required');
+
+  const r = await client.query(
+    'SELECT id FROM users WHERE tg_id = $1',
+    [idNum]
+  );
+  if (r.rows[0]) return r.rows[0].id;
+
+  const ins = await client.query(
+    'INSERT INTO users (tg_id) VALUES ($1) RETURNING id',
+    [idNum]
+  );
+  return ins.rows[0].id;
 }
 
 export default async function handler(req, res) {
@@ -28,32 +39,34 @@ export default async function handler(req, res) {
   }
 
   try {
-    const tgId =
-      (req.headers['x-tg-id'] || '').toString() ||
-      (req.query.tg_id || '').toString();
+    const tgIdHeader = (req.headers['x-tg-id'] || '').toString();
+    const tgId = tgIdHeader || (req.query.tg_id || '').toString();
     const chatId = Number(req.query.chat_id || 0);
 
     if (!tgId || !chatId) {
       return res.status(200).json({ ok: true, messages: [] });
     }
 
-    const session = await dbOne(
-      'SELECT id FROM chat_sessions WHERE id = $1 AND tg_id = $2',
-      [chatId, tgId]
-    );
-    if (!session) {
-      return res.status(200).json({ ok: true, messages: [] });
-    }
+    const messages = await withClient(async (client) => {
+      const userId = await ensureUser(client, tgId);
 
-    const rows = await dbQuery(
-      `SELECT role, content, created_at
-       FROM chat_messages
-       WHERE session_id = $1
-       ORDER BY id ASC`,
-      [chatId]
-    );
+      const s = await client.query(
+        'SELECT id FROM chat_sessions WHERE id = $1 AND user_id = $2',
+        [chatId, userId]
+      );
+      if (!s.rows[0]) return [];
 
-    return res.status(200).json({ ok: true, messages: rows });
+      const r = await client.query(
+        `SELECT role, content, created_at
+         FROM chat_messages
+         WHERE chat_id = $1
+         ORDER BY id ASC`,
+        [chatId]
+      );
+      return r.rows || [];
+    });
+
+    return res.status(200).json({ ok: true, messages });
   } catch (e) {
     console.error('[chat_history] error', e);
     return res.status(200).json({ ok: true, messages: [] });
