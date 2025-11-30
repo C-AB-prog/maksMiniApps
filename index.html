@@ -61,14 +61,6 @@ body{
 }
 .appbar .sub{color:var(--muted); font-size:12px}
 
-/* когда чат открыт на полный экран — прячем appbar + nav */
-body.chat-open .appbar{
-  display:none;
-}
-body.chat-open .nav{
-  display:none;
-}
-
 /* LAYOUT */
 .container{max-width:940px;margin:0 auto;padding:16px 14px 110px}
 .card{
@@ -147,37 +139,25 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .badge.dead{color:#991b1b;border-color:#ef4444;background:#fef2f2}
 .badge.team{margin-left:6px; font-size:10px; background:#eef2ff; border-color:#c7d2fe; color:#4f46e5}
 
-/* ФОКУС — выделенный блок */
-.focus-card h3{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-.focus-emoji{
-  font-size:20px;
-}
+/* FOCUS BLOCK */
+.focus-card h3{display:flex;align-items:center;gap:6px}
+.focus-emoji{font-size:18px}
 .focus-display{
-  margin:8px 0 10px 0;
+  border-radius:16px;
+  border:1px dashed #c7d2fe;
+  background:linear-gradient(180deg,#f4f7ff,#eef2ff);
   padding:10px 12px;
-  border-radius:14px;
-  background:linear-gradient(135deg, rgba(91,108,255,.10), rgba(70,199,244,.10));
-  border:1px dashed rgba(91,108,255,.35);
+  margin-bottom:10px;
   cursor:pointer;
-}
-.focus-display-empty{
-  opacity:0.7;
 }
 .focus-label{
   font-size:11px;
+  letter-spacing:.06em;
   text-transform:uppercase;
-  letter-spacing:.08em;
-  color:var(--muted);
+  color:#9ca3af;
   margin-bottom:4px;
 }
-.focus-text{
-  font-size:14px;
-  font-weight:600;
-}
+.focus-text{font-weight:600;font-size:14px}
 
 /* CHAT */
 .chat-container{display:flex;flex-direction:column;gap:14px}
@@ -233,51 +213,38 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 }
 .chat-item:hover .chat-delete{opacity:1}
 
-/* CHAT WINDOW — ПОЛНЫЙ ЭКРАН */
+/* CHAT WINDOW full-screen */
 .chat-window-overlay{
   display:none;
   position:fixed;
-  inset:0;
-  background:#ffffff;
+  top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,.5);
   z-index:1000;
+  align-items:stretch;
+  justify-content:center;
 }
-.chat-window-overlay.active{
-  display:block;
-}
+.chat-window-overlay.active{display:flex}
 .chat-window{
-  display:flex;
-  flex-direction:column;
-  width:100%;
-  height:100%;
-  max-width:none;
-  max-height:none;
-  border-radius:0;
-  box-shadow:none;
-  background:#fff;
+  display:flex;flex-direction:column;
+  width:100%;max-width:100%;
+  height:100%;max-height:100%;
+  background:#fff;border-radius:0;
+  box-shadow:0 25px 50px rgba(0,0,0,.25);
+  overflow:hidden;
 }
 .chat-header{
   display:flex;justify-content:space-between;align-items:center;
-  padding:16px 16px 12px;
-  border-bottom:1px solid var(--line);
-  background:#fff;
-  flex-shrink:0;
+  padding:16px 20px;border-bottom:1px solid var(--line);background:#fff;flex-shrink:0;
 }
-.chat-header-title{
-  font-weight:600;
-  font-size:16px;
-}
+.chat-header-title{font-weight:600;font-size:16px}
 .chat-body{
-  flex:1;overflow:auto;padding:16px 12px 12px;
+  flex:1;overflow:auto;padding:16px;
   display:flex;flex-direction:column;gap:12px;
-  background:linear-gradient(180deg,#FAFBFF,#F7FAFF);
+  background:linear-gradient(180deg,#FAFBFF,#F7FAFF)
 }
 .bubble{
-  max-width:80%;
-  padding:10px 14px;
-  border-radius:18px;
-  font-size:14px;
-  line-height:1.4;
-  word-wrap:break-word;
+  max-width:75%;padding:12px 16px;border-radius:18px;
+  font-size:14px;line-height:1.4;word-wrap:break-word;
 }
 .me{
   align-self:flex-end;
@@ -289,7 +256,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   border-bottom-left-radius:6px
 }
 .chat-foot{
-  display:flex;gap:8px;padding:10px 12px;
+  display:flex;gap:10px;padding:12px 16px;
   border-top:1px solid var(--line);background:#fff;flex-shrink:0;
 }
 
@@ -342,7 +309,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .profile-actions{display:flex;flex-direction:column;gap:8px}
 .profile-btn{
   display:flex;justify-content:space-between;align-items:center;
-  padding:14px 16px;background:#fff;border:1px солид var(--line);border-radius:14px;
+  padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:14px;
   cursor:pointer;transition:all .15s
 }
 .profile-btn:hover{background:var(--bg);border-color:var(--brand)}
@@ -410,14 +377,19 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .team-members-box ul{margin:4px 0 0 14px;padding:0}
 .team-members-box li{font-size:13px;margin-bottom:2px}
 
-/* FAB */
-.team-fab{position:absolute;right:6px;bottom:6px}
+/* FAB for teams: плавающая снизу */
+.team-fab{
+  position:fixed;
+  right:18px;
+  bottom:calc(80px + var(--safe-bottom));
+  z-index:30;
+}
 .team-fab button{
-  width:40px;height:40px;border-radius:999px;
-  box-shadow:var(--shadow-2);font-size:20px;padding:0;
+  width:48px;height:48px;border-radius:999px;
+  box-shadow:var(--shadow-2);font-size:22px;padding:0;
 }
 .team-menu{
-  position:absolute;right:6px;bottom:52px;
+  position:absolute;right:0;bottom:56px;
   background:#fff;border-radius:14px;border:1px solid var(--line);
   box-shadow:0 14px 28px rgba(15,23,42,.25);
   padding:6px;display:none;
@@ -428,25 +400,11 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   font-size:13px;
 }
 
-/* Quick-add team row */
-.quick-team-row{display:none;gap:8px}
-.quick-team-row.visible{display:flex}
-
 /* MOBILE tweaks */
 @media (max-width: 600px){
-  .container{
-    padding:10px 8px 90px;
-  }
-  .card{
-    padding:12px;
-    border-radius:16px;
-  }
   .task{align-items:flex-start;padding:9px 9px}
   .team-detail-header{flex-direction:column;align-items:flex-start}
   .team-header-actions{justify-content:flex-start}
-  .chat-list{
-    grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
-  }
 }
 
 /* STATS */
@@ -477,15 +435,22 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   <!-- HOME -->
   <section id="screen-home" class="active grid-2">
     <div class="card focus-card">
-      <h3><span class="focus-emoji">🎯</span>Фокус</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <h3><span class="focus-emoji">🎯</span>Фокус</h3>
+        <button id="focus-edit-btn" class="btn secondary icon" style="display:none" title="Изменить фокус">✎</button>
+      </div>
+
       <div id="focus-display" class="focus-display" style="display:none">
         <div class="focus-label">Текущий фокус</div>
         <div id="focus-text" class="focus-text"></div>
       </div>
-      <label>Обновить фокус на сегодня</label>
-      <div style="display:flex; gap:10px; flex-wrap:wrap">
-        <input id="focus-input" class="input" type="text" placeholder="Например: закрыть отчёт" />
-        <button id="focus-save" class="btn" style="white-space:nowrap">Сохранить</button>
+
+      <div id="focus-edit-block">
+        <label>Фокус на сегодня</label>
+        <div style="display:flex; gap:10px; flex-wrap:wrap">
+          <input id="focus-input" class="input" type="text" placeholder="Например: закрыть отчёт" />
+          <button id="focus-save" class="btn" style="white-space:nowrap">Сохранить</button>
+        </div>
       </div>
     </div>
 
@@ -573,14 +538,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
             <div id="team-members-box" class="team-members-box" style="display:none">
               <ul id="team-members-list"></ul>
             </div>
-          </div>
-        </div>
-
-        <div class="team-fab">
-          <button id="team-fab-btn" class="btn icon">+</button>
-          <div id="team-menu" class="team-menu">
-            <button id="team-menu-create" class="btn secondary" style="padding:6px 10px">Создать команду</button>
-            <button id="team-menu-join" class="btn secondary" style="padding:6px 10px">Вступить по коду</button>
           </div>
         </div>
       </div>
@@ -671,7 +628,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   </section>
 </div>
 
-<!-- CHAT WINDOW (полный экран) -->
+<!-- CHAT WINDOW -->
 <div id="chat-window-overlay" class="chat-window-overlay">
   <div class="chat-window">
     <div class="chat-header">
@@ -699,6 +656,15 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       <button class="btn secondary" id="cancel-new-chat" style="flex: 1;">Отмена</button>
       <button class="btn" id="confirm-new-chat" style="flex: 1;">Создать</button>
     </div>
+  </div>
+</div>
+
+<!-- FAB команд (плавает снизу) -->
+<div class="team-fab" id="team-fab-wrapper" style="display:none">
+  <button id="team-fab-btn" class="btn icon">+</button>
+  <div id="team-menu" class="team-menu">
+    <button id="team-menu-create" class="btn secondary" style="padding:6px 10px">Создать команду</button>
+    <button id="team-menu-join" class="btn secondary" style="padding:6px 10px">Вступить по коду</button>
   </div>
 </div>
 
@@ -768,6 +734,29 @@ function fmt(ts){
   return d.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
 }
 
+/* focus helpers */
+const focusEditBtn   = $('#focus-edit-btn');
+const focusEditBlock = $('#focus-edit-block');
+
+function updateFocusDisplay(text){
+  const box = $('#focus-display');
+  const t   = $('#focus-text');
+  const v   = (text || '').trim();
+  if (!box || !t) return;
+
+  if (!v){
+    box.style.display = 'none';
+    t.textContent = '';
+    if (focusEditBlock) focusEditBlock.style.display = 'block';
+    if (focusEditBtn)   focusEditBtn.style.display   = 'none';
+  } else {
+    box.style.display = 'block';
+    t.textContent = v;
+    if (focusEditBlock) focusEditBlock.style.display = 'none';
+    if (focusEditBtn)   focusEditBtn.style.display   = 'inline-flex';
+  }
+}
+
 /* tg id */
 let tgId = 0;
 try {
@@ -833,29 +822,14 @@ $$('.nav .item').forEach(it=>{
     if (to === 'plan') {
       renderPlan();
       syncQuickTeamChip();
+      $('#team-fab-wrapper').style.display = 'block';
+    } else {
+      $('#team-fab-wrapper').style.display = 'none';
     }
   };
 });
 
-/* ФОКУС */
-function updateFocusDisplay(text){
-  const box = $('#focus-display');
-  const t = $('#focus-text');
-  if (!box || !t) return;
-  const v = (text || '').trim();
-  if (!v){
-    box.style.display='none';
-    t.textContent = '';
-  } else {
-    box.style.display='block';
-    box.classList.toggle('focus-display-empty', false);
-    t.textContent = v;
-  }
-}
-$('#focus-display')?.addEventListener('click', () => {
-  $('#focus-input').focus();
-});
-
+/* focus */
 $('#focus-save').onclick = async ()=>{
   const text = $('#focus-input').value.trim();
   if (!text) return showToast('Пустой фокус');
@@ -870,6 +844,21 @@ $('#focus-save').onclick = async ()=>{
     showToast('Фокус сохранён (офлайн)');
   }
 };
+
+if (focusEditBtn){
+  focusEditBtn.onclick = () => {
+    const box = $('#focus-display');
+    if (box) box.style.display = 'none';
+    if (focusEditBlock) focusEditBlock.style.display = 'block';
+    $('#focus-input').focus();
+  };
+}
+$('#focus-display')?.addEventListener('click', ()=>{
+  const box = $('#focus-display');
+  if (box) box.style.display = 'none';
+  if (focusEditBlock) focusEditBlock.style.display = 'block';
+  $('#focus-input').focus();
+});
 
 /* quick add */
 const quickChips = $$('.seg .chip[data-prio]');
@@ -1183,10 +1172,8 @@ function fillTeamDetail(){
   const short = fullCode ? (fullCode.slice(0,4)+'••••') : '••••';
   $('#team-code-short').textContent = short;
 
-  // права
   $('#team-rename').style.display   = isOwner ? 'inline-flex' : 'none';
   $('#team-delete').style.display   = isOwner ? 'block'      : 'none';
-  // код копировать можно всем
   $('#team-code-copy').style.display = 'inline-flex';
 
   const ul = $('#team-members-list');
@@ -1265,7 +1252,7 @@ function renderWeekChart(){
     const bar = document.createElement('div');
     bar.style.cssText = `
       flex: 1;
-      background: linear-gradient(to топ, var(--brand), var(--brand-2));
+      background: linear-gradient(to top, var(--brand), var(--brand-2));
       border-radius: 4px 4px 0 0;
       height: ${height}%;
       min-height: 8px;
@@ -1440,103 +1427,35 @@ $('#team-members-toggle').onclick = ()=>{
   $('#team-members-arrow').textContent = teamMembersOpen ? '▴' : '▾';
 };
 
-/* CHAT — синхронизированный с БД */
+/* CHAT (с хранящейся историей в БД) */
 let chats = [];
 let currentChatId = null;
-let currentChatMessages = [];
 
-async function loadChats() {
-  try {
-    const r = await api('/api/chat', 'GET');
+async function loadChatsFromServer(){
+  try{
+    const r = await api('/api/chat/list','GET');
     chats = r.chats || [];
-    renderChatList();
-  } catch (e) {
-    console.error('Error loading chats:', e);
-    showToast('Не удалось загрузить чаты');
+  }catch(e){
+    console.error('loadChatsFromServer error', e);
+    chats = [];
   }
-}
-
-async function createNewChat(title = 'Новый чат') {
-  const r = await api('/api/chat', 'POST', {
-    action: 'create',
-    title
-  });
-  const chat = r.chat;
-  if (chat) {
-    chats.unshift(chat);
-    renderChatList();
-    return chat.id;
-  }
-  throw new Error('no chat in response');
-}
-
-async function deleteChat(chatId) {
-  try {
-    await api('/api/chat', 'POST', {
-      action: 'delete',
-      chat_id: chatId
-    });
-    if (currentChatId === chatId) {
-      closeChat();
-    }
-    chats = chats.filter(c => c.id !== chatId);
-    renderChatList();
-    showToast('Чат удалён');
-  } catch (e) {
-    console.error('Error deleting chat:', e);
-    showToast('Не удалось удалить чат');
-  }
-}
-window.deleteChat = deleteChat;
-
-async function openChat(chatId) {
-  try {
-    const r = await api(`/api/chat?history=1&chat_id=${encodeURIComponent(chatId)}`, 'GET');
-    currentChatId = chatId;
-    currentChatMessages = (r.messages || []).map(m => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: m.content,
-      created_at: m.created_at
-    }));
-    $('#current-chat-title').textContent = r.chat?.title || 'Чат';
-    $('#chat-window-overlay').classList.add('active');
-    document.body.classList.add('chat-open');
-    renderChatMessages(currentChatMessages);
-    setTimeout(() => $('#chat-input').focus(), 100);
-  } catch (e) {
-    console.error('Error opening chat:', e);
-    showToast('Не удалось открыть чат');
-  }
-}
-
-function closeChat() {
-  currentChatId = null;
-  currentChatMessages = [];
-  $('#chat-window-overlay').classList.remove('active');
-  document.body.classList.remove('chat-open');
-  $('#chat-body').innerHTML = '';
 }
 
 function renderChatList() {
   const container = $('#chat-list');
   container.innerHTML = '';
-
   chats.forEach(chat => {
     const chatEl = document.createElement('div');
     chatEl.className = `chat-item ${currentChatId === chat.id ? 'active' : ''}`;
-    const dateStr = chat.updated_at
-      ? new Date(chat.updated_at).toLocaleDateString('ru-RU')
-      : '';
     chatEl.innerHTML = `
-      <button class="chat-delete" onclick="event.stopPropagation(); deleteChat(${chat.id})">×</button>
+      <button class="chat-delete" onclick="event.stopPropagation(); deleteChat('${chat.id}')">×</button>
       <div class="chat-icon">💬</div>
-      <div class="chat-title">${chat.title || 'Чат'}</div>
-      <div class="chat-date">${dateStr}</div>
+      <div class="chat-title">${chat.title}</div>
+      <div class="chat-date">${new Date(chat.updated_at).toLocaleDateString('ru-RU')}</div>
     `;
     chatEl.onclick = () => openChat(chat.id);
     container.appendChild(chatEl);
   });
-
   const newChatEl = document.createElement('div');
   newChatEl.className = 'chat-item new';
   newChatEl.innerHTML = `
@@ -1545,115 +1464,139 @@ function renderChatList() {
   `;
   newChatEl.onclick = () => $('#new-chat-modal').classList.add('active');
   container.appendChild(newChatEl);
-
   $('#no-chats-message').style.display = chats.length === 0 ? 'block' : 'none';
 }
 
+async function loadChats(){
+  await loadChatsFromServer();
+  renderChatList();
+}
+
+async function createNewChat(title = 'Новый чат') {
+  try{
+    const r = await api('/api/chat/create','POST',{ title });
+    const chat = r.chat;
+    if (chat){
+      chats.unshift(chat);
+      renderChatList();
+      return chat.id;
+    }
+  }catch(e){
+    console.error('createNewChat error', e);
+  }
+  return null;
+}
+
+async function deleteChat(chatId) {
+  try{
+    await api('/api/chat/delete','POST',{ chat_id: chatId });
+  }catch(e){
+    console.error('deleteChat error', e);
+  }
+  chats = chats.filter(chat => chat.id !== chatId);
+  if (currentChatId === chatId) closeChat();
+  renderChatList();
+}
+
+async function openChat(chatId) {
+  const chat = chats.find(c => c.id === chatId);
+  if (!chat) return;
+  currentChatId = chatId;
+  $('#current-chat-title').textContent = chat.title;
+  $('#chat-window-overlay').classList.add('active');
+
+  try{
+    const r = await api('/api/chat/history?chat_id='+encodeURIComponent(chatId),'GET');
+    renderChatMessages(r.messages || []);
+  }catch(e){
+    console.error('history error', e);
+    renderChatMessages([]);
+  }
+  setTimeout(()=>$('#chat-input').focus(),100);
+}
+function closeChat() {
+  currentChatId = null;
+  $('#chat-window-overlay').classList.remove('active');
+  $('#chat-body').innerHTML = '';
+}
 function renderChatMessages(messages) {
   const container = $('#chat-body');
   container.innerHTML = '';
-  if (!messages.length) {
+  messages.forEach(msg => {
     const bubble = document.createElement('div');
-    bubble.className = 'bubble bot';
-    bubble.textContent = 'Привет! Я твой ассистент по продуктивности. Чем могу помочь?';
+    bubble.className = `bubble ${msg.role === 'user' ? 'me' : 'bot'}`;
+    bubble.textContent = msg.content;
     container.appendChild(bubble);
-  } else {
-    messages.forEach(msg => {
-      const bubble = document.createElement('div');
-      bubble.className = `bubble ${msg.role === 'user' ? 'me' : 'bot'}`;
-      bubble.textContent = msg.content;
-      container.appendChild(bubble);
-    });
-  }
+  });
   container.scrollTop = container.scrollHeight;
 }
-
-function addMessageToChat(role, content) {
-  if (!currentChatId) return;
-  currentChatMessages.push({
-    role,
-    content,
-    created_at: new Date().toISOString()
-  });
-  renderChatMessages(currentChatMessages);
+function addMessageToChatList(chatId, role, content) {
+  const chat = chats.find(c => c.id === chatId);
+  if (!chat) return;
+  chat.updated_at = new Date().toISOString();
 }
 
-/* CHAT: кнопки / send */
 $('#close-chat').onclick = closeChat;
-
-$('#create-first-chat').onclick = () => {
-  $('#new-chat-modal').classList.add('active');
-};
-
+$('#create-first-chat').onclick = () => { $('#new-chat-modal').classList.add('active'); };
 $('#cancel-new-chat').onclick = () => {
   $('#new-chat-modal').classList.remove('active');
   $('#new-chat-title').value = '';
 };
-
 $('#confirm-new-chat').onclick = async () => {
   const title = $('#new-chat-title').value.trim() || 'Новый чат';
-  try {
-    const newChatId = await createNewChat(title);
-    $('#new-chat-modal').classList.remove('active');
-    $('#new-chat-title').value = '';
-    await openChat(newChatId);
-    showToast('Чат создан');
-    await loadChats();
-  } catch (e) {
-    console.error('Error creating chat:', e);
-    showToast('Не удалось создать чат');
-  }
+  const newChatId = await createNewChat(title);
+  $('#new-chat-modal').classList.remove('active');
+  $('#new-chat-title').value = '';
+  if (newChatId) openChat(newChatId);
+  showToast('Чат создан');
 };
 
 $('#chat-send').onclick = async () => {
   const text = $('#chat-input').value.trim();
   if (!text) return;
 
-  // на всякий случай: если чата нет — создаём
   if (!currentChatId) {
-    try {
-      const newChatId = await createNewChat('Новый чат');
-      await openChat(newChatId);
-    } catch (e) {
-      console.error('Error auto-creating chat:', e);
+    const newChatId = await createNewChat('Новый чат');
+    if (!newChatId) {
+      showToast('Не удалось создать чат');
       return;
     }
+    await openChat(newChatId);
   }
 
   $('#chat-input').value = '';
-  addMessageToChat('user', text);
+  const container = $('#chat-body');
+  const bubbleMe = document.createElement('div');
+  bubbleMe.className = 'bubble me';
+  bubbleMe.textContent = text;
+  container.appendChild(bubbleMe);
+  container.scrollTop = container.scrollHeight;
 
   try {
     const r = await api('/api/chat', 'POST', {
       text,
       chat_id: currentChatId
     });
-    if (r.chat_id && r.chat_id !== currentChatId) {
-      currentChatId = r.chat_id;
-    }
-    addMessageToChat('assistant', r.reply || 'Готово.');
-    loadChats();
+    const reply = r.reply || 'Готово.';
+    const bubbleBot = document.createElement('div');
+    bubbleBot.className = 'bubble bot';
+    bubbleBot.textContent = reply;
+    container.appendChild(bubbleBot);
+    container.scrollTop = container.scrollHeight;
+    addMessageToChatList(currentChatId,'assistant',reply);
+    renderChatList();
   } catch (e) {
-    console.error('Error sending chat message:', e);
-    addMessageToChat(
-      'assistant',
-      'Сейчас не могу подключиться к серверу.\n\n' +
-      'Могу офлайн помочь структурировать задачи, распланировать день или подсказать техники продуктивности.'
-    );
+    const bubbleBot = document.createElement('div');
+    bubbleBot.className = 'bubble bot';
+    bubbleBot.textContent =
+      'Сейчас нет подключения к серверу. Могу подсказать, как лучше организовать задачи и время.';
+    container.appendChild(bubbleBot);
+    container.scrollTop = container.scrollHeight;
   }
 };
-
-$('#chat-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') $('#chat-send').click();
-});
-
-$('#new-chat-modal').onclick = (e) => {
-  if (e.target === $('#new-chat-modal')) $('#new-chat-modal').classList.remove('active');
-};
-
-$('#chat-window-overlay').onclick = (e) => {
-  if (e.target === $('#chat-window-overlay')) closeChat();
-};
+$('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('#chat-send').click(); });
+$('#new-chat-modal').onclick = (e) => { if (e.target === $('#new-chat-modal')) $('#new-chat-modal').classList.remove('active'); };
+$('#chat-window-overlay').onclick = (e) => { if (e.target === $('#chat-window-overlay')) closeChat(); };
 
 /* profile */
 $$('.lang-btn').forEach(btn => {
@@ -1674,9 +1617,9 @@ async function loadAll(){
   try{
     const f = await api('/api/focus','GET');
     focus = f.focus || null;
-    const text = focus?.text || '';
-    $('#focus-input').value = text;
-    updateFocusDisplay(text);
+    const txt = focus?.text || '';
+    $('#focus-input').value = txt;
+    updateFocusDisplay(txt);
   }catch(e){
     updateFocusDisplay('');
   }
@@ -1684,12 +1627,15 @@ async function loadAll(){
   try{
     const t = await api('/api/tasks','GET');
     tasks = t.items || [];
-  }catch(e){}
+  }catch(e){
+    tasks = [];
+  }
 
   await loadTeamInfo();
   renderHome();
   renderPlan();
   renderStats();
+  await loadChats();
 }
 loadAll();
 
