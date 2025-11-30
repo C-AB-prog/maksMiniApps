@@ -21,52 +21,42 @@ export default async function handler(req, res) {
 
     const db = await getClient();
 
-    // --- 1. Находим пользователя ---
-    const uRes = await db.query(
-      'SELECT id FROM users WHERE tg_id = $1',
-      [tgId]
-    );
+    // --- 1. находим пользователя ---
+    const uRes = await db.query('SELECT id FROM users WHERE tg_id = $1', [tgId]);
     if (!uRes.rows.length) {
       return res.status(404).json({ ok: false, error: 'user_not_found' });
     }
     const userId = uRes.rows[0].id;
 
-    // --- 2. Узнаём команду и владельца ---
-    const tRes = await db.query(
-      'SELECT id, owner_id FROM teams WHERE id = $1',
-      [teamId]
+    // --- 2. пытаемся удалить команду, если владелец совпадает
+    // или owner_id = NULL (старые команды)
+    const delRes = await db.query(
+      `DELETE FROM teams
+       WHERE id = $1
+         AND (owner_id IS NULL OR owner_id = $2)
+       RETURNING id`,
+      [teamId, userId]
     );
-    if (!tRes.rows.length) {
-      return res.status(404).json({ ok: false, error: 'team_not_found' });
-    }
-    const teamRow = tRes.rows[0];
 
-    // Если владелец задан и это не текущий пользователь — запрещаем
-    if (teamRow.owner_id && Number(teamRow.owner_id) !== Number(userId)) {
+    if (!delRes.rowCount) {
+      // команда есть, но удалить нельзя → скорее всего, не владелец
+      const tRes = await db.query(
+        'SELECT id, owner_id FROM teams WHERE id = $1',
+        [teamId]
+      );
+
+      if (!tRes.rows.length) {
+        return res.status(404).json({ ok: false, error: 'team_not_found' });
+      }
+
       return res.status(403).json({ ok: false, error: 'not_owner' });
     }
 
-    // --- 3. (опционально) убеждаемся, что юзер хотя бы член команды ---
-    const mRes = await db.query(
-      'SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2',
-      [teamId, userId]
-    );
-    if (!mRes.rows.length) {
-      return res.status(403).json({ ok: false, error: 'not_member' });
-    }
-
-    // --- 4. Отвязываем задачи от команды ---
-    await db.query(
-      'UPDATE tasks SET team_id = NULL WHERE team_id = $1',
-      [teamId]
-    );
-
-    // --- 5. Удаляем команду (участники удалятся по ON DELETE CASCADE) ---
-    await db.query('DELETE FROM teams WHERE id = $1', [teamId]);
-
+    // tasks.team_id обнулится автоматически по FOREIGN KEY (ON DELETE SET NULL)
     return res.status(200).json({ ok: true });
   } catch (e) {
     console.error('[team/delete] error:', e);
-    return res.status(500).json({ ok: false, error: 'server_error' });
+    // Возвращаем 200 с ok:false, чтобы на фронте можно было показать нормальную ошибку
+    return res.status(200).json({ ok: false, error: 'server_error' });
   }
 }
