@@ -1274,7 +1274,7 @@ async function loadTeamInfo(){
       join_code: t.join_code,
       is_owner: !!t.is_owner,
       members: []
-    ));
+    }));
 
     if (!teamList.length) {
       teamInfo = null;
@@ -1400,7 +1400,7 @@ $('#team-delete').onclick = async ()=>{
   if (!confirm('Расформировать команду "'+(teamInfo.name||'')+'"?')) return;
   try{
     await api('/api/team/delete','POST',{
-      team_id: teamInfo.team_id
+      team_id: teamInfo.team_id   // только team_id
     });
     await loadTeamInfo();
     teamDetailOpen = false;
@@ -1435,71 +1435,7 @@ async function loadChatsFromServer() {
   renderChatList();
 }
 
-function renderChatMessages() {
-  const container = $('#chat-body');
-  container.innerHTML = '';
-  currentMessages.forEach(msg => {
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble ' + (msg.role === 'user' ? 'me' : 'bot');
-    bubble.textContent = msg.content;
-    container.appendChild(bubble);
-  });
-  container.scrollTop = container.scrollHeight;
-}
-
-function addMessage(role, content) {
-  currentMessages.push({ role, content, timestamp: new Date().toISOString() });
-  renderChatMessages();
-}
-
-function openNewChatWindow(title) {
-  pendingChatTitle = (title || 'Новый чат').trim() || 'Новый чат';
-  currentChatId = null;
-  currentMessages = [{
-    role: 'assistant',
-    content: 'Привет! Я твой ассистент по продуктивности. Чем могу помочь?'
-  }];
-  $('#current-chat-title').textContent = pendingChatTitle;
-  $('#chat-window-overlay').classList.add('active');
-  renderChatMessages();
-  setTimeout(() => $('#chat-input').focus(), 50);
-}
-
-async function openChat(chatId, title) {
-  currentChatId = chatId;
-  pendingChatTitle = null;
-  $('#current-chat-title').textContent = title || 'Чат';
-  $('#chat-window-overlay').classList.add('active');
-  currentMessages = [];
-
-  try {
-    const data = await api('/api/chat_history?chat_id=' + encodeURIComponent(chatId),'GET');
-    currentMessages = (data.messages || []).map(m => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: m.content
-    }));
-  } catch (e) {
-    console.error('openChat history error', e);
-    currentMessages = [{
-      role: 'assistant',
-      content: 'Не получилось загрузить историю чата, но я всё равно могу помочь 🙂'
-    }];
-  }
-
-  renderChatMessages();
-  setTimeout(() => $('#chat-input').focus(), 50);
-}
-
-function closeChat() {
-  currentChatId = null;
-  pendingChatTitle = null;
-  currentMessages = [];
-  $('#chat-window-overlay').classList.remove('active');
-  $('#chat-body').innerHTML = '';
-  loadChatsFromServer().catch(()=>{});
-}
-
-/* удаление чата через долгий тап / правый клик */
+/* Удаление чата по долгому тапу / правому клику */
 async function deleteChat(chatId, title) {
   if (!confirm(`Удалить чат "${title}"?`)) return;
   try {
@@ -1549,10 +1485,9 @@ function renderChatList() {
       openChat(chat.id, title);
     };
 
-    // долгий тап (mobile)
+    // долгий тап (mobile) + длинное нажатие мышкой
     let pressTimer = null;
     const startPress = (ev) => {
-      // не даём всплыть "клику"
       ev.preventDefault();
       if (pressTimer) clearTimeout(pressTimer);
       pressTimer = setTimeout(() => {
@@ -1598,6 +1533,71 @@ function renderChatList() {
   container.appendChild(newChatEl);
 }
 
+async function openChat(chatId, title) {
+  currentChatId = chatId;
+  pendingChatTitle = null;
+  $('#current-chat-title').textContent = title || 'Чат';
+  $('#chat-window-overlay').classList.add('active');
+  currentMessages = [];
+
+  try {
+    const data = await api('/api/chat_history?chat_id=' + encodeURIComponent(chatId),'GET');
+    currentMessages = (data.messages || []).map(m => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.content
+    }));
+  } catch (e) {
+    console.error('openChat history error', e);
+    currentMessages = [{
+      role: 'assistant',
+      content: 'Не получилось загрузить историю чата, но я всё равно могу помочь 🙂'
+    }];
+  }
+
+  renderChatMessages();
+  setTimeout(() => $('#chat-input').focus(), 50);
+}
+
+function openNewChatWindow(title) {
+  pendingChatTitle = (title || 'Новый чат').trim() || 'Новый чат';
+  currentChatId = null;
+  currentMessages = [{
+    role: 'assistant',
+    content: 'Привет! Я твой ассистент по продуктивности. Чем могу помочь?'
+  }];
+  $('#current-chat-title').textContent = pendingChatTitle;
+  $('#chat-window-overlay').classList.add('active');
+  renderChatMessages();
+  setTimeout(() => $('#chat-input').focus(), 50);
+}
+
+function closeChat() {
+  currentChatId = null;
+  pendingChatTitle = null;
+  currentMessages = [];
+  $('#chat-window-overlay').classList.remove('active');
+  $('#chat-body').innerHTML = '';
+  // обновим список чатов, чтобы новый чат появился/исчез
+  loadChatsFromServer().catch(()=>{});
+}
+
+function renderChatMessages() {
+  const container = $('#chat-body');
+  container.innerHTML = '';
+  currentMessages.forEach(msg => {
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble ' + (msg.role === 'user' ? 'me' : 'bot');
+    bubble.textContent = msg.content;
+    container.appendChild(bubble);
+  });
+  container.scrollTop = container.scrollHeight;
+}
+
+function addMessage(role, content) {
+  currentMessages.push({ role, content, timestamp: new Date().toISOString() });
+  renderChatMessages();
+}
+
 async function sendChatMessage() {
   const text = $('#chat-input').value.trim();
   if (!text) return;
@@ -1621,7 +1621,7 @@ async function sendChatMessage() {
     if (r.chat_id && !currentChatId) {
       currentChatId = r.chat_id;
     }
-    loadChatsFromServer(); // обновляем список чатов после ответа
+    loadChatsFromServer(); // после ответа обновляем список сессий
   } catch (e) {
     console.error('sendChatMessage error', e);
     addMessage(
