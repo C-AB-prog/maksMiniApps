@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ ok: false, error: 'name required' });
   }
 
-  // только «владелец» (первый участник) может переименовывать
+  // только первый участник (создатель) может переименовать
   const own = await q(
     `
     SELECT user_id
