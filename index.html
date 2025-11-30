@@ -7,7 +7,7 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
-/* ==== дизайн токены, базовые стили (как раньше) ==== */
+/* ==== дизайн токены, базовые стили ==== */
 :root{
   --ink: #0E1220;
   --muted:#6B7280;
@@ -60,6 +60,14 @@ body{
   -webkit-background-clip:text; background-clip:text; color:transparent;
 }
 .appbar .sub{color:var(--muted); font-size:12px}
+
+/* когда чат открыт на полный экран — прячем appbar + nav */
+body.chat-open .appbar{
+  display:none;
+}
+body.chat-open .nav{
+  display:none;
+}
 
 /* LAYOUT */
 .container{max-width:940px;margin:0 auto;padding:16px 14px 110px}
@@ -139,6 +147,38 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .badge.dead{color:#991b1b;border-color:#ef4444;background:#fef2f2}
 .badge.team{margin-left:6px; font-size:10px; background:#eef2ff; border-color:#c7d2fe; color:#4f46e5}
 
+/* ФОКУС — выделенный блок */
+.focus-card h3{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.focus-emoji{
+  font-size:20px;
+}
+.focus-display{
+  margin:8px 0 10px 0;
+  padding:10px 12px;
+  border-radius:14px;
+  background:linear-gradient(135deg, rgba(91,108,255,.10), rgba(70,199,244,.10));
+  border:1px dashed rgba(91,108,255,.35);
+  cursor:pointer;
+}
+.focus-display-empty{
+  opacity:0.7;
+}
+.focus-label{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--muted);
+  margin-bottom:4px;
+}
+.focus-text{
+  font-size:14px;
+  font-weight:600;
+}
+
 /* CHAT */
 .chat-container{display:flex;flex-direction:column;gap:14px}
 .chat-list{
@@ -193,34 +233,51 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 }
 .chat-item:hover .chat-delete{opacity:1}
 
-/* CHAT WINDOW */
+/* CHAT WINDOW — ПОЛНЫЙ ЭКРАН */
 .chat-window-overlay{
-  display:none;position:fixed;top:0;left:0;right:0;bottom:0;
-  background:rgba(0,0,0,.5);z-index:1000;
-  align-items:center;justify-content:center;padding:20px;
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#ffffff;
+  z-index:1000;
 }
-.chat-window-overlay.active{display:flex}
+.chat-window-overlay.active{
+  display:block;
+}
 .chat-window{
-  display:flex;flex-direction:column;
-  width:100%;max-width:800px;
-  height:80vh;max-height:700px;
-  background:#fff;border-radius:20px;
-  box-shadow:0 25px 50px rgba(0,0,0,.25);
-  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  width:100%;
+  height:100%;
+  max-width:none;
+  max-height:none;
+  border-radius:0;
+  box-shadow:none;
+  background:#fff;
 }
 .chat-header{
   display:flex;justify-content:space-between;align-items:center;
-  padding:16px 20px;border-bottom:1px solid var(--line);background:#fff;flex-shrink:0;
+  padding:16px 16px 12px;
+  border-bottom:1px solid var(--line);
+  background:#fff;
+  flex-shrink:0;
 }
-.chat-header-title{font-weight:600;font-size:16px}
+.chat-header-title{
+  font-weight:600;
+  font-size:16px;
+}
 .chat-body{
-  flex:1;overflow:auto;padding:16px;
+  flex:1;overflow:auto;padding:16px 12px 12px;
   display:flex;flex-direction:column;gap:12px;
-  background:linear-gradient(180deg,#FAFBFF,#F7FAFF)
+  background:linear-gradient(180deg,#FAFBFF,#F7FAFF);
 }
 .bubble{
-  max-width:75%;padding:12px 16px;border-radius:18px;
-  font-size:14px;line-height:1.4;word-wrap:break-word;
+  max-width:80%;
+  padding:10px 14px;
+  border-radius:18px;
+  font-size:14px;
+  line-height:1.4;
+  word-wrap:break-word;
 }
 .me{
   align-self:flex-end;
@@ -232,7 +289,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   border-bottom-left-radius:6px
 }
 .chat-foot{
-  display:flex;gap:10px;padding:12px 16px;
+  display:flex;gap:8px;padding:10px 12px;
   border-top:1px solid var(--line);background:#fff;flex-shrink:0;
 }
 
@@ -285,7 +342,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .profile-actions{display:flex;flex-direction:column;gap:8px}
 .profile-btn{
   display:flex;justify-content:space-between;align-items:center;
-  padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:14px;
+  padding:14px 16px;background:#fff;border:1px солид var(--line);border-radius:14px;
   cursor:pointer;transition:all .15s
 }
 .profile-btn:hover{background:var(--bg);border-color:var(--brand)}
@@ -377,9 +434,19 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 
 /* MOBILE tweaks */
 @media (max-width: 600px){
+  .container{
+    padding:10px 8px 90px;
+  }
+  .card{
+    padding:12px;
+    border-radius:16px;
+  }
   .task{align-items:flex-start;padding:9px 9px}
   .team-detail-header{flex-direction:column;align-items:flex-start}
   .team-header-actions{justify-content:flex-start}
+  .chat-list{
+    grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+  }
 }
 
 /* STATS */
@@ -409,9 +476,13 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 
   <!-- HOME -->
   <section id="screen-home" class="active grid-2">
-    <div class="card">
-      <h3>Фокус</h3>
-      <label>Самое главное сегодня</label>
+    <div class="card focus-card">
+      <h3><span class="focus-emoji">🎯</span>Фокус</h3>
+      <div id="focus-display" class="focus-display" style="display:none">
+        <div class="focus-label">Текущий фокус</div>
+        <div id="focus-text" class="focus-text"></div>
+      </div>
+      <label>Обновить фокус на сегодня</label>
       <div style="display:flex; gap:10px; flex-wrap:wrap">
         <input id="focus-input" class="input" type="text" placeholder="Например: закрыть отчёт" />
         <button id="focus-save" class="btn" style="white-space:nowrap">Сохранить</button>
@@ -600,7 +671,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   </section>
 </div>
 
-<!-- CHAT WINDOW -->
+<!-- CHAT WINDOW (полный экран) -->
 <div id="chat-window-overlay" class="chat-window-overlay">
   <div class="chat-window">
     <div class="chat-header">
@@ -766,16 +837,36 @@ $$('.nav .item').forEach(it=>{
   };
 });
 
-/* focus */
+/* ФОКУС */
+function updateFocusDisplay(text){
+  const box = $('#focus-display');
+  const t = $('#focus-text');
+  if (!box || !t) return;
+  const v = (text || '').trim();
+  if (!v){
+    box.style.display='none';
+    t.textContent = '';
+  } else {
+    box.style.display='block';
+    box.classList.toggle('focus-display-empty', false);
+    t.textContent = v;
+  }
+}
+$('#focus-display')?.addEventListener('click', () => {
+  $('#focus-input').focus();
+});
+
 $('#focus-save').onclick = async ()=>{
   const text = $('#focus-input').value.trim();
   if (!text) return showToast('Пустой фокус');
   try{
     const r = await api('/api/focus','POST',{ text });
     focus = r.focus;
+    updateFocusDisplay(text);
     showToast('Фокус сохранён');
   }catch(e){
     focus = { text, id:'local_'+Date.now() };
+    updateFocusDisplay(text);
     showToast('Фокус сохранён (офлайн)');
   }
 };
@@ -1174,7 +1265,7 @@ function renderWeekChart(){
     const bar = document.createElement('div');
     bar.style.cssText = `
       flex: 1;
-      background: linear-gradient(to top, var(--brand), var(--brand-2));
+      background: linear-gradient(to топ, var(--brand), var(--brand-2));
       border-radius: 4px 4px 0 0;
       height: ${height}%;
       min-height: 8px;
@@ -1409,6 +1500,7 @@ async function openChat(chatId) {
     }));
     $('#current-chat-title').textContent = r.chat?.title || 'Чат';
     $('#chat-window-overlay').classList.add('active');
+    document.body.classList.add('chat-open');
     renderChatMessages(currentChatMessages);
     setTimeout(() => $('#chat-input').focus(), 100);
   } catch (e) {
@@ -1421,6 +1513,7 @@ function closeChat() {
   currentChatId = null;
   currentChatMessages = [];
   $('#chat-window-overlay').classList.remove('active');
+  document.body.classList.remove('chat-open');
   $('#chat-body').innerHTML = '';
 }
 
@@ -1581,8 +1674,12 @@ async function loadAll(){
   try{
     const f = await api('/api/focus','GET');
     focus = f.focus || null;
-    $('#focus-input').value = focus?.text || '';
-  }catch(e){}
+    const text = focus?.text || '';
+    $('#focus-input').value = text;
+    updateFocusDisplay(text);
+  }catch(e){
+    updateFocusDisplay('');
+  }
 
   try{
     const t = await api('/api/tasks','GET');
