@@ -1,5 +1,5 @@
 // api/chat.js
-// Growth Assistant — LLM-чат с инструментами и поддержкой множественных чатов
+// Growth Assistant — LLM-чат с инструментами и поддержкой контекста
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -21,37 +21,31 @@ export default async function handler(req, res) {
     const tgIdHeader = (req.headers['x-tg-id'] || '').toString();
     const tgId       = (tg_id || tgIdHeader || '').toString();
 
-    // 0) контекст пользователя: фокус + задачи
+    // 0) Подтягиваем контекст пользователя: фокус + задачи
     const ctx = await getContextSnapshot(baseUrl, tgId);
 
-    // 1) системный промт
+    // 1) Собираем системный промпт
     const sys = buildSystemPrompt(ctx);
 
-    // 2) история диалога, которую прислал фронт
+    // 2) История чата (из фронта) — последние 16 сообщений
     const historyMessages = Array.isArray(history)
       ? history
-          .filter(
-            m =>
-              m &&
-              (m.role === 'user' || m.role === 'assistant') &&
-              typeof m.content === 'string' &&
-              m.content.trim()
-          )
-          .slice(-16) // защитимся от слишком длинной истории
+          .slice(-16)
           .map(m => ({
-            role: m.role,
-            content: m.content.trim()
+            role: m.role === 'assistant' ? 'assistant' : 'user',
+            content: (m.content || '').toString().slice(0, 1500)
           }))
+          .filter(m => m.content.trim().length > 0)
       : [];
 
-    // 3) сообщения для модели: системка + история + текущий запрос
+    // 3) Итоговый список сообщений для модели
     const messages = [
       { role: 'system', content: sys },
       ...historyMessages,
       { role: 'user', content: userText }
     ];
 
-    // 4) агент с tools
+    // 4) Запускаем агента
     const reply = await runAgent(messages, baseUrl, tgId);
 
     return res.status(200).json({
@@ -65,7 +59,7 @@ export default async function handler(req, res) {
       ok: true,
       reply:
         'Я на секунду задумался 😅 Скажи, что сделать: «добавь задачу … завтра в 15:00», «фокус: …», «покажи задачи на неделю», «удали задачу …».',
-      chat_id: req.body?.chat_id || null
+      chat_id: null
     });
   }
 }
@@ -80,60 +74,37 @@ async function runAgent(messages, baseUrl, tgId) {
   const openai = new OpenAI({ apiKey });
 
   const tools = [
-    fnDef('add_task', 'Создать новую задачу (обычно личную, если явно не про команду)', {
+    fnDef('add_task', 'Создать новую задачу', {
       type: 'object',
       properties: {
-        title: {
-          type: 'string',
-          description:
-            'Короткий заголовок задачи (≤120 символов). Формулируй так, чтобы её было легко выполнить.'
-        },
-        due_ts: {
-          type: 'integer',
-          description:
-            'Дедлайн в миллисекундах UNIX. Если нет конкретного срока — используй null (бэклог).'
-        }
+        title: { type: 'string', description: 'Короткий заголовок задачи (≤120 символов)' },
+        due_ts: { type: 'integer', description: 'Дедлайн в миллисекундах UNIX. null, если бэклог.' }
       },
       required: ['title']
     }),
-    fnDef('set_focus', 'Установить или обновить фокус дня пользователя', {
+    fnDef('set_focus', 'Установить или обновить фокус дня', {
       type: 'object',
-      properties: {
-        text: {
-          type: 'string',
-          description: 'Краткий фокус дня в 1–2 строках, без воды.'
-        }
-      },
+      properties: { text: { type: 'string', description: 'Краткий фокус дня' } },
       required: ['text']
     }),
-    fnDef('list_tasks', 'Получить задачи за нужный период', {
+    fnDef('list_tasks', 'Получить задачи в заданном периоде', {
       type: 'object',
       properties: {
         period: {
           type: 'string',
-          description: 'Период задач: today|tomorrow|week|backlog|overdue|all'
+          description: 'today|tomorrow|week|backlog|overdue|all'
         }
       },
       required: ['period']
     }),
     fnDef('delete_task', 'Удалить задачу по части названия', {
       type: 'object',
-      properties: {
-        query: {
-          type: 'string',
-          description: 'Фраза для поиска нужной задачи (желательно почти точное название).'
-        }
-      },
+      properties: { query: { type: 'string', description: 'Фраза для поиска задачи' } },
       required: ['query']
     }),
     fnDef('complete_task', 'Отметить задачу выполненной по части названия', {
       type: 'object',
-      properties: {
-        query: {
-          type: 'string',
-          description: 'Фраза для поиска задачи, которую нужно пометить выполненной.'
-        }
-      },
+      properties: { query: { type: 'string', description: 'Фраза для поиска задачи' } },
       required: ['query']
     })
   ];
@@ -153,7 +124,12 @@ async function runAgent(messages, baseUrl, tgId) {
 
     const calls = msg.tool_calls || [];
     if (calls.length) {
-      messages.push({ role: 'assistant', tool_calls: calls, content: msg.content || '' });
+      // модель решила вызвать функции
+      messages.push({
+        role: 'assistant',
+        tool_calls: calls,
+        content: msg.content || ''
+      });
 
       for (const c of calls) {
         const name = c.function?.name;
@@ -209,44 +185,35 @@ async function tool_add_task(baseUrl, tgId, args) {
     body: JSON.stringify({ title, due_ts })
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) {
-    return JSON.stringify({ ok: false, error: j?.error || String(r.status) });
-  }
+  if (!r.ok) return JSON.stringify({ ok: false, error: j?.error || String(r.status) });
 
   const when = due_ts ? fmtDate(due_ts) : 'бэклог';
   return JSON.stringify({
     ok: true,
     task: j.task || { title, due_ts },
-    note: `задача создана (срок: ${when})`
+    note: `создана (${when})`
   });
 }
 
 async function tool_set_focus(baseUrl, tgId, args) {
   const text = (args?.text || '').toString().slice(0, 160);
-
   const r = await fetch(`${baseUrl}/api/focus`, {
     method: 'POST',
     headers: headersJson(tgId),
     body: JSON.stringify({ text })
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) {
-    return JSON.stringify({ ok: false, error: j?.error || String(r.status) });
-  }
-
-  return JSON.stringify({
-    ok: true,
-    focus: { text },
-    note: 'фокус обновлён'
-  });
+  if (!r.ok) return JSON.stringify({ ok: false, error: j?.error || String(r.status) });
+  return JSON.stringify({ ok: true, focus: { text }, note: 'фокус обновлён' });
 }
 
 async function tool_list_tasks(baseUrl, tgId, args) {
-  const period  = normPeriod(args?.period) || 'today';
-  const items   = await fetchTasks(baseUrl, tgId);
-  const now     = Date.now();
-  const range   = calcRange(period);
-  let filtered  = items;
+  const period = normPeriod(args?.period) || 'today';
+  const items  = await fetchTasks(baseUrl, tgId);
+
+  const now   = Date.now();
+  const range = calcRange(period);
+  let filtered = items;
 
   if (period === 'backlog') {
     filtered = items.filter(t => t.due_ts == null);
@@ -260,24 +227,18 @@ async function tool_list_tasks(baseUrl, tgId, args) {
 
   filtered.sort(
     (a, b) =>
-      (a.is_done - b.is_done) || ((a.due_ts ?? 1e18) - (b.due_ts ?? 1e18))
+      a.is_done - b.is_done ||
+      ((a.due_ts ?? 1e18) - (b.due_ts ?? 1e18))
   );
-
-  return JSON.stringify({
-    ok: true,
-    period,
-    items: filtered.slice(0, 50)
-  });
+  return JSON.stringify({ ok: true, period, items: filtered.slice(0, 50) });
 }
 
 async function tool_delete_task(baseUrl, tgId, args) {
-  const query   = (args?.query || '').toString().toLowerCase().trim();
-  const items   = await fetchTasks(baseUrl, tgId);
+  const query  = (args?.query || '').toString().toLowerCase().trim();
+  const items  = await fetchTasks(baseUrl, tgId);
   const matched = fuzzyFind(items, query);
 
-  if (matched.length === 0) {
-    return JSON.stringify({ ok: false, error: 'not_found' });
-  }
+  if (matched.length === 0) return JSON.stringify({ ok: false, error: 'not_found' });
   if (matched.length > 1) {
     return JSON.stringify({
       ok: false,
@@ -287,26 +248,20 @@ async function tool_delete_task(baseUrl, tgId, args) {
   }
 
   const t = matched[0];
-  const r = await fetch(`${baseUrl}/api/tasks/delete?id=${encodeURIComponent(t.id)}`, {
-    method: 'POST',
-    headers: headersJson(tgId),
-    body: JSON.stringify({})
-  });
-  if (!r.ok) {
-    return JSON.stringify({ ok: false, error: String(await safeErr(r)) });
-  }
-
+  const r = await fetch(
+    `${baseUrl}/api/tasks/delete?id=${encodeURIComponent(t.id)}`,
+    { method: 'POST', headers: headersJson(tgId), body: JSON.stringify({}) }
+  );
+  if (!r.ok) return JSON.stringify({ ok: false, error: String(await safeErr(r)) });
   return JSON.stringify({ ok: true, deleted: t.title });
 }
 
 async function tool_complete_task(baseUrl, tgId, args) {
-  const query   = (args?.query || '').toString().toLowerCase().trim();
-  const items   = await fetchTasks(baseUrl, tgId);
+  const query  = (args?.query || '').toString().toLowerCase().trim();
+  const items  = await fetchTasks(baseUrl, tgId);
   const matched = fuzzyFind(items, query);
 
-  if (matched.length === 0) {
-    return JSON.stringify({ ok: false, error: 'not_found' });
-  }
+  if (matched.length === 0) return JSON.stringify({ ok: false, error: 'not_found' });
   if (matched.length > 1) {
     return JSON.stringify({
       ok: false,
@@ -316,15 +271,11 @@ async function tool_complete_task(baseUrl, tgId, args) {
   }
 
   const t = matched[0];
-  const r = await fetch(`${baseUrl}/api/tasks/toggle?id=${encodeURIComponent(t.id)}`, {
-    method: 'POST',
-    headers: headersJson(tgId),
-    body: JSON.stringify({})
-  });
-  if (!r.ok) {
-    return JSON.stringify({ ok: false, error: String(await safeErr(r)) });
-  }
-
+  const r = await fetch(
+    `${baseUrl}/api/tasks/toggle?id=${encodeURIComponent(t.id)}`,
+    { method: 'POST', headers: headersJson(tgId), body: JSON.stringify({}) }
+  );
+  if (!r.ok) return JSON.stringify({ ok: false, error: String(await safeErr(r)) });
   return JSON.stringify({ ok: true, completed: t.title });
 }
 
@@ -332,7 +283,6 @@ async function tool_complete_task(baseUrl, tgId, args) {
 
 async function getContextSnapshot(baseUrl, tgId) {
   const ctx = { focus: null, tasks: [] };
-
   try {
     const f = await fetch(`${baseUrl}/api/focus`, { headers: headersJson(tgId) });
     if (f.ok) {
@@ -352,79 +302,43 @@ async function getContextSnapshot(baseUrl, tgId) {
   return ctx;
 }
 
-/* ========================= Новый системный промт ========================= */
-
 function buildSystemPrompt(ctx) {
-  const now      = new Date();
-  const nowRu    = now.toLocaleString('ru-RU', {
+  const now     = new Date();
+  const dateStr = now.toLocaleString('ru-RU', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
     hour: '2-digit',
-    minute: 'two-digit'
+    minute: '2-digit'
   });
-  const nowIso   = now.toISOString();
 
-  const focusStr = ctx.focus?.text
-    ? `ФОКУС ДНЯ: ${ctx.focus.text}`
-    : 'ФОКУС ДНЯ пока не задан.';
-
+  const focusStr = ctx.focus?.text ? `ФОКУС: ${ctx.focus.text}` : 'ФОКУС не задан';
   const topTasks = (ctx.tasks || [])
-    .slice(0, 15)
+    .slice(0, 10)
     .map(t => {
-      const due =
-        t.due_ts != null
-          ? `до ${fmtDate(t.due_ts)}`
-          : 'без срока';
+      const due  = t.due_ts != null ? `до ${fmtDate(t.due_ts)}` : 'бэклог';
       const mark = t.is_done ? '✓' : '•';
-      const kind = t.team_id ? ' (командная)' : '';
-      return `${mark} ${t.title}${kind} — ${due}`;
+      return `${mark} ${t.title} (${due})`;
     })
     .join('\n');
 
-  const contextBlock = [
-    focusStr,
-    topTasks ? `ТЕКУЩИЕ ЗАДАЧИ:\n${topTasks}` : 'Задач пока нет.'
-  ].join('\n');
-
   return [
-    'Ты — умный, деловой ассистент в мини-приложении Growth Assistant.',
-    'Твоя цель — помогать пользователю двигаться по делам: формулировать задачи, ставить сроки, расставлять приоритеты, работать с фокусом и планом.',
+    'Ты — деловой ассистент Growth Assistant.',
+    'Всегда учитывай контекст фокуса и задач пользователя.',
+    'Отвечай кратко и по делу, без воды. Используй в ответе максимум 3–5 предложений.',
+    'Если пользователь просит создать/изменить задачу или фокус — используй доступные функции.',
+    'Если пользователь просит просто поговорить/дать совет — не вызывай функции без необходимости.',
+    'Всегда следуй текущей дате ниже и не придумывай свой год или месяц.',
     '',
-    `ТЕКУЩЕЕ ВРЕМЯ СЕРВЕРА: ${nowRu} (${nowIso}).`,
-    'Считай, что это и есть реальная текущая дата и год. Если пользователь спрашивает, какой сейчас год, месяц, число или время — всегда отвечай, опираясь именно на эти значения, а не на свои старые знания.',
-    'Когда нужно ставить сроки («сегодня в 12:00», «завтра в 9», «через 2 дня») — рассчитывай due_ts относительно этого времени.',
+    `Сегодняшняя дата и время: ${dateStr}.`,
     '',
-    'ОБЩИЕ ПРАВИЛА ОТВЕТА:',
-    '• Отвечай на том языке, на котором пишет пользователь (если неочевидно — по умолчанию по-русски).',
-    '• Пиши коротко и по делу: 1–3 абзаца + небольшой список (до 5 пунктов), только если он помогает.',
-    '• Без воды: каждый ответ должен продвигать пользователя вперёд.',
-    '• Всегда предлагай следующий маленький шаг, который можно сделать сегодня или в ближайшие дни.',
+    'Формат финального ответа (если уместно):',
+    '— 1–3 предложения с ключевой мыслью;',
+    '— затем маркированный список шагов (до 5 пунктов).',
     '',
-    'РАБОТА С КОНТЕКСТОМ И ПАМЯТЬЮ:',
-    '• Учитывай в ответах текущий фокус и список задач из блока контекста ниже.',
-    '• История диалога передаётся вместе с сообщениями: используй её, чтобы не задавать одни и те же вопросы и помнить, о чём говорили раньше.',
-    '• Не выдумывай детали прошлой переписки, которой нет в истории.',
-    '',
-    'ИСПОЛЬЗОВАНИЕ ИНСТРУМЕНТОВ:',
-    '• Если пользователь просит добавить/изменить/удалить задачи или фокус — используй соответствующие функции.',
-    '• Перед созданием задачи или сменой фокуса убедись, что это логично вытекает из запроса. Если сомневаешься — задай 1 уточняющий вопрос.',
-    '• После вызова инструмента в финальном ответе коротко напиши, что именно сделал (например: «Добавил задачу … на сегодня в 12:00»).',
-    '',
-    'СТИЛЬ И ТОН:',
-    '• Тон — дружелюбный, спокойный, деловой. Без панибратства и без канцелярита.',
-    '• Можно иногда использовать лёгкие эмодзи (до 1–3 за ответ, не обязательно).',
-    '• Если запрос большой и запутанный — сначала кратко переформулируй его своими словами, затем предложи план.',
-    '',
-    'ПРОДУКТИВНОСТЬ:',
-    '• Помогай дробить крупные цели на простые шаги-задачи.',
-    '• Когда уместно, предлагай конкретные сроки и формулировки задач, которые можно создать в системе.',
-    '• Если задач много — предлагай приоритизацию (важное/срочное, сегодня/неделя/месяц).',
-    '',
-    'ТЕКУЩИЙ КОНТЕКСТ ПОЛЬЗОВАТЕЛЯ:',
-    contextBlock,
-    '',
-    'Всегда опирайся на этот контекст и текущее время, когда даёшь советы или работаешь с задачами.'
+    'Контекст пользователя:',
+    focusStr,
+    topTasks ? `ЗАДАЧИ:\n${topTasks}` : 'ЗАДАЧ нет'
   ].join('\n');
 }
 
@@ -435,8 +349,11 @@ function fnDef(name, description, parameters) {
 }
 
 function safeParseJson(s) {
-  try { return JSON.parse(s || '{}'); }
-  catch { return {}; }
+  try {
+    return JSON.parse(s || '{}');
+  } catch {
+    return {};
+  }
 }
 
 function headersJson(tgId) {
@@ -472,28 +389,24 @@ async function safeErr(r) {
   }
 }
 
-function startOfDay(ts) { const d = new Date(ts); d.setHours(0, 0, 0, 0); return d.getTime(); }
+function startOfDay(ts) { const d = new Date(ts); d.setHours(0,0,0,0); return d.getTime(); }
 function endOfDay(ts)   { const d = new Date(ts); d.setHours(23,59,59,999); return d.getTime(); }
 function addDays(ts, n) { const d = new Date(ts); d.setDate(d.getDate() + n); return d.getTime(); }
 
 function calcRange(period) {
   const now = Date.now();
-  if (period === 'today') {
-    return { start: startOfDay(now), end: endOfDay(now) };
-  }
+  if (period === 'today')    return { start: startOfDay(now), end: endOfDay(now) };
   if (period === 'tomorrow') {
     const t = addDays(now, 1);
     return { start: startOfDay(t), end: endOfDay(t) };
   }
-  if (period === 'week') {
-    return { start: startOfDay(now), end: endOfDay(addDays(now, 7)) };
-  }
+  if (period === 'week')     return { start: startOfDay(now), end: endOfDay(addDays(now, 7)) };
   return null;
 }
 
 function normPeriod(p) {
   const v = (p || '').toString().toLowerCase();
-  if (['today', 'tomorrow', 'week', 'backlog', 'overdue', 'all'].includes(v)) return v;
+  if (['today','tomorrow','week','backlog','overdue','all'].includes(v)) return v;
   return 'today';
 }
 
@@ -522,6 +435,7 @@ function fuzzyFind(items, q) {
   if (!s) return [];
   let res = items.filter(t => (t.title || '').toLowerCase().includes(s));
   if (res.length) return res;
+
   const parts = s.split(/\s+/).filter(Boolean);
   if (!parts.length) return [];
   res = items.filter(t => {
