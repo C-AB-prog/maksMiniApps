@@ -139,7 +139,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .badge.dead{color:#991b1b;border-color:#ef4444;background:#fef2f2}
 .badge.team{margin-left:6px; font-size:10px; background:#eef2ff; border-color:#c7d2fe; color:#4f46e5}
 
-/* CHAT (как было) */
+/* CHAT */
 .chat-container{display:flex;flex-direction:column;gap:14px}
 .chat-list{
   display:grid;
@@ -276,7 +276,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   box-shadow:0 10px 20px rgba(0,0,0,.2);z-index:999;
   max-width:90%;font-size:13px;
 }
-.mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+.mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace}
 .muted{color:var(--muted)}
 
 /* PROFILE */
@@ -1349,93 +1349,101 @@ $('#team-members-toggle').onclick = ()=>{
   $('#team-members-arrow').textContent = teamMembersOpen ? '▴' : '▾';
 };
 
-/* CHAT */
+/* CHAT — синхронизированный с БД */
 let chats = [];
 let currentChatId = null;
+let currentChatMessages = [];
 
 async function loadChats() {
   try {
-    // основное хранилище — сервер
-    const r = await api('/api/chat-store', 'GET');
-    const rows = r.chats || [];
-    chats = rows.map(row => row.data);
+    const r = await api('/api/chat', 'GET');
+    chats = r.chats || [];
+    renderChatList();
   } catch (e) {
-    console.error('Error loading chats from server, fallback to localStorage:', e);
-    try {
-      const saved = localStorage.getItem('growth_assistant_chats');
-      chats = saved ? JSON.parse(saved) : [];
-    } catch {
-      chats = [];
-    }
+    console.error('Error loading chats:', e);
+    showToast('Не удалось загрузить чаты');
   }
-  renderChatList();
 }
 
-async function saveChats() {
+async function createNewChat(title = 'Новый чат') {
+  const r = await api('/api/chat', 'POST', {
+    action: 'create',
+    title
+  });
+  const chat = r.chat;
+  if (chat) {
+    chats.unshift(chat);
+    renderChatList();
+    return chat.id;
+  }
+  throw new Error('no chat in response');
+}
+
+async function deleteChat(chatId) {
   try {
-    await api('/api/chat-store', 'POST', { chats });
+    await api('/api/chat', 'POST', {
+      action: 'delete',
+      chat_id: chatId
+    });
+    if (currentChatId === chatId) {
+      closeChat();
+    }
+    chats = chats.filter(c => c.id !== chatId);
+    renderChatList();
+    showToast('Чат удалён');
   } catch (e) {
-    console.error('Error saving chats to server, fallback to localStorage:', e);
-    try {
-      localStorage.setItem('growth_assistant_chats', JSON.stringify(chats));
-    } catch {}
+    console.error('Error deleting chat:', e);
+    showToast('Не удалось удалить чат');
+  }
+}
+window.deleteChat = deleteChat;
+
+async function openChat(chatId) {
+  try {
+    const r = await api(`/api/chat?history=1&chat_id=${encodeURIComponent(chatId)}`, 'GET');
+    currentChatId = chatId;
+    currentChatMessages = (r.messages || []).map(m => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.content,
+      created_at: m.created_at
+    }));
+    $('#current-chat-title').textContent = r.chat?.title || 'Чат';
+    $('#chat-window-overlay').classList.add('active');
+    renderChatMessages(currentChatMessages);
+    setTimeout(() => $('#chat-input').focus(), 100);
+  } catch (e) {
+    console.error('Error opening chat:', e);
+    showToast('Не удалось открыть чат');
   }
 }
 
-function createNewChat(title = 'Новый чат') {
-  const newChat = {
-    id: 'chat_' + Date.now(),
-    title,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    messages: [
-      {
-        role: 'assistant',
-        content: 'Привет! Я твой ассистент по продуктивности. Чем могу помочь?',
-        timestamp: new Date().toISOString()
-      }
-    ]
-  };
-  chats.unshift(newChat);
-  saveChats();
-  renderChatList();
-  return newChat.id;
-}
-function deleteChat(chatId) {
-  chats = chats.filter(chat => chat.id !== chatId);
-  if (currentChatId === chatId) closeChat();
-  saveChats();
-  renderChatList();
-}
-function openChat(chatId) {
-  const chat = chats.find(c => c.id === chatId);
-  if (!chat) return;
-  currentChatId = chatId;
-  $('#current-chat-title').textContent = chat.title;
-  $('#chat-window-overlay').classList.add('active');
-  renderChatMessages(chat.messages);
-  setTimeout(()=>$('#chat-input').focus(),100);
-}
 function closeChat() {
   currentChatId = null;
+  currentChatMessages = [];
   $('#chat-window-overlay').classList.remove('active');
   $('#chat-body').innerHTML = '';
 }
+
 function renderChatList() {
   const container = $('#chat-list');
   container.innerHTML = '';
+
   chats.forEach(chat => {
     const chatEl = document.createElement('div');
     chatEl.className = `chat-item ${currentChatId === chat.id ? 'active' : ''}`;
+    const dateStr = chat.updated_at
+      ? new Date(chat.updated_at).toLocaleDateString('ru-RU')
+      : '';
     chatEl.innerHTML = `
-      <button class="chat-delete" onclick="event.stopPropagation(); deleteChat('${chat.id}')">×</button>
+      <button class="chat-delete" onclick="event.stopPropagation(); deleteChat(${chat.id})">×</button>
       <div class="chat-icon">💬</div>
-      <div class="chat-title">${chat.title}</div>
-      <div class="chat-date">${new Date(chat.updatedAt).toLocaleDateString('ru-RU')}</div>
+      <div class="chat-title">${chat.title || 'Чат'}</div>
+      <div class="chat-date">${dateStr}</div>
     `;
     chatEl.onclick = () => openChat(chat.id);
     container.appendChild(chatEl);
   });
+
   const newChatEl = document.createElement('div');
   newChatEl.className = 'chat-item new';
   newChatEl.innerHTML = `
@@ -1444,61 +1452,80 @@ function renderChatList() {
   `;
   newChatEl.onclick = () => $('#new-chat-modal').classList.add('active');
   container.appendChild(newChatEl);
+
   $('#no-chats-message').style.display = chats.length === 0 ? 'block' : 'none';
 }
+
 function renderChatMessages(messages) {
   const container = $('#chat-body');
   container.innerHTML = '';
-  messages.forEach(msg => {
+  if (!messages.length) {
     const bubble = document.createElement('div');
-    bubble.className = `bubble ${msg.role === 'user' ? 'me' : 'bot'}`;
-    bubble.textContent = msg.content;
+    bubble.className = 'bubble bot';
+    bubble.textContent = 'Привет! Я твой ассистент по продуктивности. Чем могу помочь?';
     container.appendChild(bubble);
-  });
+  } else {
+    messages.forEach(msg => {
+      const bubble = document.createElement('div');
+      bubble.className = `bubble ${msg.role === 'user' ? 'me' : 'bot'}`;
+      bubble.textContent = msg.content;
+      container.appendChild(bubble);
+    });
+  }
   container.scrollTop = container.scrollHeight;
 }
+
 function addMessageToChat(role, content) {
   if (!currentChatId) return;
-  const chat = chats.find(c => c.id === currentChatId);
-  if (!chat) return;
-  const newMessage = { role, content, timestamp: new Date().toISOString() };
-  chat.messages.push(newMessage);
-  chat.updatedAt = new Date().toISOString();
-  saveChats();
-  renderChatMessages(chat.messages);
+  currentChatMessages.push({
+    role,
+    content,
+    created_at: new Date().toISOString()
+  });
+  renderChatMessages(currentChatMessages);
 }
+
+/* CHAT: кнопки / send */
 $('#close-chat').onclick = closeChat;
-$('#create-first-chat').onclick = () => { $('#new-chat-modal').classList.add('active'); };
+
+$('#create-first-chat').onclick = () => {
+  $('#new-chat-modal').classList.add('active');
+};
+
 $('#cancel-new-chat').onclick = () => {
   $('#new-chat-modal').classList.remove('active');
   $('#new-chat-title').value = '';
 };
-$('#confirm-new-chat').onclick = () => {
+
+$('#confirm-new-chat').onclick = async () => {
   const title = $('#new-chat-title').value.trim() || 'Новый чат';
-  const newChatId = createNewChat(title);
-  $('#new-chat-modal').classList.remove('active');
-  $('#new-chat-title').value = '';
-  openChat(newChatId);
-  showToast('Чат создан');
+  try {
+    const newChatId = await createNewChat(title);
+    $('#new-chat-modal').classList.remove('active');
+    $('#new-chat-title').value = '';
+    await openChat(newChatId);
+    showToast('Чат создан');
+    await loadChats();
+  } catch (e) {
+    console.error('Error creating chat:', e);
+    showToast('Не удалось создать чат');
+  }
 };
+
 $('#chat-send').onclick = async () => {
   const text = $('#chat-input').value.trim();
   if (!text) return;
 
-  // если чата ещё нет — создаём новый
+  // на всякий случай: если чата нет — создаём
   if (!currentChatId) {
-    const newChatId = createNewChat('Новый чат');
-    openChat(newChatId);
+    try {
+      const newChatId = await createNewChat('Новый чат');
+      await openChat(newChatId);
+    } catch (e) {
+      console.error('Error auto-creating chat:', e);
+      return;
+    }
   }
-
-  // берём историю сообщений текущего чата (для памяти на бэке)
-  const chat = chats.find(c => c.id === currentChatId);
-  const history = chat
-    ? chat.messages.map(m => ({
-        role: m.role === 'assistant' ? 'assistant' : 'user',
-        content: m.content
-      })).slice(-16)
-    : [];
 
   $('#chat-input').value = '';
   addMessageToChat('user', text);
@@ -1506,23 +1533,34 @@ $('#chat-send').onclick = async () => {
   try {
     const r = await api('/api/chat', 'POST', {
       text,
-      chat_id: currentChatId,
-      history
+      chat_id: currentChatId
     });
-    addMessageToChat('assistant', r.reply || 'Я обработал ваш запрос и готов помочь!');
+    if (r.chat_id && r.chat_id !== currentChatId) {
+      currentChatId = r.chat_id;
+    }
+    addMessageToChat('assistant', r.reply || 'Готово.');
+    loadChats();
   } catch (e) {
+    console.error('Error sending chat message:', e);
     addMessageToChat(
       'assistant',
-      'В настоящее время я не могу подключиться к серверу. Вот что я могу сделать офлайн:\n\n' +
-      '• Помочь разбить большие задачи на шаги\n' +
-      '• Подсказать методы тайм-менеджмента\n' +
-      '• Составить примерный план выполнения задач'
+      'Сейчас не могу подключиться к серверу.\n\n' +
+      'Могу офлайн помочь структурировать задачи, распланировать день или подсказать техники продуктивности.'
     );
   }
 };
-$('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('#chat-send').click(); });
-$('#new-chat-modal').onclick = (e) => { if (e.target === $('#new-chat-modal')) $('#new-chat-modal').classList.remove('active'); };
-$('#chat-window-overlay').onclick = (e) => { if (e.target === $('#chat-window-overlay')) closeChat(); };
+
+$('#chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') $('#chat-send').click();
+});
+
+$('#new-chat-modal').onclick = (e) => {
+  if (e.target === $('#new-chat-modal')) $('#new-chat-modal').classList.remove('active');
+};
+
+$('#chat-window-overlay').onclick = (e) => {
+  if (e.target === $('#chat-window-overlay')) closeChat();
+};
 
 /* profile */
 $$('.lang-btn').forEach(btn => {
