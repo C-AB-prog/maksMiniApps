@@ -139,27 +139,47 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .badge.dead{color:#991b1b;border-color:#ef4444;background:#fef2f2}
 .badge.team{margin-left:6px; font-size:10px; background:#eef2ff; border-color:#c7d2fe; color:#4f46e5}
 
-/* FOCUS BLOCK */
-.focus-card h3{display:flex;align-items:center;gap:6px}
-.focus-emoji{font-size:18px}
-.focus-display{
+/* ФОКУС */
+.focus-header{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:8px;
+}
+.focus-header-icon{
+  width:26px;
+  height:26px;
+  border-radius:999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:radial-gradient(circle at 0 0,#f97316,transparent 55%), #fef3c7;
+  font-size:16px;
+}
+.focus-current{
+  margin-top:4px;
+  padding:12px 14px;
   border-radius:16px;
   border:1px dashed #c7d2fe;
-  background:linear-gradient(180deg,#f4f7ff,#eef2ff);
-  padding:10px 12px;
-  margin-bottom:10px;
-  cursor:pointer;
+  background:linear-gradient(135deg,#f5f7ff,#eef2ff);
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
 }
+.focus-current.empty{opacity:.75}
 .focus-label{
   font-size:11px;
-  letter-spacing:.06em;
+  letter-spacing:.08em;
   text-transform:uppercase;
-  color:#9ca3af;
+  color:var(--muted);
   margin-bottom:4px;
 }
-.focus-text{font-weight:600;font-size:14px}
+.focus-text{
+  font-weight:600;
+  font-size:14px;
+}
 
-/* CHAT */
+/* CHAT (как было) */
 .chat-container{display:flex;flex-direction:column;gap:14px}
 .chat-list{
   display:grid;
@@ -213,22 +233,18 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 }
 .chat-item:hover .chat-delete{opacity:1}
 
-/* CHAT WINDOW full-screen */
+/* CHAT WINDOW */
 .chat-window-overlay{
-  display:none;
-  position:fixed;
-  top:0;left:0;right:0;bottom:0;
-  background:rgba(0,0,0,.5);
-  z-index:1000;
-  align-items:stretch;
-  justify-content:center;
+  display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,.5);z-index:1000;
+  align-items:center;justify-content:center;padding:20px;
 }
 .chat-window-overlay.active{display:flex}
 .chat-window{
   display:flex;flex-direction:column;
-  width:100%;max-width:100%;
-  height:100%;max-height:100%;
-  background:#fff;border-radius:0;
+  width:100%;max-width:800px;
+  height:80vh;max-height:700px;
+  background:#fff;border-radius:20px;
   box-shadow:0 25px 50px rgba(0,0,0,.25);
   overflow:hidden;
 }
@@ -260,7 +276,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   border-top:1px solid var(--line);background:#fff;flex-shrink:0;
 }
 
-/* MODAL */
+/* MODAL (универсальный input + модал для чата) */
 .modal{
   display:none;position:fixed;top:0;left:0;right:0;bottom:0;
   background:rgba(0,0,0,.5);z-index:1100;align-items:center;justify-content:center;
@@ -377,19 +393,14 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .team-members-box ul{margin:4px 0 0 14px;padding:0}
 .team-members-box li{font-size:13px;margin-bottom:2px}
 
-/* FAB for teams: плавающая снизу */
-.team-fab{
-  position:fixed;
-  right:18px;
-  bottom:calc(80px + var(--safe-bottom));
-  z-index:30;
-}
+/* FAB */
+.team-fab{position:absolute;right:6px;bottom:6px}
 .team-fab button{
-  width:48px;height:48px;border-radius:999px;
-  box-shadow:var(--shadow-2);font-size:22px;padding:0;
+  width:40px;height:40px;border-radius:999px;
+  box-shadow:var(--shadow-2);font-size:20px;padding:0;
 }
 .team-menu{
-  position:absolute;right:0;bottom:56px;
+  position:absolute;right:6px;bottom:52px;
   background:#fff;border-radius:14px;border:1px solid var(--line);
   box-shadow:0 14px 28px rgba(15,23,42,.25);
   padding:6px;display:none;
@@ -399,6 +410,10 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   width:100%;justify-content:flex-start;margin:2px 0;
   font-size:13px;
 }
+
+/* Quick-add team row */
+.quick-team-row{display:none;gap:8px}
+.quick-team-row.visible{display:flex}
 
 /* MOBILE tweaks */
 @media (max-width: 600px){
@@ -434,23 +449,20 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 
   <!-- HOME -->
   <section id="screen-home" class="active grid-2">
-    <div class="card focus-card">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <h3><span class="focus-emoji">🎯</span>Фокус</h3>
-        <button id="focus-edit-btn" class="btn secondary icon" style="display:none" title="Изменить фокус">✎</button>
-      </div>
-
-      <div id="focus-display" class="focus-display" style="display:none">
-        <div class="focus-label">Текущий фокус</div>
-        <div id="focus-text" class="focus-text"></div>
-      </div>
-
-      <div id="focus-edit-block">
-        <label>Фокус на сегодня</label>
-        <div style="display:flex; gap:10px; flex-wrap:wrap">
-          <input id="focus-input" class="input" type="text" placeholder="Например: закрыть отчёт" />
-          <button id="focus-save" class="btn" style="white-space:nowrap">Сохранить</button>
+    <div class="card">
+      <div class="focus-header">
+        <div class="focus-header-icon">🎯</div>
+        <div>
+          <div style="font-size:14px;font-weight:700">Фокус</div>
+          <div class="muted" style="font-size:12px">Самое главное на сегодня</div>
         </div>
+      </div>
+      <div id="focus-current-block" class="focus-current empty">
+        <div>
+          <div class="focus-label">Текущий фокус</div>
+          <div id="focus-current-text" class="focus-text muted">Фокус ещё не задан</div>
+        </div>
+        <button id="focus-edit-btn" class="btn secondary icon" title="Изменить фокус">✎</button>
       </div>
     </div>
 
@@ -538,6 +550,14 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
             <div id="team-members-box" class="team-members-box" style="display:none">
               <ul id="team-members-list"></ul>
             </div>
+          </div>
+        </div>
+
+        <div class="team-fab">
+          <button id="team-fab-btn" class="btn icon">+</button>
+          <div id="team-menu" class="team-menu">
+            <button id="team-menu-create" class="btn secondary" style="padding:6px 10px">Создать команду</button>
+            <button id="team-menu-join" class="btn secondary" style="padding:6px 10px">Вступить по коду</button>
           </div>
         </div>
       </div>
@@ -659,12 +679,15 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   </div>
 </div>
 
-<!-- FAB команд (плавает снизу) -->
-<div class="team-fab" id="team-fab-wrapper" style="display:none">
-  <button id="team-fab-btn" class="btn icon">+</button>
-  <div id="team-menu" class="team-menu">
-    <button id="team-menu-create" class="btn secondary" style="padding:6px 10px">Создать команду</button>
-    <button id="team-menu-join" class="btn secondary" style="padding:6px 10px">Вступить по коду</button>
+<!-- UNIVERSAL INPUT MODAL (фокус + команды) -->
+<div id="input-modal" class="modal">
+  <div class="modal-content">
+    <h3 class="modal-title" id="input-modal-title">Заголовок</h3>
+    <input type="text" id="input-modal-field" class="input" placeholder="" style="margin-bottom:16px;">
+    <div style="display:flex;gap:10px;">
+      <button class="btn secondary" id="input-modal-cancel" style="flex:1;">Отмена</button>
+      <button class="btn" id="input-modal-confirm" style="flex:1;">Сохранить</button>
+    </div>
   </div>
 </div>
 
@@ -734,29 +757,6 @@ function fmt(ts){
   return d.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
 }
 
-/* focus helpers */
-const focusEditBtn   = $('#focus-edit-btn');
-const focusEditBlock = $('#focus-edit-block');
-
-function updateFocusDisplay(text){
-  const box = $('#focus-display');
-  const t   = $('#focus-text');
-  const v   = (text || '').trim();
-  if (!box || !t) return;
-
-  if (!v){
-    box.style.display = 'none';
-    t.textContent = '';
-    if (focusEditBlock) focusEditBlock.style.display = 'block';
-    if (focusEditBtn)   focusEditBtn.style.display   = 'none';
-  } else {
-    box.style.display = 'block';
-    t.textContent = v;
-    if (focusEditBlock) focusEditBlock.style.display = 'none';
-    if (focusEditBtn)   focusEditBtn.style.display   = 'inline-flex';
-  }
-}
-
 /* tg id */
 let tgId = 0;
 try {
@@ -803,6 +803,36 @@ function hasOwnedTeams(){
   return teamList.some(t => t.is_owner);
 }
 
+/* UNIVERSAL INPUT MODAL (фокус + команды) */
+const inputModal = {
+  onConfirm: null,
+  open({ title, placeholder, confirmText = 'Сохранить', initialValue = '', onConfirm }) {
+    $('#input-modal-title').textContent = title;
+    const field = $('#input-modal-field');
+    field.value = initialValue || '';
+    field.placeholder = placeholder || '';
+    $('#input-modal-confirm').textContent = confirmText;
+    this.onConfirm = onConfirm || null;
+    $('#input-modal').classList.add('active');
+    setTimeout(()=>field.focus(), 40);
+  },
+  close() {
+    $('#input-modal').classList.remove('active');
+    $('#input-modal-field').value = '';
+    this.onConfirm = null;
+  }
+};
+$('#input-modal-cancel').onclick = () => inputModal.close();
+$('#input-modal-confirm').onclick = () => {
+  const val = $('#input-modal-field').value.trim();
+  if (!val) { showToast('Поле не может быть пустым'); return; }
+  if (inputModal.onConfirm) inputModal.onConfirm(val);
+  inputModal.close();
+};
+$('#input-modal').onclick = (e) => {
+  if (e.target === $('#input-modal')) inputModal.close();
+};
+
 /* NAV */
 const screens = {
   home: $('#screen-home'),
@@ -822,43 +852,44 @@ $$('.nav .item').forEach(it=>{
     if (to === 'plan') {
       renderPlan();
       syncQuickTeamChip();
-      $('#team-fab-wrapper').style.display = 'block';
-    } else {
-      $('#team-fab-wrapper').style.display = 'none';
     }
   };
 });
 
-/* focus */
-$('#focus-save').onclick = async ()=>{
-  const text = $('#focus-input').value.trim();
-  if (!text) return showToast('Пустой фокус');
-  try{
-    const r = await api('/api/focus','POST',{ text });
-    focus = r.focus;
-    updateFocusDisplay(text);
-    showToast('Фокус сохранён');
-  }catch(e){
-    focus = { text, id:'local_'+Date.now() };
-    updateFocusDisplay(text);
-    showToast('Фокус сохранён (офлайн)');
+/* FOCUS */
+function renderFocus() {
+  const block = $('#focus-current-block');
+  const textEl = $('#focus-current-text');
+  const text = (focus && focus.text || '').trim();
+  if (text) {
+    textEl.textContent = text;
+    textEl.classList.remove('muted');
+    block.classList.remove('empty');
+  } else {
+    textEl.textContent = 'Фокус ещё не задан';
+    textEl.classList.add('muted');
+    block.classList.add('empty');
   }
-};
-
-if (focusEditBtn){
-  focusEditBtn.onclick = () => {
-    const box = $('#focus-display');
-    if (box) box.style.display = 'none';
-    if (focusEditBlock) focusEditBlock.style.display = 'block';
-    $('#focus-input').focus();
-  };
 }
-$('#focus-display')?.addEventListener('click', ()=>{
-  const box = $('#focus-display');
-  if (box) box.style.display = 'none';
-  if (focusEditBlock) focusEditBlock.style.display = 'block';
-  $('#focus-input').focus();
-});
+$('#focus-edit-btn').onclick = () => {
+  const initial = focus?.text || '';
+  inputModal.open({
+    title: 'Фокус на сегодня',
+    placeholder: 'Например: закрыть отчёт',
+    confirmText: 'Сохранить',
+    initialValue: initial,
+    onConfirm: async (text) => {
+      try{
+        const r = await api('/api/focus','POST',{ text });
+        focus = r.focus || { text };
+      }catch(e){
+        focus = { text, id:'local_'+Date.now() };
+      }
+      renderFocus();
+      showToast('Фокус сохранён');
+    }
+  });
+};
 
 /* quick add */
 const quickChips = $$('.seg .chip[data-prio]');
@@ -1172,8 +1203,10 @@ function fillTeamDetail(){
   const short = fullCode ? (fullCode.slice(0,4)+'••••') : '••••';
   $('#team-code-short').textContent = short;
 
+  // права
   $('#team-rename').style.display   = isOwner ? 'inline-flex' : 'none';
   $('#team-delete').style.display   = isOwner ? 'block'      : 'none';
+  // код копировать можно всем
   $('#team-code-copy').style.display = 'inline-flex';
 
   const ul = $('#team-members-list');
@@ -1334,41 +1367,53 @@ $('#team-fab-btn').onclick = ()=>{
 
 $('#team-menu-create').onclick = async ()=>{
   teamMenu.classList.remove('open');
-  const nameInput = prompt('Введите название команды (например: Отдел продаж)');
-  const name = nameInput && nameInput.trim() ? nameInput.trim() : '';
-  try{
-    const resp = await api('/api/team/create','POST', name ? { name } : {});
-    await loadTeamInfo();
-    if (resp.team && resp.team.id){
-      const found = teamList.find(t => t.team_id === resp.team.id);
-      if (found){
-        teamInfo = found;
-        teamDetailOpen = true;
-        teamMembersOpen = false;
-        fillTeamDetail();
+  inputModal.open({
+    title: 'Название команды',
+    placeholder: 'Например: Отдел продаж',
+    confirmText: 'Создать',
+    initialValue: '',
+    onConfirm: async (name) => {
+      try{
+        const resp = await api('/api/team/create','POST', name ? { name } : {});
+        await loadTeamInfo();
+        if (resp.team && resp.team.id){
+          const found = teamList.find(t => t.team_id === resp.team.id);
+          if (found){
+            teamInfo = found;
+            teamDetailOpen = true;
+            teamMembersOpen = false;
+            fillTeamDetail();
+          }
+        }
+        setPlanMode('team');
+        showToast('Команда создана');
+      }catch(e){
+        console.error(e);
+        showToast('Не удалось создать команду');
       }
     }
-    setPlanMode('team');
-    showToast('Команда создана');
-  }catch(e){
-    console.error(e);
-    showToast('Не удалось создать команду');
-  }
+  });
 };
 
 $('#team-menu-join').onclick = async ()=>{
   teamMenu.classList.remove('open');
-  const token = prompt('Введите код приглашения');
-  if (!token || !token.trim()) return;
-  try{
-    await api('/api/team/join','POST',{ token: token.trim() });
-    await loadTeamInfo();
-    setPlanMode('team');
-    showToast('Вы присоединились к команде');
-  }catch(e){
-    console.error(e);
-    showToast('Не удалось вступить в команду');
-  }
+  inputModal.open({
+    title: 'Вступить по коду',
+    placeholder: 'Код приглашения',
+    confirmText: 'Вступить',
+    initialValue: '',
+    onConfirm: async (token) => {
+      try{
+        await api('/api/team/join','POST',{ token: token.trim() });
+        await loadTeamInfo();
+        setPlanMode('team');
+        showToast('Вы присоединились к команде');
+      }catch(e){
+        console.error(e);
+        showToast('Не удалось вступить в команду');
+      }
+    }
+  });
 };
 
 $('#team-back').onclick = ()=>{
@@ -1380,21 +1425,27 @@ $('#team-back').onclick = ()=>{
 
 $('#team-rename').onclick = async ()=>{
   if (!teamInfo || !teamInfo.is_owner) return;
-  const nameInput = prompt('Новое название команды', teamInfo.name || '');
-  if (!nameInput || !nameInput.trim()) return;
-  try{
-    await api('/api/team/rename','POST',{
-      team_id: teamInfo.team_id,
-      name: nameInput.trim()
-    });
-    await loadTeamInfo();
-    teamDetailOpen = true;
-    fillTeamDetail();
-    showToast('Название обновлено');
-  }catch(e){
-    console.error(e);
-    showToast('Не удалось переименовать');
-  }
+  inputModal.open({
+    title: 'Новое название команды',
+    placeholder: '',
+    confirmText: 'Сохранить',
+    initialValue: teamInfo.name || '',
+    onConfirm: async (name) => {
+      try{
+        await api('/api/team/rename','POST',{
+          team_id: teamInfo.team_id,
+          name: name.trim()
+        });
+        await loadTeamInfo();
+        teamDetailOpen = true;
+        fillTeamDetail();
+        showToast('Название обновлено');
+      }catch(e){
+        console.error(e);
+        showToast('Не удалось переименовать');
+      }
+    }
+  });
 };
 
 $('#team-code-copy').onclick = async ()=>{
@@ -1427,20 +1478,65 @@ $('#team-members-toggle').onclick = ()=>{
   $('#team-members-arrow').textContent = teamMembersOpen ? '▴' : '▾';
 };
 
-/* CHAT (с хранящейся историей в БД) */
+/* CHAT (локальный, как раньше) */
 let chats = [];
 let currentChatId = null;
-
-async function loadChatsFromServer(){
-  try{
-    const r = await api('/api/chat/list','GET');
-    chats = r.chats || [];
-  }catch(e){
-    console.error('loadChatsFromServer error', e);
+function loadChats() {
+  try {
+    const saved = localStorage.getItem('growth_assistant_chats');
+    chats = saved ? JSON.parse(saved) : [];
+  } catch (e) {
+    console.error('Error loading chats:', e);
     chats = [];
   }
+  renderChatList();
 }
-
+function saveChats() {
+  try {
+    localStorage.setItem('growth_assistant_chats', JSON.stringify(chats));
+  } catch (e) {
+    console.error('Error saving chats:', e);
+  }
+}
+function createNewChat(title = 'Новый чат') {
+  const newChat = {
+    id: 'chat_' + Date.now(),
+    title,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    messages: [
+      {
+        role: 'assistant',
+        content: 'Привет! Я твой ассистент по продуктивности. Чем могу помочь?',
+        timestamp: new Date().toISOString()
+      }
+    ]
+  };
+  chats.unshift(newChat);
+  saveChats();
+  renderChatList();
+  return newChat.id;
+}
+function deleteChat(chatId) {
+  chats = chats.filter(chat => chat.id !== chatId);
+  if (currentChatId === chatId) closeChat();
+  saveChats();
+  renderChatList();
+}
+function openChat(chatId) {
+  const chat = chats.find(c => c.id === chatId);
+  if (!chat) return;
+  currentChatId = chatId;
+  $('#current-chat-title').textContent = chat.title;
+  $('#chat-window-overlay').classList.add('active');
+  renderChatMessages(chat.messages);
+  setTimeout(()=>$('#chat-input').focus(),100);
+}
+function closeChat() {
+  currentChatId = null;
+  $('#chat-window-overlay').classList.remove('active');
+  $('#chat-body').innerHTML = '';
+}
 function renderChatList() {
   const container = $('#chat-list');
   container.innerHTML = '';
@@ -1451,7 +1547,7 @@ function renderChatList() {
       <button class="chat-delete" onclick="event.stopPropagation(); deleteChat('${chat.id}')">×</button>
       <div class="chat-icon">💬</div>
       <div class="chat-title">${chat.title}</div>
-      <div class="chat-date">${new Date(chat.updated_at).toLocaleDateString('ru-RU')}</div>
+      <div class="chat-date">${new Date(chat.updatedAt).toLocaleDateString('ru-RU')}</div>
     `;
     chatEl.onclick = () => openChat(chat.id);
     container.appendChild(chatEl);
@@ -1466,59 +1562,6 @@ function renderChatList() {
   container.appendChild(newChatEl);
   $('#no-chats-message').style.display = chats.length === 0 ? 'block' : 'none';
 }
-
-async function loadChats(){
-  await loadChatsFromServer();
-  renderChatList();
-}
-
-async function createNewChat(title = 'Новый чат') {
-  try{
-    const r = await api('/api/chat/create','POST',{ title });
-    const chat = r.chat;
-    if (chat){
-      chats.unshift(chat);
-      renderChatList();
-      return chat.id;
-    }
-  }catch(e){
-    console.error('createNewChat error', e);
-  }
-  return null;
-}
-
-async function deleteChat(chatId) {
-  try{
-    await api('/api/chat/delete','POST',{ chat_id: chatId });
-  }catch(e){
-    console.error('deleteChat error', e);
-  }
-  chats = chats.filter(chat => chat.id !== chatId);
-  if (currentChatId === chatId) closeChat();
-  renderChatList();
-}
-
-async function openChat(chatId) {
-  const chat = chats.find(c => c.id === chatId);
-  if (!chat) return;
-  currentChatId = chatId;
-  $('#current-chat-title').textContent = chat.title;
-  $('#chat-window-overlay').classList.add('active');
-
-  try{
-    const r = await api('/api/chat/history?chat_id='+encodeURIComponent(chatId),'GET');
-    renderChatMessages(r.messages || []);
-  }catch(e){
-    console.error('history error', e);
-    renderChatMessages([]);
-  }
-  setTimeout(()=>$('#chat-input').focus(),100);
-}
-function closeChat() {
-  currentChatId = null;
-  $('#chat-window-overlay').classList.remove('active');
-  $('#chat-body').innerHTML = '';
-}
 function renderChatMessages(messages) {
   const container = $('#chat-body');
   container.innerHTML = '';
@@ -1530,68 +1573,65 @@ function renderChatMessages(messages) {
   });
   container.scrollTop = container.scrollHeight;
 }
-function addMessageToChatList(chatId, role, content) {
-  const chat = chats.find(c => c.id === chatId);
+function addMessageToChat(role, content) {
+  if (!currentChatId) return;
+  const chat = chats.find(c => c.id === currentChatId);
   if (!chat) return;
-  chat.updated_at = new Date().toISOString();
+  const newMessage = { role, content, timestamp: new Date().toISOString() };
+  chat.messages.push(newMessage);
+  chat.updatedAt = new Date().toISOString();
+  saveChats();
+  renderChatMessages(chat.messages);
 }
-
 $('#close-chat').onclick = closeChat;
 $('#create-first-chat').onclick = () => { $('#new-chat-modal').classList.add('active'); };
 $('#cancel-new-chat').onclick = () => {
   $('#new-chat-modal').classList.remove('active');
   $('#new-chat-title').value = '';
 };
-$('#confirm-new-chat').onclick = async () => {
+$('#confirm-new-chat').onclick = () => {
   const title = $('#new-chat-title').value.trim() || 'Новый чат';
-  const newChatId = await createNewChat(title);
+  const newChatId = createNewChat(title);
   $('#new-chat-modal').classList.remove('active');
   $('#new-chat-title').value = '';
-  if (newChatId) openChat(newChatId);
+  openChat(newChatId);
   showToast('Чат создан');
 };
-
 $('#chat-send').onclick = async () => {
   const text = $('#chat-input').value.trim();
   if (!text) return;
 
   if (!currentChatId) {
-    const newChatId = await createNewChat('Новый чат');
-    if (!newChatId) {
-      showToast('Не удалось создать чат');
-      return;
-    }
-    await openChat(newChatId);
+    const newChatId = createNewChat('Новый чат');
+    openChat(newChatId);
   }
 
+  const chat = chats.find(c => c.id === currentChatId);
+  const history = chat
+    ? chat.messages.map(m => ({
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: m.content
+      })).slice(-16)
+    : [];
+
   $('#chat-input').value = '';
-  const container = $('#chat-body');
-  const bubbleMe = document.createElement('div');
-  bubbleMe.className = 'bubble me';
-  bubbleMe.textContent = text;
-  container.appendChild(bubbleMe);
-  container.scrollTop = container.scrollHeight;
+  addMessageToChat('user', text);
 
   try {
     const r = await api('/api/chat', 'POST', {
       text,
-      chat_id: currentChatId
+      chat_id: currentChatId,
+      history
     });
-    const reply = r.reply || 'Готово.';
-    const bubbleBot = document.createElement('div');
-    bubbleBot.className = 'bubble bot';
-    bubbleBot.textContent = reply;
-    container.appendChild(bubbleBot);
-    container.scrollTop = container.scrollHeight;
-    addMessageToChatList(currentChatId,'assistant',reply);
-    renderChatList();
+    addMessageToChat('assistant', r.reply || 'Я обработал ваш запрос и готов помочь!');
   } catch (e) {
-    const bubbleBot = document.createElement('div');
-    bubbleBot.className = 'bubble bot';
-    bubbleBot.textContent =
-      'Сейчас нет подключения к серверу. Могу подсказать, как лучше организовать задачи и время.';
-    container.appendChild(bubbleBot);
-    container.scrollTop = container.scrollHeight;
+    addMessageToChat(
+      'assistant',
+      'В настоящее время я не могу подключиться к серверу. Вот что я могу сделать офлайн:\n\n' +
+      '• Помочь разбить большие задачи на шаги\n' +
+      '• Подсказать методы тайм-менеджмента\n' +
+      '• Составить примерный план выполнения задач'
+    );
   }
 };
 $('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('#chat-send').click(); });
@@ -1617,25 +1657,18 @@ async function loadAll(){
   try{
     const f = await api('/api/focus','GET');
     focus = f.focus || null;
-    const txt = focus?.text || '';
-    $('#focus-input').value = txt;
-    updateFocusDisplay(txt);
-  }catch(e){
-    updateFocusDisplay('');
-  }
+  }catch(e){}
+  renderFocus();
 
   try{
     const t = await api('/api/tasks','GET');
     tasks = t.items || [];
-  }catch(e){
-    tasks = [];
-  }
+  }catch(e){}
 
   await loadTeamInfo();
   renderHome();
   renderPlan();
   renderStats();
-  await loadChats();
 }
 loadAll();
 
