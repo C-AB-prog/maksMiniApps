@@ -7,27 +7,34 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   const tgId = getTgId(req);
-  if (!tgId) return res.status(400).json({ ok:false, error:'tg_id required' });
+  if (!tgId) {
+    return res.status(400).json({ ok: false, error: 'tg_id required' });
+  }
   const userId = await getOrCreateUserId(tgId);
 
   const teamId = Number(req.body?.team_id);
-  if (!teamId) return res.status(400).json({ ok:false, error:'team_id required' });
-
-  // проверяем, что пользователь в этой команде
-  const m = await q(
-    `SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2`,
-    [teamId, userId],
-  );
-  if (!m.rows.length) {
-    return res.status(403).json({ ok:false, error:'not in team' });
+  if (!teamId) {
+    return res.status(400).json({ ok: false, error: 'team_id required' });
   }
 
-  // удаляем саму команду — team_members удалятся каскадно,
-  // у tasks team_id обнулится (ON DELETE SET NULL)
-  await q(
-    `DELETE FROM teams WHERE id = $1`,
+  // проверяем, что пользователь — первый участник (создатель)
+  const own = await q(
+    `
+    SELECT user_id
+    FROM team_members
+    WHERE team_id = $1
+    ORDER BY joined_at ASC
+    LIMIT 1
+    `,
     [teamId],
   );
 
-  res.json({ ok:true, team_id: teamId });
+  if (!own.rows.length || Number(own.rows[0].user_id) !== userId) {
+    return res.status(403).json({ ok: false, error: 'only owner can delete' });
+  }
+
+  await q(`DELETE FROM teams WHERE id = $1`, [teamId]);
+
+  // благодаря FK ON DELETE CASCADE/SET NULL подтянутся остальные записи
+  res.json({ ok: true });
 }
