@@ -24,10 +24,8 @@ export default async function handler(req, res) {
     `,
     [name, token],
   );
-
   const team = t.rows[0];
 
-  // добавляем создателя как участника
   await q(
     `
     INSERT INTO team_members(team_id, user_id)
