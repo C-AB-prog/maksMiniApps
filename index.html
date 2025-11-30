@@ -276,7 +276,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   box-shadow:0 10px 20px rgba(0,0,0,.2);z-index:999;
   max-width:90%;font-size:13px;
 }
-.mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace}
+.mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
 .muted{color:var(--muted)}
 
 /* PROFILE */
@@ -1349,26 +1349,39 @@ $('#team-members-toggle').onclick = ()=>{
   $('#team-members-arrow').textContent = teamMembersOpen ? '▴' : '▾';
 };
 
-/* CHAT (как раньше) */
+/* CHAT */
 let chats = [];
 let currentChatId = null;
-function loadChats() {
+
+async function loadChats() {
   try {
-    const saved = localStorage.getItem('growth_assistant_chats');
-    chats = saved ? JSON.parse(saved) : [];
+    // основное хранилище — сервер
+    const r = await api('/api/chat-store', 'GET');
+    const rows = r.chats || [];
+    chats = rows.map(row => row.data);
   } catch (e) {
-    console.error('Error loading chats:', e);
-    chats = [];
+    console.error('Error loading chats from server, fallback to localStorage:', e);
+    try {
+      const saved = localStorage.getItem('growth_assistant_chats');
+      chats = saved ? JSON.parse(saved) : [];
+    } catch {
+      chats = [];
+    }
   }
   renderChatList();
 }
-function saveChats() {
+
+async function saveChats() {
   try {
-    localStorage.setItem('growth_assistant_chats', JSON.stringify(chats));
+    await api('/api/chat-store', 'POST', { chats });
   } catch (e) {
-    console.error('Error saving chats:', e);
+    console.error('Error saving chats to server, fallback to localStorage:', e);
+    try {
+      localStorage.setItem('growth_assistant_chats', JSON.stringify(chats));
+    } catch {}
   }
 }
+
 function createNewChat(title = 'Новый чат') {
   const newChat = {
     id: 'chat_' + Date.now(),
@@ -1484,7 +1497,7 @@ $('#chat-send').onclick = async () => {
     ? chat.messages.map(m => ({
         role: m.role === 'assistant' ? 'assistant' : 'user',
         content: m.content
-      })).slice(-16) // последние 16 сообщений
+      })).slice(-16)
     : [];
 
   $('#chat-input').value = '';
