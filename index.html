@@ -11,20 +11,18 @@
 /*       DESIGN TOKENS   */
 /* ===================== */
 :root{
-  /* Цвета */
   --ink: #0E1220;
   --muted:#6B7280;
   --line:#E7ECF5;
 
-  --brand:#5B6CFF;          /* основной */
-  --brand-2:#7F6BFF;        /* доп-градиент */
-  --brand-3:#46C7F4;        /* акцент */
+  --brand:#5B6CFF;
+  --brand-2:#7F6BFF;
+  --brand-3:#46C7F4;
 
   --ok:#10B981;
   --warn:#F59E0B;
   --danger:#EF4444;
 
-  /* Фоны */
   --bg: #F3F6FF;
   --bg-grad: radial-gradient(1200px 600px at 100% -10%, rgba(123, 195, 255, .20), transparent 60%),
              radial-gradient(900px 500px at -10% 0%, rgba(135, 121, 255, .18), transparent 55%),
@@ -33,7 +31,6 @@
   --card: rgba(255,255,255,.86);
   --card-blur: blur(10px);
 
-  /* Прочее */
   --r: 18px;
   --shadow: 0 10px 28px rgba(17,24,39,.10);
   --shadow-2: 0 16px 40px rgba(91,108,255,.20);
@@ -82,7 +79,6 @@ body{
 }
 h3{margin:0 0 12px 0; font-size:16px}
 
-/* 2 колонки на десктопе */
 section{display:none;gap:14px}
 section.active{display:grid}
 .grid-2{grid-template-columns:1fr}
@@ -117,16 +113,25 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .btn.icon{padding:8px 10px; border-radius:999px; min-width:34px; display:inline-flex; align-items:center; justify-content:center}
 
 /* ===================== */
-/*     SEGMENTED CHIP    */
+/*       CHIPS           */
 /* ===================== */
 .seg{display:flex;gap:8px;flex-wrap:wrap}
-.seg .chip{
-  padding:9px 13px; border-radius:999px; border:1px solid var(--line); background:#fff; cursor:pointer; font-weight:600;
+.seg .chip,
+.plan-filters .chip{
+  padding:7px 13px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background:#fff;
+  cursor:pointer;
+  font-weight:600;
   font-size:13px;
   transition:all .15s;
 }
-.seg .chip.active{
-  background:linear-gradient(135deg, var(--brand), var(--brand-2)); color:#fff; border-color:transparent;
+.seg .chip.active,
+.plan-filters .chip.active{
+  background:linear-gradient(135deg, var(--brand), var(--brand-2));
+  color:#fff;
+  border-color:transparent;
   box-shadow:0 8px 22px rgba(91,108,255,.28)
 }
 
@@ -149,208 +154,147 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 /* ===================== */
 /*      CHAT SYSTEM      */
 /* ===================== */
-.chat-container {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+.chat-container{display:flex;flex-direction:column;gap:14px}
+.chat-list{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:12px;
+  margin-bottom:16px;
 }
-.chat-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.chat-item {
-  background: #fff;
-  border: 2px solid var(--line);
-  border-radius: 16px;
-  padding: 16px 12px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  min-height: 120px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-.chat-item:hover {
-  border-color: var(--brand);
-  transform: translateY(-2px);
-}
-.chat-item.active {
-  border-color: var(--brand);
-  background: linear-gradient(135deg, #f8faff, #f0f4ff);
-  box-shadow: 0 8px 25px rgba(91,108,255,.15);
-}
-.chat-item.new {
-  border: 2px dashed var(--muted);
-  background: transparent;
-}
-.chat-item.new:hover {
-  border-color: var(--brand);
-  background: rgba(91,108,255,.03);
-}
-.chat-icon {
-  font-size: 24px;
-  margin-bottom: 8px;
-  opacity: 0.7;
-}
-.chat-item.active .chat-icon,
-.chat-item:hover .chat-icon {
-  opacity: 1;
-}
-.chat-title { font-weight: 600; font-size: 13px; line-height: 1.3; margin-bottom: 4px; }
-.chat-date { font-size: 11px; color: var(--muted); }
-.chat-delete {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--danger);
-  color: white;
-  border: none;
-  font-size: 12px;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.chat-item:hover .chat-delete { opacity: 1; }
-
-/* ОТДЕЛЬНОЕ ОКНО ЧАТА */
-.chat-window-overlay {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 1000;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-.chat-window-overlay.active { display: flex; }
-.chat-window {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: 800px;
-  height: 80vh;
-  max-height: 700px;
-  background: #fff;
-  border-radius: 20px;
-  box-shadow: 0 25px 50px rgba(0,0,0,0.25);
-  overflow: hidden;
-}
-.chat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--line);
-  background: #fff;
-  flex-shrink: 0;
-}
-.chat-header-title { font-weight: 600; font-size: 16px; }
-.chat-body{
-  flex:1;
-  overflow:auto;
-  padding:16px;
+.chat-item{
+  background:#fff;
+  border:2px solid var(--line);
+  border-radius:16px;
+  padding:16px 12px;
+  text-align:center;
+  cursor:pointer;
+  transition:all .2s;
+  min-height:120px;
   display:flex;
   flex-direction:column;
-  gap:12px;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+}
+.chat-item:hover{
+  border-color:var(--brand);
+  transform:translateY(-2px);
+}
+.chat-item.active{
+  border-color:var(--brand);
+  background:linear-gradient(135deg,#f8faff,#f0f4ff);
+  box-shadow:0 8px 25px rgba(91,108,255,.15);
+}
+.chat-item.new{
+  border:2px dashed var(--muted);
+  background:transparent;
+}
+.chat-item.new:hover{
+  border-color:var(--brand);
+  background:rgba(91,108,255,.03);
+}
+.chat-icon{font-size:24px;margin-bottom:8px;opacity:.7}
+.chat-item.active .chat-icon,
+.chat-item:hover .chat-icon{opacity:1}
+.chat-title{font-weight:600;font-size:13px;line-height:1.3;margin-bottom:4px}
+.chat-date{font-size:11px;color:var(--muted)}
+.chat-delete{
+  position:absolute;top:6px;right:6px;
+  width:20px;height:20px;border-radius:50%;
+  background:var(--danger);color:#fff;border:none;font-size:12px;
+  cursor:pointer;opacity:0;transition:opacity .2s;
+  display:flex;align-items:center;justify-content:center;
+}
+.chat-item:hover .chat-delete{opacity:1}
+
+/* ОКНО ЧАТА */
+.chat-window-overlay{
+  display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,.5);z-index:1000;
+  align-items:center;justify-content:center;padding:20px;
+}
+.chat-window-overlay.active{display:flex}
+.chat-window{
+  display:flex;flex-direction:column;
+  width:100%;max-width:800px;
+  height:80vh;max-height:700px;
+  background:#fff;border-radius:20px;
+  box-shadow:0 25px 50px rgba(0,0,0,.25);
+  overflow:hidden;
+}
+.chat-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 20px;border-bottom:1px solid var(--line);background:#fff;flex-shrink:0;
+}
+.chat-header-title{font-weight:600;font-size:16px}
+.chat-body{
+  flex:1;overflow:auto;padding:16px;
+  display:flex;flex-direction:column;gap:12px;
   background:linear-gradient(180deg,#FAFBFF,#F7FAFF)
 }
 .bubble{
-  max-width:75%;
-  padding:12px 16px;
-  border-radius:18px;
-  font-size:14px;
-  line-height:1.4;
-  word-wrap: break-word;
+  max-width:75%;padding:12px 16px;border-radius:18px;
+  font-size:14px;line-height:1.4;word-wrap:break-word;
 }
 .me{
   align-self:flex-end;
-  background:linear-gradient(135deg, var(--brand), var(--brand-2));
-  color:#fff;
-  border-bottom-right-radius:6px
+  background:linear-gradient(135deg,var(--brand),var(--brand-2));
+  color:#fff;border-bottom-right-radius:6px
 }
 .bot{
-  align-self:flex-start;
-  background:#fff;
-  border:1px solid var(--line);
+  align-self:flex-start;background:#fff;border:1px solid var(--line);
   border-bottom-left-radius:6px
 }
 .chat-foot{
-  display:flex;
-  gap:10px;
-  padding:12px 16px;
-  border-top:1px solid var(--line);
-  background:#fff;
-  flex-shrink: 0;
+  display:flex;gap:10px;padding:12px 16px;
+  border-top:1px solid var(--line);background:#fff;flex-shrink:0;
 }
 
 /* Modal */
-.modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 1100;
-  align-items: center;
-  justify-content: center;
+.modal{
+  display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,.5);z-index:1100;align-items:center;justify-content:center;
 }
-.modal.active { display: flex; }
-.modal-content {
-  background: #fff;
-  border-radius: 20px;
-  padding: 24px;
-  max-width: 400px;
-  width: 90%;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+.modal.active{display:flex}
+.modal-content{
+  background:#fff;border-radius:20px;padding:24px;
+  max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.2);
 }
-.modal-title {
-  margin: 0 0 16px 0;
-  font-size: 18px;
-  font-weight: 700;
-}
+.modal-title{margin:0 0 16px 0;font-size:18px;font-weight:700}
 
 /* ===================== */
 /*      BOTTOM NAV       */
 /* ===================== */
 .nav{
-  position:fixed; left:0; right:0; bottom:0; z-index:25;
+  position:fixed;left:0;right:0;bottom:0;z-index:25;
   padding:10px 10px calc(10px + var(--safe-bottom));
-  background:rgba(255,255,255,.9); border-top:1px solid var(--line);
-  backdrop-filter: saturate(160%) blur(10px);
+  background:rgba(255,255,255,.9);border-top:1px solid var(--line);
+  backdrop-filter:saturate(160%) blur(10px);
   box-shadow:0 -8px 24px rgba(17,24,39,.08);
-  display:flex; justify-content:space-around
+  display:flex;justify-content:space-around;
 }
-.nav .item{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:64px;color:var(--muted);font-size:12px}
-.nav .item svg{opacity:.6; transition:opacity .15s, transform .06s}
+.nav .item{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  min-width:64px;color:var(--muted);font-size:12px;
+}
+.nav .item svg{opacity:.6;transition:opacity .15s, transform .06s}
 .nav .item.active{color:var(--brand)}
-.nav .item.active svg{opacity:1; transform:translateY(-1px); filter: drop-shadow(0 4px 8px rgba(91,108,255,.35))}
+.nav .item.active svg{
+  opacity:1;transform:translateY(-1px);
+  filter:drop-shadow(0 4px 8px rgba(91,108,255,.35))
+}
 
 /* ===================== */
 /*         TOAST         */
 /* ===================== */
 .toast{
   position:fixed;left:50%;bottom:calc(78px + var(--safe-bottom));
-  transform:translateX(-50%);background:#111827;color:#fff;padding:10px 14px;border-radius:12px;
-  box-shadow:0 10px 20px rgba(0,0,0,.2);z-index:999
+  transform:translateX(-50%);background:#111827;color:#fff;
+  padding:10px 14px;border-radius:12px;
+  box-shadow:0 10px 20px rgba(0,0,0,.2);z-index:999;
+  max-width:90%;font-size:13px;
 }
-.mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+.mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace}
 .muted{color:var(--muted)}
 
 /* ===================== */
@@ -367,26 +311,19 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .profile-btn:hover{background:var(--bg);border-color:var(--brand)}
 .profile-btn .arrow{color:var(--muted);font-size:14px}
 .lang-switch{display:flex;gap:8px;margin-top:8px}
-.lang-btn{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;flex:1;text-align:center}
+.lang-btn{
+  padding:8px 12px;border:1px solid var(--line);
+  border-radius:10px;background:#fff;cursor:pointer;flex:1;text-align:center
+}
 .lang-btn.active{background:var(--brand);color:#fff;border-color:var(--brand)}
 
 /* ===================== */
 /*        PLAN UI        */
 /* ===================== */
-.plan-top{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-  margin-bottom:10px;
-}
-.plan-mode{
-  display:flex;
-  gap:8px;
-}
+.plan-top{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.plan-mode{display:flex;gap:6px}
 .plan-mode .pill{
-  flex:1;
-  text-align:center;
-  padding:8px 10px;
+  flex:1;text-align:center;padding:8px 10px;
   border-radius:999px;
   border:1px solid var(--line);
   background:#fff;
@@ -404,169 +341,81 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   display:flex;
   gap:8px;
   flex-wrap:wrap;
+  margin-bottom:6px;
 }
 
 /* TEAM layout */
-.plan-team-wrapper{
-  position:relative;
-  min-height:140px;
-}
-.team-list{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
+.plan-team-wrapper{position:relative;min-height:140px;margin-top:10px}
+.team-list{display:flex;flex-direction:column;gap:8px}
 .team-list-item{
-  padding:10px 12px;
-  border-radius:14px;
-  border:1px solid var(--line);
-  background:#fff;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+  padding:10px 12px;border-radius:14px;
+  border:1px solid var(--line);background:#fff;
+  display:flex;justify-content:space-between;align-items:center;
   cursor:pointer;
 }
-.team-list-item span.name{
-  font-weight:600;
-}
-.team-list-empty{
-  text-align:center;
-  padding:24px 12px;
-}
+.team-list-item span.name{font-weight:600}
+.team-list-empty{text-align:center;padding:24px 12px}
 
-.team-detail{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
+.team-detail{display:flex;flex-direction:column;gap:10px;margin-top:4px}
 .team-detail-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:8px;
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
 }
-.team-detail-title{
-  font-size:15px;
-  font-weight:700;
-  display:flex;
-  align-items:center;
-  gap:6px;
-}
+.team-detail-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px}
 .team-code-pill{
-  font-size:11px;
-  padding:3px 8px;
-  border-radius:999px;
-  background:#eef2ff;
-  color:#4f46e5;
+  font-size:11px;padding:4px 10px;border-radius:999px;
+  background:#eef2ff;color:#4f46e5;
 }
-.team-header-actions{
-  display:flex;
-  gap:6px;
-}
+.team-header-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .team-members-toggle{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:8px 10px;
-  border-radius:12px;
-  border:1px solid var(--line);
-  background:#fff;
-  cursor:pointer;
-  font-size:13px;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 10px;border-radius:12px;border:1px solid var(--line);
+  background:#fff;cursor:pointer;font-size:13px;margin-top:4px;
 }
-.team-members-box{
-  margin-top:4px;
-  padding-left:4px;
-}
-.team-members-box ul{
-  margin:4px 0 0 14px;
-  padding:0;
-}
-.team-members-box li{
-  font-size:13px;
-  margin-bottom:2px;
-}
+.team-members-box{margin-top:4px;padding-left:4px}
+.team-members-box ul{margin:4px 0 0 14px;padding:0}
+.team-members-box li{font-size:13px;margin-bottom:2px}
 
 /* FAB для команд */
-.team-fab{
-  position:absolute;
-  right:6px;
-  bottom:6px;
-}
+.team-fab{position:absolute;right:6px;bottom:6px}
 .team-fab button{
-  width:40px;
-  height:40px;
-  border-radius:999px;
-  box-shadow:var(--shadow-2);
-  font-size:20px;
-  padding:0;
+  width:40px;height:40px;border-radius:999px;
+  box-shadow:var(--shadow-2);font-size:20px;padding:0;
 }
 .team-menu{
-  position:absolute;
-  right:6px;
-  bottom:52px;
-  background:#fff;
-  border-radius:14px;
-  border:1px solid var(--line);
+  position:absolute;right:6px;bottom:52px;
+  background:#fff;border-radius:14px;border:1px solid var(--line);
   box-shadow:0 14px 28px rgba(15,23,42,.25);
-  padding:6px;
-  display:none;
+  padding:6px;display:none;
 }
-.team-menu.open{display:block;}
+.team-menu.open{display:block}
 .team-menu button{
-  width:100%;
-  justify-content:flex-start;
-  margin:2px 0;
+  width:100%;justify-content:flex-start;margin:2px 0;
   font-size:13px;
 }
 
-/* Quick-add extra row with team select */
-.quick-team-row{
-  display:none;
-  gap:8px;
-}
-.quick-team-row.visible{
-  display:flex;
-}
+/* Quick-add team row */
+.quick-team-row{display:none;gap:8px}
+.quick-team-row.visible{display:flex}
 
 /* MOBILE tweaks */
 @media (max-width: 600px){
-  .task{
-    align-items:flex-start;
-    padding:9px 9px;
-  }
-  .team-detail-header{
-    flex-direction:column;
-    align-items:flex-start;
-  }
-  .team-header-actions{
-    align-self:stretch;
-    justify-content:flex-start;
-  }
+  .task{align-items:flex-start;padding:9px 9px}
+  .team-detail-header{flex-direction:column;align-items:flex-start}
+  .team-header-actions{justify-content:flex-start}
 }
 
 /* STATS */
-.stats-grid{
-  display:flex;
-  flex-wrap:wrap;
-  gap:12px;
-}
+.stats-grid{display:flex;flex-wrap:wrap;gap:12px}
 .stats-grid .card-mini{
-  flex:1;
-  min-width:160px;
-  background:#fff;
-  border-radius:14px;
-  border:1px solid var(--line);
+  flex:1;min-width:160px;background:#fff;
+  border-radius:14px;border:1px solid var(--line);
   padding:10px 12px;
 }
 
 /* Week chart */
 #week-chart{
-  height:200px;
-  display:flex;
-  align-items:flex-end;
-  gap:4px;
-  margin-top:20px;
+  height:200px;display:flex;align-items:flex-end;
+  gap:4px;margin-top:20px;
 }
 </style>
 </head>
@@ -631,7 +480,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       </div>
 
       <!-- Фильтры для МОИХ задач -->
-      <div id="my-filters" class="plan-filters" style="margin-bottom:8px">
+      <div id="my-filters" class="plan-filters">
         <div class="chip" data-plan-filter="all">Все</div>
         <div class="chip" data-plan-filter="today">Сегодня</div>
         <div class="chip" data-plan-filter="week">Неделя</div>
@@ -641,8 +490,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       <div id="plan-my-list" class="list"></div>
 
       <!-- Блок команд -->
-      <div id="plan-team-block" class="plan-team-wrapper" style="display:none; margin-top:4px">
-
+      <div id="plan-team-block" class="plan-team-wrapper" style="display:none;">
         <!-- список команд -->
         <div id="team-list-box" class="team-list"></div>
 
@@ -851,13 +699,13 @@ const startOfDay = d => { const x = new Date(d); x.setHours(0,0,0,0); return x; 
 const endOfDay   = d => { const x = new Date(d); x.setHours(23,59,59,999); return x; };
 const addDays    = (d,n)=>{const x=new Date(d); x.setDate(x.getDate()+n); return x;};
 
-/* --- SAFE DATE HELPERS --- */
+/* SAFE DATE HELPERS */
 function normalizeDue(v){
   if (v === null || v === undefined) return null;
   if (typeof v === 'string' && v.trim().toLowerCase() === 'null') return null;
   const num = Number(v);
   if (!Number.isNaN(num) && v !== '' && v !== true && v !== false) {
-    const ms = num < 1e12 ? num * 1000 : num; // секунды -> мс
+    const ms = num < 1e12 ? num * 1000 : num;
     return ms;
   }
   let ms = Date.parse(v);
@@ -973,7 +821,6 @@ function updateQuickTeamVisibility(){
   const need = quickPrio === 'team';
   row.classList.toggle('visible', need);
 
-  // наполняем селект актуальными командами
   const sel = $('#quick-team-select');
   if (!sel) return;
   sel.innerHTML = '<option value="">Выберите команду</option>';
@@ -996,13 +843,11 @@ $('#quick-add').onclick = async ()=>{
     if (!isNaN(ms)) due_ts = ms;
   } else {
     const now = new Date();
-    if (quickPrio==='today')   due_ts = endOfDay(now).getTime();
+    if (quickPrio==='today')      due_ts = endOfDay(now).getTime();
     else if (quickPrio==='week')  due_ts = endOfDay(addDays(now,7)).getTime();
     else if (quickPrio==='month') due_ts = endOfDay(addDays(now,30)).getTime();
-    // "Команда" по дедлайну — как у "Мои": если не указано, просто null
   }
 
-  // команда для задач, если выбран режим "Команда"
   let team_id = null;
   if (quickPrio === 'team') {
     const selVal = $('#quick-team-select').value;
@@ -1012,7 +857,6 @@ $('#quick-add').onclick = async ()=>{
   try{
     const payload = { title, due_ts, priority: quickPrio };
     if (team_id) payload.team_id = team_id;
-
     const r = await api('/api/tasks','POST', payload);
     tasks.unshift(r.task);
   }catch(e){
@@ -1066,7 +910,6 @@ function rowTask(t, showTeamBadge=false){
     badge.className = 'badge ' + (past ? (t.is_done?'ok':'dead') : 'due');
     badge.textContent = (t.is_done?'сделано • ':'до ') + fmt(ms);
   }
-
   meta.appendChild(badge);
 
   if (showTeamBadge && t.team_id){
@@ -1142,8 +985,8 @@ myFilterChips.forEach(ch=>{
     renderPlan();
   };
 });
-// по умолчанию — "Все"
-myFilterChips.find(c => c.dataset.planFilter==='all')?.classList.add('active');
+const allChip = myFilterChips.find(c=>c.dataset.planFilter==='all');
+if (allChip) allChip.classList.add('active');
 
 function renderPlanMy(){
   let arr = tasks.filter(t => !t.team_id); // только мои
@@ -1242,7 +1085,6 @@ function fillTeamDetail(){
   const short = fullCode ? (fullCode.slice(0,4)+'••••') : '••••';
   $('#team-code-short').textContent = short;
 
-  // участники
   const ul = $('#team-members-list');
   ul.innerHTML='';
   (teamInfo.members || []).forEach(m=>{
@@ -1259,7 +1101,6 @@ function fillTeamDetail(){
   $('#team-members-box').style.display = teamMembersOpen ? 'block' : 'none';
   $('#team-members-arrow').textContent = teamMembersOpen ? '▴' : '▾';
 
-  // задачи этой команды
   const box = $('#team-tasks-list');
   box.innerHTML='';
   const arr = tasks.filter(t => t.team_id === teamInfo.team_id)
@@ -1377,7 +1218,7 @@ async function loadTeamInfo(){
       if (found) teamInfo = found;
     }
 
-    // подтягиваем участников для активной команды
+    // участники для активной команды
     try{
       const r = await api('/api/team/members?team_id='+encodeURIComponent(teamInfo.team_id),'GET');
       teamInfo.members = r.members || [];
@@ -1487,7 +1328,7 @@ $('#team-code-copy').onclick = async ()=>{
 
 $('#team-delete').onclick = async ()=>{
   if (!teamInfo) return;
-  if (!confirm('Расформировать команду "'+(teamInfo.name||'')+'"? Задачи останутся, но станут личными.')) return;
+  if (!confirm('Расформировать команду "'+(teamInfo.name||'')+'"?')) return;
   try{
     await api('/api/team/delete','POST',{ team_id: teamInfo.team_id });
     await loadTeamInfo();
@@ -1605,11 +1446,7 @@ function addMessageToChat(role, content) {
   if (!currentChatId) return;
   const chat = chats.find(c => c.id === currentChatId);
   if (!chat) return;
-  const newMessage = {
-    role,
-    content,
-    timestamp: new Date().toISOString()
-  };
+  const newMessage = { role, content, timestamp: new Date().toISOString() };
   chat.messages.push(newMessage);
   chat.updatedAt = new Date().toISOString();
   saveChats();
@@ -1648,7 +1485,6 @@ $('#chat-send').onclick = async () => {
   }
 };
 $('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('#chat-send').click(); });
-
 $('#new-chat-modal').onclick = (e) => { if (e.target === $('#new-chat-modal')) $('#new-chat-modal').classList.remove('active'); };
 $('#chat-window-overlay').onclick = (e) => { if (e.target === $('#chat-window-overlay')) closeChat(); };
 
