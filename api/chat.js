@@ -1,236 +1,121 @@
 // api/chat.js
-// Growth Assistant — LLM-чат с хранением в БД (chat_sessions + chat_messages)
+// Growth Assistant — LLM-чат с инструментами
 
-import { ensureSchema, getOrCreateUserId, q } from './_db';
+import { getClient } from './_db.js';
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET' && req.method !== 'POST') {
-    res.setHeader('Allow', 'GET, POST');
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
     return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
   }
 
   try {
-    await ensureSchema();
+    const { text, message, tg_id, chat_id, history } = await readJson(req);
+    const userText = (text || message || '').toString().trim();
+    if (!userText) {
+      return res.status(400).json({ ok: false, error: 'Empty message' });
+    }
 
     const tgIdHeader = (req.headers['x-tg-id'] || '').toString();
-    const qsTg = (req.query?.tg_id || '').toString();
-    const body = req.method === 'POST' ? await readJson(req) : {};
-    const bodyTg = (body.tg_id || '').toString();
+    const tgId = (tg_id || tgIdHeader || '').toString();
 
-    const tgIdStr = bodyTg || tgIdHeader || qsTg;
-    if (!tgIdStr) {
-      return res.status(400).json({ ok: false, error: 'tg_id required' });
-    }
-    const tgId = Number(tgIdStr);
-    const userId = await getOrCreateUserId(tgId);
-
-    const proto = (req.headers['x-forwarded-proto'] || 'https').toString();
-    const host  = (req.headers['x-forwarded-host']  || req.headers.host || '').toString();
+    const proto   = (req.headers['x-forwarded-proto'] || 'https').toString();
+    const host    = (req.headers['x-forwarded-host']  || req.headers.host || '').toString();
     const baseUrl = `${proto}://${host}`;
 
-    if (req.method === 'GET') {
-      return handleGet(req, res, userId);
-    } else {
-      return handlePost(req, res, userId, tgId, baseUrl, body);
-    }
-  } catch (e) {
-    console.error('[chat] fatal error:', e);
+    // контекст пользователя (фокус + задачи)
+    const ctx = await getContextSnapshot(baseUrl, tgId);
+
+    // системный промпт
+    const sys = buildSystemPrompt(ctx);
+
+    // история из фронта (последние 16 сообщений)
+    const safeHistory = Array.isArray(history)
+      ? history.slice(-16).map(m => ({
+          role: m.role === 'assistant' ? 'assistant' : 'user',
+          content: (m.content || '').toString()
+        }))
+      : [];
+
+    const messages = [
+      { role: 'system', content: sys },
+      ...safeHistory,
+      { role: 'user', content: userText }
+    ];
+
+    // запускаем агента
+    const replyText = await runAgent(messages, baseUrl, tgId);
+
+    // мягко логируем переписку в БД (но ошибки не ломают ответ)
+    logChatToDb(tgId, chat_id, userText, replyText).catch(e =>
+      console.error('[chat] log error:', e)
+    );
+
     return res.status(200).json({
       ok: true,
-      reply: 'Я на секунду задумался 😅 Скажи, что сделать: «добавь задачу … завтра в 15:00», «фокус: …», «покажи задачи на неделю», «удали задачу …».',
+      reply: replyText || 'Готово.',
+      chat_id: chat_id || null
+    });
+  } catch (e) {
+    console.error('[chat] error:', e);
+    // не даём фронту свалиться — возвращаем «мягкий» ответ
+    return res.status(200).json({
+      ok: true,
+      reply:
+        'Сейчас сервер LLM недоступен 😅 Но я всё равно могу помочь с планированием: ' +
+        'сформулируй задачу и срок, а я подскажу, как её разбить и куда лучше поставить.',
       chat_id: null
     });
   }
 }
 
-/* ========================= GET: list / history ========================= */
+/* ============ логирование чата в БД (best effort) ============ */
 
-async function handleGet(req, res, userId) {
-  const { history, chat_id } = req.query || {};
+async function logChatToDb(tgId, chatId, userText, assistantText) {
+  if (!tgId || !chatId) return;
 
-  // История одного чата
-  if (history && chat_id) {
-    const cid = Number(chat_id);
-    if (!Number.isFinite(cid)) {
-      return res.status(400).json({ ok: false, error: 'bad chat_id' });
-    }
+  const db = await getClient();
 
-    const chatRow = await q(
-      'SELECT id, title, created_at, updated_at FROM chat_sessions WHERE id=$1 AND user_id=$2',
-      [cid, userId]
-    );
-    if (!chatRow.rows.length) {
-      return res.status(404).json({ ok: false, error: 'chat_not_found' });
-    }
+  // находим или создаём пользователя
+  const uRes = await db.query(
+    `INSERT INTO users (tg_id)
+     VALUES ($1)
+     ON CONFLICT (tg_id) DO UPDATE SET tg_id = EXCLUDED.tg_id
+     RETURNING id`,
+    [Number(tgId)]
+  );
+  const userId = uRes.rows[0].id;
 
-    const msgs = await q(
-      'SELECT role, content, created_at FROM chat_messages WHERE chat_id=$1 ORDER BY created_at ASC LIMIT 200',
-      [cid]
-    );
-
-    return res.status(200).json({
-      ok: true,
-      chat: chatRow.rows[0],
-      messages: msgs.rows
-    });
+  // убеждаемся, что поток (чат) существует
+  const thRes = await db.query(
+    `SELECT id FROM chat_threads WHERE id = $1 AND user_id = $2`,
+    [chatId, userId]
+  );
+  if (!thRes.rows.length) {
+    // если такого чата нет — тихо выходим, не создаём новый
+    return;
   }
 
-  // Список чатов пользователя
-  const rows = await q(
-    `SELECT id, title, created_at, updated_at
-     FROM chat_sessions
-     WHERE user_id=$1
-     ORDER BY updated_at DESC
-     LIMIT 100`,
-    [userId]
+  await db.query(
+    `INSERT INTO chat_messages (thread_id, role, content)
+     VALUES ($1, 'user', $2),
+            ($1, 'assistant', $3)`,
+    [chatId, userText, assistantText]
   );
-
-  return res.status(200).json({
-    ok: true,
-    chats: rows.rows
-  });
 }
 
-/* ========================= POST: create / rename / delete / message ========================= */
-
-async function handlePost(req, res, userId, tgId, baseUrl, body) {
-  const { action } = body || {};
-
-  // --- создать чат ---
-  if (action === 'create') {
-    const rawTitle = (body.title || '').toString().trim();
-    const title = rawTitle || 'Новый чат';
-    const created = await q(
-      `INSERT INTO chat_sessions(user_id, title)
-       VALUES ($1, $2)
-       RETURNING id, title, created_at, updated_at`,
-      [userId, title]
-    );
-    return res.status(200).json({ ok: true, chat: created.rows[0] });
-  }
-
-  // --- переименовать чат ---
-  if (action === 'rename') {
-    const cid = Number(body.chat_id);
-    if (!Number.isFinite(cid)) {
-      return res.status(400).json({ ok: false, error: 'bad chat_id' });
-    }
-    const rawTitle = (body.title || '').toString().trim();
-    if (!rawTitle) {
-      return res.status(400).json({ ok: false, error: 'empty title' });
-    }
-    const upd = await q(
-      `UPDATE chat_sessions
-       SET title=$1, updated_at=now()
-       WHERE id=$2 AND user_id=$3
-       RETURNING id, title, created_at, updated_at`,
-      [rawTitle, cid, userId]
-    );
-    if (!upd.rows.length) {
-      return res.status(404).json({ ok: false, error: 'chat_not_found' });
-    }
-    return res.status(200).json({ ok: true, chat: upd.rows[0] });
-  }
-
-  // --- удалить чат ---
-  if (action === 'delete') {
-    const cid = Number(body.chat_id);
-    if (!Number.isFinite(cid)) {
-      return res.status(400).json({ ok: false, error: 'bad chat_id' });
-    }
-    const del = await q(
-      'DELETE FROM chat_sessions WHERE id=$1 AND user_id=$2',
-      [cid, userId]
-    );
-    return res.status(200).json({ ok: true });
-  }
-
-  // --- обычное сообщение в чат (LLM ответ) ---
-  const { text, message, chat_id } = body;
-  const userText = (text || message || '').toString().trim();
-  if (!userText) {
-    return res.status(400).json({ ok: false, error: 'Empty message' });
-  }
-
-  // Определяем / создаём чат
-  let chatId = null;
-  if (chat_id != null && chat_id !== '') {
-    const cid = Number(chat_id);
-    if (!Number.isFinite(cid)) {
-      return res.status(400).json({ ok: false, error: 'bad chat_id' });
-    }
-    const found = await q(
-      'SELECT id FROM chat_sessions WHERE id=$1 AND user_id=$2',
-      [cid, userId]
-    );
-    if (!found.rows.length) {
-      return res.status(404).json({ ok: false, error: 'chat_not_found' });
-    }
-    chatId = cid;
-  } else {
-    // если чат не передан — создаём новый с автоназванием
-    const autoTitle = userText.slice(0, 40) || 'Новый чат';
-    const inserted = await q(
-      `INSERT INTO chat_sessions(user_id, title)
-       VALUES ($1, $2)
-       RETURNING id`,
-      [userId, autoTitle]
-    );
-    chatId = inserted.rows[0].id;
-  }
-
-  // Контекст пользователя: фокус + топ задач
-  const ctx = await getContextSnapshot(baseUrl, tgId);
-
-  // Загружаем историю чата из БД (последние N сообщений)
-  const history = await q(
-    `SELECT role, content
-     FROM chat_messages
-     WHERE chat_id=$1
-     ORDER BY created_at ASC
-     LIMIT 40`,
-    [chatId]
-  );
-
-  const sys = buildSystemPrompt(ctx);
-  const messages = [{ role: 'system', content: sys }];
-
-  for (const row of history.rows) {
-    if (row.role === 'user' || row.role === 'assistant') {
-      messages.push({ role: row.role, content: row.content });
-    }
-  }
-
-  messages.push({ role: 'user', content: userText });
-
-  const reply = await runAgent(messages, baseUrl, tgId);
-
-  // Сохраняем сообщения в БД
-  await q(
-    `INSERT INTO chat_messages(chat_id, role, content)
-     VALUES ($1, 'user', $2), ($1, 'assistant', $3)`,
-    [chatId, userText, reply || 'Готово.']
-  );
-  await q(
-    `UPDATE chat_sessions SET updated_at=now() WHERE id=$1`,
-    [chatId]
-  );
-
-  return res.status(200).json({
-    ok: true,
-    reply: reply || 'Готово.',
-    chat_id: chatId
-  });
-}
-
-/* ========================= Агент / LLM ========================= */
+/* ========================= Агент и инструменты ========================= */
 
 async function runAgent(messages, baseUrl, tgId) {
   const apiKey = process.env.OPENAI_API_KEY || '';
-  const model  = 'gpt-4o-mini';
+  if (!apiKey) {
+    // без ключа просто возвращаем заглушку
+    return 'LLM сейчас недоступен (нет ключа API). Можем всё равно накидать план задач вручную 👍';
+  }
 
   const OpenAI = (await import('openai')).default;
   const openai = new OpenAI({ apiKey });
+  const model  = 'gpt-4o-mini';
 
   const tools = [
     fnDef('add_task', 'Создать новую задачу', {
@@ -324,10 +209,10 @@ async function runAgent(messages, baseUrl, tgId) {
     break;
   }
 
-  return 'Готово. Если нужно — скажи «покажи задачи на неделю» или «добавь задачу … завтра в 10:00».';
+  return 'Готово. Можешь сказать: «добавь задачу ... завтра в 10:00» или «покажи задачи на неделю».';
 }
 
-/* ========================= Инструменты для задач/фокуса ========================= */
+/* ===== инструменты (как у тебя были) ===== */
 
 async function tool_add_task(baseUrl, tgId, args) {
   const title = (args?.title || '').toString().slice(0, 120);
@@ -338,11 +223,11 @@ async function tool_add_task(baseUrl, tgId, args) {
     headers: headersJson(tgId),
     body: JSON.stringify({ title, due_ts })
   });
-  const j = await r.json().catch(()=> ({}));
-  if (!r.ok) return JSON.stringify({ ok:false, error: j?.error || String(r.status) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) return JSON.stringify({ ok: false, error: j?.error || String(r.status) });
 
   const when = due_ts ? fmtDate(due_ts) : 'бэклог';
-  return JSON.stringify({ ok:true, task: j.task || { title, due_ts }, note:`создана (${when})` });
+  return JSON.stringify({ ok: true, task: j.task || { title, due_ts }, note: `создана (${when})` });
 }
 
 async function tool_set_focus(baseUrl, tgId, args) {
@@ -352,9 +237,9 @@ async function tool_set_focus(baseUrl, tgId, args) {
     headers: headersJson(tgId),
     body: JSON.stringify({ text })
   });
-  const j = await r.json().catch(()=> ({}));
-  if (!r.ok) return JSON.stringify({ ok:false, error: j?.error || String(r.status) });
-  return JSON.stringify({ ok:true, focus:{ text }, note: 'фокус обновлён' });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) return JSON.stringify({ ok: false, error: j?.error || String(r.status) });
+  return JSON.stringify({ ok: true, focus: { text }, note: 'фокус обновлён' });
 }
 
 async function tool_list_tasks(baseUrl, tgId, args) {
@@ -373,8 +258,10 @@ async function tool_list_tasks(baseUrl, tgId, args) {
     filtered = items.filter(t => t.due_ts != null && t.due_ts >= range.start && t.due_ts <= range.end);
   }
 
-  filtered.sort((a,b)=>(a.is_done - b.is_done)||((a.due_ts ?? 1e18)-(b.due_ts ?? 1e18)));
-  return JSON.stringify({ ok:true, period, items: filtered.slice(0,50) });
+  filtered.sort(
+    (a, b) => a.is_done - b.is_done || (a.due_ts ?? 1e18) - (b.due_ts ?? 1e18)
+  );
+  return JSON.stringify({ ok: true, period, items: filtered.slice(0, 50) });
 }
 
 async function tool_delete_task(baseUrl, tgId, args) {
@@ -382,19 +269,26 @@ async function tool_delete_task(baseUrl, tgId, args) {
   const items = await fetchTasks(baseUrl, tgId);
   const matched = fuzzyFind(items, query);
 
-  if (matched.length === 0) return JSON.stringify({ ok:false, error:'not_found' });
+  if (matched.length === 0) return JSON.stringify({ ok: false, error: 'not_found' });
   if (matched.length > 1) {
-    return JSON.stringify({ ok:false, error:'ambiguous', sample: matched.slice(0,5).map(t => t.title) });
+    return JSON.stringify({
+      ok: false,
+      error: 'ambiguous',
+      sample: matched.slice(0, 5).map(t => t.title)
+    });
   }
 
   const t = matched[0];
-  const r = await fetch(`${baseUrl}/api/tasks/delete?id=${encodeURIComponent(t.id)}`, {
-    method: 'POST',
-    headers: headersJson(tgId),
-    body: JSON.stringify({})
-  });
-  if (!r.ok) return JSON.stringify({ ok:false, error: String(await safeErr(r)) });
-  return JSON.stringify({ ok:true, deleted: t.title });
+  const r = await fetch(
+    `${baseUrl}/api/tasks/delete?id=${encodeURIComponent(t.id)}`,
+    {
+      method: 'POST',
+      headers: headersJson(tgId),
+      body: JSON.stringify({})
+    }
+  );
+  if (!r.ok) return JSON.stringify({ ok: false, error: String(await safeErr(r)) });
+  return JSON.stringify({ ok: true, deleted: t.title });
 }
 
 async function tool_complete_task(baseUrl, tgId, args) {
@@ -402,68 +296,79 @@ async function tool_complete_task(baseUrl, tgId, args) {
   const items = await fetchTasks(baseUrl, tgId);
   const matched = fuzzyFind(items, query);
 
-  if (matched.length === 0) return JSON.stringify({ ok:false, error:'not_found' });
+  if (matched.length === 0) return JSON.stringify({ ok: false, error: 'not_found' });
   if (matched.length > 1) {
-    return JSON.stringify({ ok:false, error:'ambiguous', sample: matched.slice(0,5).map(t => t.title) });
+    return JSON.stringify({
+      ok: false,
+      error: 'ambiguous',
+      sample: matched.slice(0, 5).map(t => t.title)
+    });
   }
 
   const t = matched[0];
-  const r = await fetch(`${baseUrl}/api/tasks/toggle?id=${encodeURIComponent(t.id)}`, {
-    method: 'POST',
-    headers: headersJson(tgId),
-    body: JSON.stringify({})
-  });
-  if (!r.ok) return JSON.stringify({ ok:false, error: String(await safeErr(r)) });
-  return JSON.stringify({ ok:true, completed: t.title });
+  const r = await fetch(
+    `${baseUrl}/api/tasks/toggle?id=${encodeURIComponent(t.id)}`,
+    {
+      method: 'POST',
+      headers: headersJson(tgId),
+      body: JSON.stringify({})
+    }
+  );
+  if (!r.ok) return JSON.stringify({ ok: false, error: String(await safeErr(r)) });
+  return JSON.stringify({ ok: true, completed: t.title });
 }
 
-/* ========================= Контекст пользователя ========================= */
+/* ===== контекст пользователя, утилиты (как раньше) ===== */
 
 async function getContextSnapshot(baseUrl, tgId) {
   const ctx = { focus: null, tasks: [] };
   try {
     const f = await fetch(`${baseUrl}/api/focus`, { headers: headersJson(tgId) });
     if (f.ok) {
-      const j = await f.json().catch(()=> ({}));
+      const j = await f.json().catch(() => ({}));
       ctx.focus = j.focus || null;
     }
   } catch {}
+
   try {
     const t = await fetch(`${baseUrl}/api/tasks`, { headers: headersJson(tgId) });
     if (t.ok) {
-      const j = await t.json().catch(()=> ({}));
+      const j = await t.json().catch(() => ({}));
       ctx.tasks = (j.items || []).slice(0, 50);
     }
   } catch {}
+
   return ctx;
 }
 
 function buildSystemPrompt(ctx) {
   const focusStr = ctx.focus?.text ? `ФОКУС: ${ctx.focus.text}` : 'ФОКУС не задан';
-  const topTasks = (ctx.tasks || []).slice(0, 10).map(t => {
-    const due = (t.due_ts!=null) ? `до ${fmtDate(t.due_ts)}` : 'бэклог';
-    const mark = t.is_done ? '✓' : '•';
-    return `${mark} ${t.title} (${due})`;
-  }).join('\n');
+  const topTasks = (ctx.tasks || [])
+    .slice(0, 10)
+    .map(t => {
+      const due = t.due_ts != null ? `до ${fmtDate(t.due_ts)}` : 'бэклог';
+      const mark = t.is_done ? '✓' : '•';
+      return `${mark} ${t.title} (${due})`;
+    })
+    .join('\n');
 
   return [
     'Ты — деловой ассистент Growth Assistant. Отвечай кратко и по делу, структурируй.',
     'Если нужно — используй функции (инструменты), чтобы создавать/показывать/закрывать/удалять задачи и изменять фокус.',
     'Формат финального ответа: 1–3 предложения + маркированный список до 5 пунктов (если уместно).',
-    'Избегай воды. Предлагай конкретные сроки.',
+    'Избегай воды. Предлагай конкретные сроки. Всегда считай, что сейчас реальная текущая дата (по системным часам).',
     '',
     'Контекст пользователя:',
     focusStr,
-    topTasks ? `ЗАДАЧИ:\n${topTasks}` : 'ЗАДАЧ нет',
+    topTasks ? `ЗАДАЧИ:\n${topTasks}` : 'ЗАДАЧ нет'
   ].join('\n');
 }
 
-/* ========================= Утилиты ========================= */
+/* общие утилиты */
 
 function fnDef(name, description, parameters) {
   return { type: 'function', function: { name, description, parameters } };
 }
-
 function safeParseJson(s) { try { return JSON.parse(s || '{}'); } catch { return {}; } }
 
 function headersJson(tgId) {
@@ -476,9 +381,10 @@ async function readJson(req) {
   try {
     const buf = await getRawBody(req);
     return JSON.parse(buf.toString('utf8') || '{}');
-  } catch { return {}; }
+  } catch {
+    return {};
+  }
 }
-
 function getRawBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -489,8 +395,12 @@ function getRawBody(req) {
 }
 
 async function safeErr(r) {
-  try { const j = await r.json(); return j?.error || `${r.status}`; }
-  catch { return `${r.status}`; }
+  try {
+    const j = await r.json();
+    return j?.error || `${r.status}`;
+  } catch {
+    return `${r.status}`;
+  }
 }
 
 function startOfDay(ts) { const d = new Date(ts); d.setHours(0,0,0,0); return d.getTime(); }
@@ -511,14 +421,21 @@ function normPeriod(p) {
 }
 
 function fmtDate(ms) {
-  try { return new Date(ms).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }); }
-  catch { return ''; }
+  try {
+    const d = new Date(ms);
+    return d.toLocaleString('ru-RU', {
+      day:'2-digit', month:'2-digit',
+      hour:'2-digit', minute:'2-digit'
+    });
+  } catch {
+    return '';
+  }
 }
 
 async function fetchTasks(baseUrl, tgId) {
   const r = await fetch(`${baseUrl}/api/tasks`, { headers: headersJson(tgId) });
   if (!r.ok) throw new Error(await safeErr(r));
-  const j = await r.json().catch(()=> ({}));
+  const j = await r.json().catch(() => ({}));
   return j.items || [];
 }
 
