@@ -1,5 +1,6 @@
+// api/tasks/delete.js
 import { q, ensureSchema } from '../_db.js';
-import { getTgId, getOrCreateUserId, userTeamIds } from '../_utils.js';
+import { getTgId, getOrCreateUserId, userTeamIds, isTeamOwner } from '../_utils.js';
 
 export default async function handler(req, res) {
   await ensureSchema();
@@ -11,16 +12,36 @@ export default async function handler(req, res) {
   const id = Number(req.query?.id || req.body?.id);
   if (!id) return res.status(400).json({ ok: false, error: 'id required' });
 
-  const teams = await userTeamIds(userId);
+  const t = await q(
+    `SELECT id, user_id, team_id
+     FROM tasks
+     WHERE id = $1`,
+    [id]
+  );
+  if (!t.rows.length) return res.status(404).json({ ok: false, error: 'not found' });
+
+  const task = t.rows[0];
+
+  if (!task.team_id) {
+    if (Number(task.user_id) !== Number(userId)) {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
+  } else {
+    const teams = await userTeamIds(userId);
+    const teamId = Number(task.team_id);
+    if (!teams.includes(teamId)) return res.status(403).json({ ok: false, error: 'forbidden' });
+
+    const creator = Number(task.user_id) === Number(userId);
+    const owner = await isTeamOwner(userId, teamId);
+    if (!creator && !owner) {
+      return res.status(403).json({ ok: false, error: 'only creator or owner can delete' });
+    }
+  }
 
   const { rows } = await q(
-    `DELETE FROM tasks
-     WHERE id = $1
-       AND (user_id = $2 OR (team_id IS NOT NULL AND team_id = ANY($3::bigint[])))
-     RETURNING id`,
-    [id, userId, teams.length ? teams : [0]],
+    `DELETE FROM tasks WHERE id = $1 RETURNING id`,
+    [id],
   );
 
-  if (!rows.length) return res.status(404).json({ ok: false, error: 'not found' });
   res.json({ ok: true, id: rows[0].id });
 }
