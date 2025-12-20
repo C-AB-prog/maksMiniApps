@@ -192,7 +192,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   box-shadow:0 8px 22px rgba(91,108,255,.28)
 }
 
-/* TASK LIST - УЛУЧШЕННЫЙ СТИЛЬ */
+/* TASK LIST */
 .list{display:flex;flex-direction:column;gap:10px}
 .task{
   display:flex;align-items:flex-start;gap:12px;padding:14px 14px;
@@ -204,15 +204,12 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   touch-action: manipulation;
   position: relative;
 }
-.task:active {
-  transform: scale(0.98);
-  background: #f8faff;
-}
+.task:active { transform: scale(0.98); background: #f8faff; }
 .task .ttl{flex:1; font-size:14px; line-height:1.4; font-weight:500; padding-right: 8px;}
 .task.done{opacity:.7}
 .task.done .ttl{text-decoration: line-through; color: var(--muted);}
 
-/* Улучшенные бейджи для задач */
+/* meta badges */
 .task-meta {
   display: flex;
   flex-direction: column;
@@ -237,10 +234,9 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   align-items: center;
   gap: 4px;
 }
-.badge.team::before {
-  content: "👥";
-  font-size: 9px;
-}
+.badge.team::before { content: "👥"; font-size: 9px; }
+
+/* team task style */
 .task.team-task {
   border-left: 4px solid #c7d2fe;
   background: linear-gradient(to right, #f8faff, #ffffff);
@@ -274,12 +270,28 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   text-transform:uppercase;
   letter-spacing:.06em;
 }
-.focus-current-text{ font-weight:600; font-size:14px; }
-.focus-edit-fields{ display:flex; gap:10px; flex-wrap:wrap; }
+.focus-current-text{
+  font-weight:600;
+  font-size:14px;
+}
+.focus-edit-fields{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
 @keyframes gentlePulse {
-  0% { box-shadow: 0 0 0 0 rgba(91,108,255,0.1); transform: scale(1); }
-  50% { box-shadow: 0 0 0 4px rgba(91,108,255,0.05); transform: scale(1.005); }
-  100% { box-shadow: 0 0 0 0 rgba(91,108,255,0.1); transform: scale(1); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(91,108,255,0.1);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(91,108,255,0.05);
+    transform: scale(1.005);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(91,108,255,0.1);
+    transform: scale(1);
+  }
 }
 
 /* CHAT – список чатов */
@@ -334,12 +346,21 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .chat-title{font-weight:600;font-size:13px;line-height:1.3;margin-bottom:4px}
 .chat-date{font-size:11px;color:var(--muted)}
 @keyframes chatPulse {
-  0% { border-color: var(--brand); box-shadow: 0 0 0 0 rgba(91,108,255,.3); }
-  50% { border-color: var(--brand-2); box-shadow: 0 0 0 4px rgba(91,108,255,.1); }
-  100% { border-color: var(--brand); box-shadow: 0 0 0 0 rgba(91,108,255,.3); }
+  0% {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 0 rgba(91,108,255,.3);
+  }
+  50% {
+    border-color: var(--brand-2);
+    box-shadow: 0 0 0 4px rgba(91,108,255,.1);
+  }
+  100% {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 0 rgba(91,108,255,.3);
+  }
 }
 
-/* CHAT WINDOW – ПОЛНОЭКРАННЫЙ */
+/* CHAT WINDOW */
 .chat-window-overlay{
   display:none;position:fixed;top:0;left:0;right:0;bottom:0;
   background:rgba(0,0,0,.35);z-index:1000;
@@ -541,45 +562,38 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .team-list-empty{text-align:center;padding:24px 12px}
 
 .team-detail{display:flex;flex-direction:column;gap:10px;margin-top:4px}
-
-/* ВАЖНО: ХЕДЕР КОМАНДЫ — ОДНА СТРОКА (мобилки) */
 .team-detail-header{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+}
+.team-detail-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px}
+
+/* ✅ ВАЖНО: шапка "Код/Копировать/Расформировать" в одну строку на мобилках */
+.team-header-actions{
   display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:8px;
+  gap:6px;
   flex-wrap:nowrap;
-}
-.team-detail-title{
-  font-size:15px;font-weight:700;
-  display:flex;align-items:center;gap:6px;
-  min-width: 0;
-}
-.team-detail-title #team-name-label{
-  display:inline-block;
-  max-width: 48vw;
-  overflow:hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  justify-content:flex-end;
+  align-items:center;
+  max-width:100%;
 }
 .team-code-pill{
   font-size:11px;padding:4px 10px;border-radius:999px;
   background:#eef2ff;color:#4f46e5;
   white-space:nowrap;
+  flex:0 0 auto;
 }
+#team-delete{
+  white-space:nowrap;
+  flex:0 0 auto;
+}
+
+/* на очень узких экранах пусть слегка скроллится, но остаётся одной строкой */
 .team-header-actions{
-  display:flex;
-  gap:6px;
-  flex-wrap:nowrap;           /* не переносим */
-  justify-content:flex-end;
-  align-items:center;
-  min-width: 0;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
 }
-.team-code-pill{
-  max-width: 44vw;            /* чтобы влезало в одну строку на мобилке */
-  overflow:hidden;
-  text-overflow: ellipsis;
-}
+.team-header-actions::-webkit-scrollbar{display:none}
+
 .team-members-toggle{
   display:flex;justify-content:space-between;align-items:center;
   padding:8px 10px;border-radius:12px;border:1px solid var(--line);
@@ -604,30 +618,13 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   .card { padding: 14px; }
   .task{align-items:flex-start;padding:9px 9px}
 
-  /* Хедер команды оставляем в одну строку */
-  .team-detail-header{
-    flex-direction: row;
-    align-items: center;
-  }
-  .team-header-actions{
-    flex-wrap: nowrap;
-    gap: 6px;
-  }
-
-  /* кнопки чуть компактнее, чтобы точно помещалось */
-  #team-delete.btn.secondary{
-    padding: 6px 10px !important;
-    font-size: 11px !important;
-    border-radius: 12px;
-    white-space: nowrap;
-  }
-  #team-code-copy.btn.secondary.icon{
-    min-width: 34px;
-    min-height: 34px;
-  }
+  /* ✅ оставляем заголовок команды вертикальным, но actions — в одну строку */
+  .team-detail-header{flex-direction:column;align-items:flex-start}
+  .team-header-actions{justify-content:flex-start; width:100%}
 
   .appbar { padding: calc(10px + var(--safe-top)) 14px 10px; }
   .appbar h1 { font-size: 20px; }
+
   .grid-2 { gap: 12px; }
   .nav .item { min-width: 56px; font-size: 11px; }
   .stats-grid .card-mini { min-width: calc(50% - 6px); }
@@ -638,6 +635,10 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     right: 16px;
     font-size: 22px;
   }
+
+  /* чуть компактнее кнопки справа, чтобы точно влезало */
+  .team-code-pill{font-size:10px;padding:4px 8px}
+  #team-delete{font-size:10px;padding:6px 9px}
 }
 
 /* STATS */
@@ -677,16 +678,17 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   .task:hover,
   .team-list-item:hover,
   .profile-btn:hover,
-  .stats-grid .card-mini:hover { transform: none; }
-
+  .stats-grid .card-mini:hover {
+    transform: none;
+  }
   .btn, .chip, .nav .item, .profile-btn { min-height: 44px; }
-
   .btn.icon { min-width: 44px; min-height: 44px; }
   .task { min-height: 60px; }
   .team-list-item { min-height: 50px; }
 }
 </style>
 </head>
+
 <body>
 
 <!-- APP BAR -->
@@ -702,7 +704,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     <div class="card">
       <h3>Фокус</h3>
 
-      <!-- текущий фокус -->
       <div id="focus-current" class="focus-current" style="display:none">
         <div class="focus-current-top">
           <span>Текущий фокус</span>
@@ -711,7 +712,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
         <div id="focus-current-text" class="focus-current-text"></div>
       </div>
 
-      <!-- режим редактирования -->
       <div id="focus-edit-row">
         <label id="focus-edit-label">Самое главное сегодня</label>
         <div class="focus-edit-fields">
@@ -769,7 +769,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 
       <div id="plan-my-list" class="list"></div>
 
-      <!-- TEAM BLOCK -->
       <div id="plan-team-block" class="plan-team-wrapper" style="display:none;">
         <div id="team-list-box" class="team-list"></div>
 
@@ -781,12 +780,14 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
               <span id="team-name-label">Команда</span>
               <button id="team-rename" class="btn secondary icon" title="Переименовать">✎</button>
             </div>
+
+            <!-- ✅ вот этот блок теперь всегда одной строкой (scroll при необходимости) -->
             <div class="team-header-actions">
               <div class="team-code-pill" id="team-code-pill">
                 Код: <span id="team-code-short">••••</span>
               </div>
               <button id="team-code-copy" class="btn secondary icon" title="Скопировать код">📋</button>
-              <button id="team-delete" class="btn secondary" style="font-size:11px;padding:6px 10px">Расформировать</button>
+              <button id="team-delete" class="btn secondary">Расформировать</button>
             </div>
           </div>
 
@@ -895,10 +896,8 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   </section>
 </div>
 
-<!-- FLOATING ACTION BUTTON -->
 <button id="team-fab-btn" class="floating-action-btn" style="display: none;">+</button>
 
-<!-- TEAM MENU -->
 <div id="team-menu" class="modal">
   <div class="modal-content">
     <h3 class="modal-title">Действия с командой</h3>
@@ -910,7 +909,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   </div>
 </div>
 
-<!-- CHAT WINDOW (полноэкранный) -->
 <div id="chat-window-overlay" class="chat-window-overlay">
   <div class="chat-window">
     <div class="chat-header">
@@ -929,7 +927,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   </div>
 </div>
 
-<!-- NEW CHAT MODAL -->
 <div id="new-chat-modal" class="modal">
   <div class="modal-content">
     <h3 class="modal-title">Название чата</h3>
@@ -941,7 +938,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   </div>
 </div>
 
-<!-- NAV -->
 <nav class="nav">
   <div class="item active" data-go="home">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 7v10a1 1 0 0 1-1 1h-6v-6H10v6H4a1 1 0 0 1-1-1V10l9-7z"/></svg>
@@ -1154,22 +1150,35 @@ function syncQuickTeamChip(){
   updateQuickTeamVisibility();
 }
 
+/* ✅ FIX: команда в select не должна "сбрасываться" */
 function updateQuickTeamVisibility(){
   const row = $('#quick-team-row');
   if (!row) return;
+
   const ownedTeams = teamList.filter(t => t.is_owner);
   const need = quickPrio === 'team' && ownedTeams.length;
   row.classList.toggle('visible', need);
 
   const sel = $('#quick-team-select');
   if (!sel) return;
+
+  const prev = sel.value; // сохраняем выбор
   sel.innerHTML = '<option value="">Выберите команду</option>';
+
   ownedTeams.forEach(t=>{
     const opt = document.createElement('option');
     opt.value = String(t.team_id);
     opt.textContent = t.name;
     sel.appendChild(opt);
   });
+
+  // восстанавливаем выбор, если он ещё валиден
+  if (prev && ownedTeams.some(t => String(t.team_id) === String(prev))) {
+    sel.value = prev;
+  } else if (ownedTeams.length && need) {
+    // если в режиме "Команда" — выбираем первую по умолчанию
+    sel.value = String(ownedTeams[0].team_id);
+  }
 }
 
 $('#quick-add').onclick = async ()=>{
@@ -1441,7 +1450,7 @@ function fillTeamDetail(){
   $('#team-code-short').textContent = short;
 
   $('#team-rename').style.display   = isOwner ? 'inline-flex' : 'none';
-  $('#team-delete').style.display   = isOwner ? 'block'      : 'none';
+  $('#team-delete').style.display   = isOwner ? 'inline-flex' : 'none';
   $('#team-code-copy').style.display = 'inline-flex';
 
   const ul = $('#team-members-list');
@@ -1575,6 +1584,7 @@ async function loadTeamInfo(){
 
     try{
       const r = await api('/api/team/members?team_id='+encodeURIComponent(teamInfo.team_id),'GET');
+      // у тебя в members.js возвращается items, а фронт ждал members — подстрахуем:
       teamInfo.members = r.members || r.items || [];
     }catch(e){
       console.log('members error', e);
@@ -1595,7 +1605,7 @@ async function loadTeamInfo(){
   }
 }
 
-/* FLOATING BUTTON MANAGEMENT */
+/* FLOATING BUTTON */
 function updateFloatingButtonVisibility() {
   const fab = $('#team-fab-btn');
   const currentScreen = Object.values(screens).find(s => s.classList.contains('active'));
@@ -1771,16 +1781,32 @@ function renderChatList() {
       <div class="chat-date">${dateStr}</div>
     `;
 
-    // FIX: корректный long-press на мобилках (НЕ ломаем обычный tap)
-    let pressTimer = null;
-    let longPressFired = false;
+    // обычный клик — открыть чат
+    chatEl.onclick = () => {
+      if (chatEl._skipClickOnce) {
+        chatEl._skipClickOnce = false;
+        return;
+      }
+      openChat(chat.id, title);
+    };
 
-    const startPress = () => {
+    // ✅ FIX: на телефоне не ломаем клик preventDefault'ом
+    let pressTimer = null;
+
+    const startPressTouch = () => {
       if (pressTimer) clearTimeout(pressTimer);
-      longPressFired = false;
       pressTimer = setTimeout(() => {
         pressTimer = null;
-        longPressFired = true;
+        chatEl._skipClickOnce = true;
+        deleteChat(chat.id, title);
+      }, 550);
+    };
+
+    const startPressMouse = (ev) => {
+      if (ev.button !== 0) return;
+      if (pressTimer) clearTimeout(pressTimer);
+      pressTimer = setTimeout(() => {
+        pressTimer = null;
         chatEl._skipClickOnce = true;
         deleteChat(chat.id, title);
       }, 550);
@@ -1793,31 +1819,14 @@ function renderChatList() {
       }
     };
 
-    // обычный клик — открыть чат
-    chatEl.onclick = () => {
-      if (longPressFired) return;
-      if (chatEl._skipClickOnce) {
-        chatEl._skipClickOnce = false;
-        return;
-      }
-      openChat(chat.id, title);
-    };
-
-    // touch (mobile) — без preventDefault, иначе ломает tap
-    chatEl.addEventListener('touchstart', startPress, { passive: true });
+    chatEl.addEventListener('touchstart', startPressTouch, { passive: true });
     chatEl.addEventListener('touchend', cancelPress, { passive: true });
     chatEl.addEventListener('touchcancel', cancelPress, { passive: true });
 
-    // mouse (desktop) — можно preventDefault
-    chatEl.addEventListener('mousedown', (ev) => {
-      if (ev.button !== 0) return;
-      ev.preventDefault();
-      startPress();
-    });
+    chatEl.addEventListener('mousedown', startPressMouse);
     chatEl.addEventListener('mouseup', cancelPress);
     chatEl.addEventListener('mouseleave', cancelPress);
 
-    // правый клик (desktop)
     chatEl.addEventListener('contextmenu', (ev) => {
       ev.preventDefault();
       chatEl._skipClickOnce = true;
