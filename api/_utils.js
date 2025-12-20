@@ -21,7 +21,7 @@ export function getTgId(req) {
   const fromQuery = Number(req.query?.tg_id || req.query?.user_id);
   if (fromQuery) return fromQuery;
 
-  const fromHeader = Number(req.headers['x-tg-id']);
+  const fromHeader = Number(req.headers['x-tg-id'] || req.headers['X-TG-ID']);
   if (fromHeader) return fromHeader;
 
   return 0;
@@ -38,6 +38,13 @@ export async function getOrCreateUserId(tg_id) {
   return rows[0].id;
 }
 
+export async function getUserIdByTgId(tgId) {
+  const tgNum = Number(tgId);
+  if (!tgNum) return null;
+  const r = await q(`SELECT id FROM users WHERE tg_id = $1`, [tgNum]);
+  return r.rows[0]?.id ? Number(r.rows[0].id) : null;
+}
+
 /* ---------- Teams helpers ---------- */
 
 export async function userTeamIds(userId) {
@@ -46,6 +53,29 @@ export async function userTeamIds(userId) {
     [userId],
   );
   return rows.map(r => Number(r.team_id));
+}
+
+export async function ensureTeamMember(teamId, userId) {
+  const m = await q(
+    `SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2`,
+    [teamId, userId]
+  );
+  return !!m.rows.length;
+}
+
+export async function isTeamOwner(userId, teamId) {
+  const own = await q(
+    `
+    SELECT user_id
+    FROM team_members
+    WHERE team_id = $1
+    ORDER BY joined_at ASC
+    LIMIT 1
+    `,
+    [teamId]
+  );
+  if (!own.rows.length) return false;
+  return Number(own.rows[0].user_id) === Number(userId);
 }
 
 export function randomToken(len = 32) {
@@ -57,7 +87,6 @@ export function randomToken(len = 32) {
 
 /**
  * Старый вариант: создаёт дефолтную команду, если нет ни одной.
- * Используется в задачах / уведомлениях, можно оставить как есть.
  */
 export async function ensureDefaultTeamForUser(userId, tgId) {
   const { rows } = await q(
@@ -90,9 +119,7 @@ export async function ensureDefaultTeamForUser(userId, tgId) {
 }
 
 /**
- * Новый хелпер: либо возвращает первую команду пользователя,
- * либо создаёт новую (с join_token) и добавляет его как участника.
- * Используется в /api/team/invite.
+ * Новый хелпер для invite.
  */
 export async function getOrEnsureUserTeam(userId, tgId) {
   const { rows } = await q(
@@ -143,33 +170,64 @@ export async function joinByToken(userId, token) {
   return teamId;
 }
 
+/**
+ * Для напоминаний: кто должен получить уведомление.
+ * Логика:
+ * - всегда автор задачи
+ * - если назначена (assigned_to_user_id) — этот человек
+ * - если командная задача:
+ *   - владелец команды (админ) всегда получает
+ *   - остальные участники получают только если задача НЕ назначена конкретному человеку
+ */
 export async function getTgIdsForTask(taskId) {
-  // автор
-  const owner = await q(
-    `SELECT u.tg_id
+  const task = await q(
+    `SELECT t.id, t.user_id, t.team_id, t.assigned_to_user_id
      FROM tasks t
-     JOIN users u ON u.id = t.user_id
      WHERE t.id = $1`,
     [taskId],
   );
+  if (!task.rows.length) return [];
 
-  const list = new Set(owner.rows.map(r => Number(r.tg_id)));
+  const t = task.rows[0];
+  const list = new Set();
 
-  // все участники команды (если командная задача)
-  const team = await q(
-    `SELECT t.team_id FROM tasks t WHERE t.id = $1`,
-    [taskId],
-  );
-  if (team.rows.length && team.rows[0].team_id) {
-    const members = await q(
+  // автор
+  const owner = await q(`SELECT tg_id FROM users WHERE id = $1`, [t.user_id]);
+  owner.rows.forEach(r => list.add(Number(r.tg_id)));
+
+  // назначенный
+  if (t.assigned_to_user_id) {
+    const ass = await q(`SELECT tg_id FROM users WHERE id = $1`, [t.assigned_to_user_id]);
+    ass.rows.forEach(r => list.add(Number(r.tg_id)));
+  }
+
+  // команда
+  if (t.team_id) {
+    // админ команды (первый участник)
+    const admin = await q(
       `SELECT u.tg_id
        FROM team_members m
        JOIN users u ON u.id = m.user_id
-       WHERE m.team_id = $1`,
-      [team.rows[0].team_id],
+       WHERE m.team_id = $1
+       ORDER BY m.joined_at ASC
+       LIMIT 1`,
+      [t.team_id]
     );
-    members.rows.forEach(r => list.add(Number(r.tg_id)));
+    admin.rows.forEach(r => list.add(Number(r.tg_id)));
+
+    // если задача не назначена конкретному человеку — уведомляем всех участников
+    if (!t.assigned_to_user_id) {
+      const members = await q(
+        `SELECT u.tg_id
+         FROM team_members m
+         JOIN users u ON u.id = m.user_id
+         WHERE m.team_id = $1`,
+        [t.team_id],
+      );
+      members.rows.forEach(r => list.add(Number(r.tg_id)));
+    }
   }
+
   return Array.from(list);
 }
 
