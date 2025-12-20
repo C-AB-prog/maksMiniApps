@@ -61,14 +61,7 @@ body{
   background: linear-gradient(90deg, var(--brand), var(--brand-2));
   -webkit-background-clip:text; background-clip:text; color:transparent;
 }
-/* ✅ В ОДНУ СТРОЧКУ, МОЛЧА ОБРЕЗАЕМ */
-.appbar .sub{
-  color:var(--muted);
-  font-size:12px;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
+.appbar .sub{color:var(--muted); font-size:12px}
 
 /* LAYOUT */
 .container{max-width:940px;margin:0 auto;padding:16px 14px 110px}
@@ -90,7 +83,6 @@ section.active{display:grid}
 @media (min-width: 860px){
   .grid-2{grid-template-columns:1.15fr .85fr}
 }
-
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -111,7 +103,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   appearance:none; border:none; padding:12px 16px; border-radius:14px;
   background:linear-gradient(135deg, var(--brand), var(--brand-2));
   color:#fff; cursor:pointer; font-weight:800; letter-spacing:.2px;
-  box-shadow:var(--shadow-2); 
+  box-shadow:var(--shadow-2);
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
@@ -120,9 +112,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   touch-action: manipulation;
 }
 .btn:active { transform: scale(0.95); box-shadow: 0 4px 12px rgba(91,108,255,.3); }
-.btn.secondary{
-  background:#fff;color:var(--ink); border:1px solid var(--line); box-shadow:none; font-weight:700;
-}
+.btn.secondary{ background:#fff;color:var(--ink); border:1px solid var(--line); box-shadow:none; font-weight:700; }
 .btn.ghost{background:rgba(91,108,255,.10); color:var(--brand); box-shadow:none}
 .btn.icon{padding:8px 10px; border-radius:999px; min-width:34px; display:inline-flex; align-items:center; justify-content:center}
 
@@ -150,11 +140,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   user-select: none;
   touch-action: manipulation;
 }
-.floating-action-btn:active {
-  transform: scale(0.85);
-  box-shadow: 0 4px 15px rgba(91,108,255,.3);
-  animation: none;
-}
+.floating-action-btn:active { transform: scale(0.85); box-shadow: 0 4px 15px rgba(91,108,255,.3); animation:none; }
 @keyframes pulse {
   0% { transform: scale(1); box-shadow: 0 8px 25px rgba(91,108,255,.4); }
   50% { transform: scale(1.05); box-shadow: 0 12px 35px rgba(91,108,255,.6); }
@@ -204,18 +190,8 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .task.done{opacity:.7}
 .task.done .ttl{text-decoration: line-through; color: var(--muted);}
 
-/* meta */
-.task-meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  min-width: fit-content;
-}
-.badge{
-  font-size:11px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--muted);
-  white-space: nowrap;
-}
+.task-meta { display:flex; flex-direction:column; align-items:flex-end; gap:6px; min-width:fit-content; }
+.badge{ font-size:11px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--muted); white-space: nowrap; }
 .badge.ok{color:#065f46;border-color:#10b981;background:#ecfdf5}
 .badge.due{color:#7c2d12;border-color:#f59e0b;background:#fffbeb}
 .badge.dead{color:#991b1b;border-color:#ef4444;background:#fef2f2}
@@ -229,21 +205,11 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   align-items: center;
   gap: 4px;
 }
-.badge.team::before { content: "👥"; font-size: 9px; }
+.badge.team::before { content:"👥"; font-size:9px; }
 
-.task.team-task {
-  border-left: 4px solid #c7d2fe;
-  background: linear-gradient(to right, #f8faff, #ffffff);
-}
-.task-actions {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-@keyframes slideIn {
-  from { opacity: 0; transform: translateX(-10px); }
-  to { opacity: 1; transform: translateX(0); }
-}
+.task.team-task { border-left: 4px solid #c7d2fe; background: linear-gradient(to right, #f8faff, #ffffff); }
+.task-actions { display:flex; gap:6px; align-items:center; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
 
 /* FOCUS CARD */
 .focus-current{
@@ -254,25 +220,16 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   margin-bottom:10px;
   animation: gentlePulse 3s infinite;
 }
-.focus-current-top{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:4px;
-  font-size:11px;
-  color:var(--muted);
-  text-transform:uppercase;
-  letter-spacing:.06em;
-}
-.focus-current-text{ font-weight:600; font-size:14px; }
-.focus-edit-fields{ display:flex; gap:10px; flex-wrap:wrap; }
+.focus-current-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.focus-current-text{font-weight:600;font-size:14px;}
+.focus-edit-fields{display:flex;gap:10px;flex-wrap:wrap}
 @keyframes gentlePulse {
   0% { box-shadow: 0 0 0 0 rgba(91,108,255,0.1); transform: scale(1); }
   50% { box-shadow: 0 0 0 4px rgba(91,108,255,0.05); transform: scale(1.005); }
   100% { box-shadow: 0 0 0 0 rgba(91,108,255,0.1); transform: scale(1); }
 }
 
-/* CHAT – список чатов */
+/* CHAT */
 .chat-container{display:flex;flex-direction:column;gap:14px}
 .chat-list{
   display:grid;
@@ -312,7 +269,8 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .chat-item.new{ border:2px dashed var(--muted); background:transparent; }
 .chat-item.new:active{ border-color:var(--brand); background:rgba(91,108,255,.03); transform: scale(0.95); }
 .chat-icon{font-size:24px;margin-bottom:8px;opacity:.7}
-.chat-item.active .chat-icon, .chat-item:active .chat-icon{opacity:1}
+.chat-item.active .chat-icon,
+.chat-item:active .chat-icon{opacity:1}
 .chat-title{font-weight:600;font-size:13px;line-height:1.3;margin-bottom:4px}
 .chat-date{font-size:11px;color:var(--muted)}
 @keyframes chatPulse {
@@ -350,19 +308,9 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   font-size:14px;line-height:1.4;word-wrap:break-word;
   animation: bubbleIn 0.3s ease;
 }
-.me{
-  align-self:flex-end;
-  background:linear-gradient(135deg,var(--brand),var(--brand-2));
-  color:#fff;border-bottom-right-radius:6px
-}
-.bot{
-  align-self:flex-start;background:#fff;border:1px solid var(--line);
-  border-bottom-left-radius:6px
-}
-.chat-foot{
-  display:flex;gap:10px;padding:12px 16px;
-  border-top:1px solid var(--line);background:#fff;flex-shrink:0;
-}
+.me{ align-self:flex-end; background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff;border-bottom-right-radius:6px }
+.bot{ align-self:flex-start;background:#fff;border:1px solid var(--line); border-bottom-left-radius:6px }
+.chat-foot{ display:flex;gap:10px;padding:12px 16px; border-top:1px solid var(--line);background:#fff;flex-shrink:0; }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 @keyframes bubbleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
 
@@ -404,10 +352,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .nav .item:active { transform: scale(0.9); background: rgba(91,108,255,0.1); }
 .nav .item svg{opacity:.6;transition:opacity .15s, transform .06s}
 .nav .item.active{color:var(--brand); background: rgba(91,108,255,0.08);}
-.nav .item.active svg{
-  opacity:1;transform:translateY(-1px);
-  filter:drop-shadow(0 4px 8px rgba(91,108,255,.35))
-}
+.nav .item.active svg{ opacity:1;transform:translateY(-1px); filter:drop-shadow(0 4px 8px rgba(91,108,255,.35)) }
 
 /* TOAST */
 .toast{
@@ -472,7 +417,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   border-color:transparent;
   box-shadow:0 8px 22px rgba(91,108,255,.2);
 }
-.plan-filters{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+.plan-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
 
 /* TEAM layout */
 .plan-team-wrapper{position:relative;min-height:140px;margin-top:10px}
@@ -492,10 +437,30 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .team-list-empty{text-align:center;padding:24px 12px}
 
 .team-detail{display:flex;flex-direction:column;gap:10px;margin-top:4px}
-.team-detail-header{ display:flex;justify-content:space-between;align-items:center;gap:8px; }
+.team-detail-header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+
+/* ✅ ВАЖНО: делаем это "в одну строчку" на мобилках */
+.team-header-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:nowrap;          /* не переносить */
+  align-items:center;
+  justify-content:flex-end;
+  min-width:0;
+}
+.team-code-pill{
+  font-size:11px;padding:6px 10px;border-radius:999px;
+  background:#eef2ff;color:#4f46e5;
+  white-space:nowrap;
+  max-width:48vw;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
 .team-detail-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px}
-.team-code-pill{ font-size:11px;padding:4px 10px;border-radius:999px; background:#eef2ff;color:#4f46e5; }
-.team-header-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+
 .team-members-toggle{
   display:flex;justify-content:space-between;align-items:center;
   padding:8px 10px;border-radius:12px;border:1px solid var(--line);
@@ -509,11 +474,8 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .team-members-box{margin-top:4px;padding-left:4px}
 .team-members-box ul{margin:4px 0 0 14px;padding:0}
 .team-members-box li{font-size:13px;margin-bottom:2px}
-
-/* ✅ Quick-add team row (команда + исполнитель) */
 .quick-team-row{display:none;gap:8px}
 .quick-team-row.visible{display:flex}
-.quick-team-row.visible select{flex:1}
 
 /* MOBILE tweaks */
 @media (max-width: 600px){
@@ -521,20 +483,14 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   .card { padding: 14px; }
   .task{align-items:flex-start;padding:9px 9px}
   .team-detail-header{flex-direction:column;align-items:flex-start}
-  .team-header-actions{justify-content:flex-start}
-
+  .team-header-actions{justify-content:flex-start; width:100%;}
+  .team-code-pill{max-width:100%;}
   .appbar { padding: calc(10px + var(--safe-top)) 14px 10px; }
   .appbar h1 { font-size: 20px; }
-
   .grid-2 { gap: 12px; }
-
   .nav .item { min-width: 56px; font-size: 11px; }
-
-  .floating-action-btn {
-    width: 56px; height: 56px;
-    bottom: 80px; right: 16px;
-    font-size: 22px;
-  }
+  .stats-grid .card-mini { min-width: calc(50% - 6px); }
+  .floating-action-btn { width: 56px; height: 56px; bottom: 80px; right: 16px; font-size: 22px; }
 }
 
 /* STATS */
@@ -549,26 +505,21 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   touch-action: manipulation;
 }
 .stats-grid .card-mini:active { transform: scale(0.98); }
+
+/* Week chart */
 #week-chart{ height:200px;display:flex;align-items:flex-end; gap:4px;margin-top:20px; }
 
 /* Loading */
-.loading {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 3px solid rgba(91,108,255,.3);
-  border-radius: 50%;
-  border-top-color: var(--brand);
-  animation: spin 1s ease-in-out infinite;
-}
+.loading { display:inline-block; width:20px; height:20px; border:3px solid rgba(91,108,255,.3); border-radius:50%; border-top-color:var(--brand); animation: spin 1s ease-in-out infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* Touch improvements */
 @media (hover: none) and (pointer: coarse) {
-  .card:hover, .task:hover, .team-list-item:hover, .profile-btn:hover, .stats-grid .card-mini:hover { transform: none; }
-  .btn, .chip, .nav .item, .profile-btn { min-height: 44px; }
-  .btn.icon { min-width: 44px; min-height: 44px; }
-  .task { min-height: 60px; }
-  .team-list-item { min-height: 50px; }
+  .card:hover,.task:hover,.team-list-item:hover,.profile-btn:hover,.stats-grid .card-mini:hover { transform:none; }
+  .btn, .chip, .nav .item, .profile-btn { min-height:44px; }
+  .btn.icon { min-width:44px; min-height:44px; }
+  .task { min-height:60px; }
+  .team-list-item { min-height:50px; }
 }
 </style>
 </head>
@@ -613,20 +564,15 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
         <div class="chip" data-prio="month">Месяц</div>
         <div class="chip" data-prio="team">Команда</div>
       </div>
+
       <div style="display:flex;flex-direction:column;gap:8px">
         <input id="quick-title" class="input" type="text" placeholder="Название задачи" />
         <input id="quick-due" class="input" type="datetime-local" />
-
-        <!-- ✅ Команда + Исполнитель -->
         <div class="quick-team-row" id="quick-team-row">
           <select id="quick-team-select" class="input">
             <option value="">Выберите команду</option>
           </select>
-          <select id="quick-assignee-select" class="input">
-            <option value="">Исполнитель: не выбран</option>
-          </select>
         </div>
-
         <button id="quick-add" class="btn">Добавить задачу</button>
       </div>
     </div>
@@ -671,6 +617,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
               <span id="team-name-label">Команда</span>
               <button id="team-rename" class="btn secondary icon" title="Переименовать">✎</button>
             </div>
+
             <div class="team-header-actions">
               <div class="team-code-pill" id="team-code-pill">
                 Код: <span id="team-code-short">••••</span>
@@ -698,7 +645,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
           </div>
         </div>
       </div>
-
     </div>
   </section>
 
@@ -784,7 +730,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       </div>
     </div>
   </section>
-
 </div>
 
 <!-- FLOATING ACTION BUTTON -->
@@ -812,7 +757,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       </div>
     </div>
     <div id="chat-body" class="chat-body">
-      <div class="bubble bot">Привет! Я ассистент по бизнесу и продуктивности. Чем занимаешься и что хочешь улучшить?</div>
+      <div class="bubble bot">Привет! Я твой ассистент по продуктивности. Чем могу помочь?</div>
     </div>
     <div class="chat-foot">
       <input id="chat-input" class="input" type="text" placeholder="Напишите сообщение..." />
@@ -825,7 +770,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 <div id="new-chat-modal" class="modal">
   <div class="modal-content">
     <h3 class="modal-title">Название чата</h3>
-    <input type="text" id="new-chat-title" class="input" placeholder="Например: Рост продаж" style="margin-bottom: 16px;">
+    <input type="text" id="new-chat-title" class="input" placeholder="Например: Планирование проекта" style="margin-bottom: 16px;">
     <div style="display: flex; gap: 10px;">
       <button class="btn secondary" id="cancel-new-chat" style="flex: 1;">Отмена</button>
       <button class="btn" id="confirm-new-chat" style="flex: 1;">Создать</button>
@@ -914,13 +859,36 @@ const HEADERS = () => tgId
   ? { 'Content-Type':'application/json', 'X-TG-ID': String(tgId) }
   : { 'Content-Type':'application/json' };
 
-async function api(path, method='GET', body=null) {
-  const opt = { method, headers: HEADERS() };
-  if (body) opt.body = JSON.stringify(body);
-  const r = await fetch(path, opt);
-  const data = await r.json().catch(()=> ({}));
-  if (!r.ok || data?.ok === false) throw new Error(data?.error || ('HTTP '+r.status));
-  return data;
+/* ✅ ВАЖНО: абсолютный URL + таймаут + no-store (для Telegram WebView на телефонах) */
+const BASE_URL = location.origin;
+
+async function api(path, method='GET', body=null, opts={}) {
+  const url = path.startsWith('http') ? path : (BASE_URL + path);
+
+  const controller = new AbortController();
+  const timeoutMs = opts.timeoutMs ?? 15000;
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const opt = {
+      method,
+      headers: HEADERS(),
+      signal: controller.signal,
+      cache: 'no-store'
+    };
+    if (body) opt.body = JSON.stringify(body);
+
+    const r = await fetch(url, opt);
+
+    const txt = await r.text();
+    let data = {};
+    try { data = JSON.parse(txt || '{}'); } catch { data = { ok:false, error:'bad_json' }; }
+
+    if (!r.ok || data?.ok === false) throw new Error(data?.error || ('HTTP '+r.status));
+    return data;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /* global state */
@@ -937,11 +905,9 @@ let teamInfo = null;
 let teamDetailOpen = false;
 let teamMembersOpen = false;
 
-let quickTeamMembers = []; // items из /api/team/members для выбранной команды
-
 /* team owner helpers */
 function isOwnerOfTeam(teamId){
-  const t = teamList.find(x => Number(x.team_id) === Number(teamId));
+  const t = teamList.find(x => x.team_id === teamId);
   return !!(t && t.is_owner);
 }
 function hasOwnedTeams(){
@@ -995,6 +961,7 @@ function renderFocus(){
     label.textContent = 'Самое главное сегодня';
   }
 }
+
 $('#focus-edit-btn').onclick = () => {
   focusEditing = true;
   renderFocus();
@@ -1002,6 +969,7 @@ $('#focus-edit-btn').onclick = () => {
   inp.focus();
   inp.select();
 };
+
 $('#focus-save').onclick = async ()=>{
   const text = $('#focus-input').value.trim();
   if (!text) return showToast('Пустой фокус');
@@ -1046,31 +1014,6 @@ function syncQuickTeamChip(){
   updateQuickTeamVisibility();
 }
 
-async function loadMembersForTeam(teamId){
-  try{
-    const r = await api('/api/team/members?team_id=' + encodeURIComponent(teamId),'GET');
-    quickTeamMembers = r.items || r.members || [];
-  }catch(e){
-    quickTeamMembers = [];
-  }
-}
-
-function renderQuickAssignees(){
-  const sel = $('#quick-assignee-select');
-  if (!sel) return;
-  const prev = sel.value;
-  sel.innerHTML = `<option value="">Исполнитель: не выбран</option>`;
-  quickTeamMembers.forEach(m=>{
-    const opt = document.createElement('option');
-    opt.value = String(m.user_id);
-    opt.textContent = m.username ? '@'+m.username : ('ID ' + m.tg_id);
-    sel.appendChild(opt);
-  });
-  if (prev && quickTeamMembers.some(m => String(m.user_id) === String(prev))) {
-    sel.value = prev;
-  }
-}
-
 function updateQuickTeamVisibility(){
   const row = $('#quick-team-row');
   if (!row) return;
@@ -1080,10 +1023,6 @@ function updateQuickTeamVisibility(){
 
   const sel = $('#quick-team-select');
   if (!sel) return;
-
-  // сохраняем выбранную команду
-  const prev = sel.value;
-
   sel.innerHTML = '<option value="">Выберите команду</option>';
   ownedTeams.forEach(t=>{
     const opt = document.createElement('option');
@@ -1091,32 +1030,7 @@ function updateQuickTeamVisibility(){
     opt.textContent = t.name;
     sel.appendChild(opt);
   });
-
-  // восстановим выбор если можно
-  if (prev && ownedTeams.some(t => String(t.team_id) === String(prev))) {
-    sel.value = prev;
-  }
-
-  // подгрузим участников выбранной команды
-  if (need) {
-    const teamId = Number(sel.value || ownedTeams[0]?.team_id);
-    if (teamId) {
-      loadMembersForTeam(teamId).then(() => {
-        renderQuickAssignees();
-      });
-    }
-  } else {
-    quickTeamMembers = [];
-    renderQuickAssignees();
-  }
 }
-
-$('#quick-team-select').addEventListener('change', async () => {
-  const teamId = Number($('#quick-team-select').value);
-  if (!teamId) { quickTeamMembers = []; return renderQuickAssignees(); }
-  await loadMembersForTeam(teamId);
-  renderQuickAssignees();
-});
 
 $('#quick-add').onclick = async ()=>{
   const title = $('#quick-title').value.trim();
@@ -1141,27 +1055,11 @@ $('#quick-add').onclick = async ()=>{
     team_id = Number(selVal);
   }
 
-  let assigned_to_user_id = null;
-  if (quickPrio === 'team') {
-    const aVal = ($('#quick-assignee-select')?.value || '').trim();
-    if (aVal) assigned_to_user_id = Number(aVal);
-  }
-
   try{
     const payload = { title, due_ts, priority: quickPrio };
     if (team_id) payload.team_id = team_id;
-    if (assigned_to_user_id) payload.assigned_to_user_id = assigned_to_user_id;
-
     const r = await api('/api/tasks','POST', payload);
-
-    // нормализуем
-    const created = r.task || r.item || r;
-    if (created && typeof created === 'object') {
-      if (created.team_id != null) created.team_id = Number(created.team_id);
-      tasks.unshift(created);
-    } else {
-      tasks.unshift(r.task);
-    }
+    tasks.unshift(r.task);
   }catch(e){
     const fake = {
       id: 'tmp_'+Date.now(),
@@ -1169,7 +1067,6 @@ $('#quick-add').onclick = async ()=>{
       due_ts,
       is_done: false,
       team_id: team_id || null,
-      assigned_to_user_id: assigned_to_user_id || null,
       created_at: new Date().toISOString()
     };
     tasks.unshift(fake);
@@ -1226,16 +1123,8 @@ function rowTask(t, showTeamBadge=false, readonly=false){
   if (showTeamBadge && t.team_id){
     const tb = document.createElement('span');
     tb.className='badge team';
-    tb.textContent='Командная';
+    tb.textContent='Командная задача';
     meta.appendChild(tb);
-  }
-
-  // ✅ показываем исполнителя если есть username
-  if (t.assigned_to_username){
-    const ab = document.createElement('span');
-    ab.className = 'badge';
-    ab.textContent = '→ @' + t.assigned_to_username;
-    meta.appendChild(ab);
   }
 
   const right = document.createElement('button');
@@ -1313,7 +1202,7 @@ myFilterChips.forEach(ch=>{
 (myFilterChips.find(c=>c.dataset.planFilter==='all')||{}).classList?.add('active');
 
 function renderPlanMy(){
-  let arr = tasks.filter(t => !t.team_id); // только личные
+  let arr = tasks.filter(t => !t.team_id);
   const now = new Date();
 
   if (planFilter === 'today'){
@@ -1407,7 +1296,7 @@ function fillTeamDetail(){
 
   $('#team-name-label').textContent = teamInfo.name || ('Команда '+teamInfo.team_id);
 
-  const fullCode = teamInfo.join_code || teamInfo.join_token || teamInfo.join_code || '';
+  const fullCode = teamInfo.join_code || '';
   const short = fullCode ? (fullCode.slice(0,4)+'••••') : '••••';
   $('#team-code-short').textContent = short;
 
@@ -1433,10 +1322,7 @@ function fillTeamDetail(){
 
   const box = $('#team-tasks-list');
   box.innerHTML='';
-
-  // ✅ FIX: team_id может приходить строкой → приводим к number
-  const arr = tasks
-    .filter(t => Number(t.team_id) === Number(teamInfo.team_id))
+  const arr = tasks.filter(t => t.team_id === teamInfo.team_id)
     .sort((a,b)=>(a.is_done-b.is_done)||((normalizeDue(a.due_ts)||1e20)-(normalizeDue(b.due_ts)||1e20)));
 
   if (!arr.length){
@@ -1521,12 +1407,12 @@ function renderWeekChart(){
 async function loadTeamInfo(){
   try{
     const listResp = await api('/api/team/list','GET');
-    const teams = listResp.teams || listResp.items || [];
+    const teams = listResp.teams || [];
 
     teamList = teams.map(t => ({
-      team_id: Number(t.id ?? t.team_id ?? t.teamId ?? t.team_id),
+      team_id: t.id,
       name: t.name,
-      join_code: t.join_code || t.join_token || t.joinToken || t.join_token,
+      join_code: t.join_code,
       is_owner: !!t.is_owner,
       members: []
     }));
@@ -1540,17 +1426,18 @@ async function loadTeamInfo(){
       return;
     }
 
-    if (!teamInfo || !teamList.some(x => Number(x.team_id) === Number(teamInfo.team_id))) {
+    if (!teamInfo || !teamList.some(x => x.team_id === teamInfo.team_id)) {
       teamInfo = teamList[0];
     } else {
-      const found = teamList.find(x => Number(x.team_id) === Number(teamInfo.team_id));
+      const found = teamList.find(x => x.team_id === teamInfo.team_id);
       if (found) teamInfo = found;
     }
 
     try{
       const r = await api('/api/team/members?team_id='+encodeURIComponent(teamInfo.team_id),'GET');
-      teamInfo.members = r.items || r.members || [];
+      teamInfo.members = r.members || r.items || [];
     }catch(e){
+      console.log('members error', e);
       teamInfo.members = [];
     }
 
@@ -1558,6 +1445,7 @@ async function loadTeamInfo(){
     if (teamDetailOpen) fillTeamDetail();
     syncQuickTeamChip();
   }catch(e){
+    console.log('loadTeamInfo error', e);
     teamList = [];
     teamInfo = null;
     teamDetailOpen = false;
@@ -1592,7 +1480,7 @@ $('#team-menu-create').onclick = async ()=>{
     const resp = await api('/api/team/create','POST', name ? { name } : {});
     await loadTeamInfo();
     if (resp.team && resp.team.id){
-      const found = teamList.find(t => Number(t.team_id) === Number(resp.team.id));
+      const found = teamList.find(t => t.team_id === resp.team.id);
       if (found){
         teamInfo = found;
         teamDetailOpen = true;
@@ -1603,6 +1491,7 @@ $('#team-menu-create').onclick = async ()=>{
     setPlanMode('team');
     showToast('Команда создана');
   }catch(e){
+    console.error(e);
     showToast('Не удалось создать команду');
   }
 };
@@ -1617,10 +1506,14 @@ $('#team-menu-join').onclick = async ()=>{
     setPlanMode('team');
     showToast('Вы присоединились к команде');
   }catch(e){
+    console.error(e);
     showToast('Не удалось вступить в команду');
   }
 };
-$('#team-menu-close').onclick = ()=>{ $('#team-menu').classList.remove('active'); };
+
+$('#team-menu-close').onclick = ()=>{
+  $('#team-menu').classList.remove('active');
+};
 
 $('#team-back').onclick = ()=>{
   teamDetailOpen = false;
@@ -1643,15 +1536,15 @@ $('#team-rename').onclick = async ()=>{
     fillTeamDetail();
     showToast('Название обновлено');
   }catch(e){
+    console.error(e);
     showToast('Не удалось переименовать');
   }
 };
 
 $('#team-code-copy').onclick = async ()=>{
-  if (!teamInfo || !(teamInfo.join_code || teamInfo.join_token)) return showToast('Код недоступен');
-  const code = teamInfo.join_code || teamInfo.join_token;
+  if (!teamInfo || !teamInfo.join_code) return showToast('Код недоступен');
   try{
-    await navigator.clipboard.writeText(code);
+    await navigator.clipboard.writeText(teamInfo.join_code);
     showToast('Код скопирован');
   }catch(e){
     showToast('Не удалось скопировать');
@@ -1667,6 +1560,7 @@ $('#team-delete').onclick = async ()=>{
     teamDetailOpen = false;
     showToast('Команда расформирована');
   }catch(e){
+    console.error(e);
     showToast('Не удалось удалить');
   }
 };
@@ -1678,7 +1572,6 @@ $('#team-members-toggle').onclick = ()=>{
 };
 
 /* ======================= CHAT: БД-сессии ======================= */
-
 let chats = [];
 let currentChatId = null;
 let currentMessages = [];
@@ -1689,11 +1582,13 @@ async function loadChatsFromServer() {
     const data = await api('/api/chat_sessions','GET');
     chats = data.sessions || [];
   } catch (e) {
+    console.error('loadChatsFromServer error', e);
     chats = [];
   }
   renderChatList();
 }
 
+/* Удаление чата */
 async function deleteChat(chatId, title) {
   if (!confirm(`Удалить чат "${title}"?`)) return;
   try {
@@ -1705,6 +1600,7 @@ async function deleteChat(chatId, title) {
     }
     showToast('Чат удалён');
   } catch (e) {
+    console.error('deleteChat error', e);
     showToast('Не удалось удалить чат');
   }
 }
@@ -1722,7 +1618,6 @@ function renderChatList() {
   chats.forEach(chat => {
     const chatEl = document.createElement('div');
     chatEl.className = 'chat-item';
-
     const dateStr = chat.updated_at
       ? new Date(chat.updated_at).toLocaleDateString('ru-RU')
       : '';
@@ -1742,15 +1637,15 @@ function renderChatList() {
       openChat(chat.id, title);
     };
 
-    // ✅ FIX для телефона: НЕ делаем preventDefault на touchstart (он ломал обычный клик)
     let pressTimer = null;
-    const startPress = () => {
+    const startPress = (ev) => {
+      ev.preventDefault();
       if (pressTimer) clearTimeout(pressTimer);
       pressTimer = setTimeout(() => {
         pressTimer = null;
         chatEl._skipClickOnce = true;
         deleteChat(chat.id, title);
-      }, 550);
+      }, 500);
     };
     const cancelPress = () => {
       if (pressTimer) {
@@ -1759,13 +1654,12 @@ function renderChatList() {
       }
     };
 
-    chatEl.addEventListener('touchstart', startPress, { passive: true });
-    chatEl.addEventListener('touchend', cancelPress, { passive: true });
-    chatEl.addEventListener('touchcancel', cancelPress, { passive: true });
-
+    chatEl.addEventListener('touchstart', startPress);
+    chatEl.addEventListener('touchend', cancelPress);
+    chatEl.addEventListener('touchcancel', cancelPress);
     chatEl.addEventListener('mousedown', (ev) => {
       if (ev.button !== 0) return;
-      startPress();
+      startPress(ev);
     });
     chatEl.addEventListener('mouseup', cancelPress);
     chatEl.addEventListener('mouseleave', cancelPress);
@@ -1803,6 +1697,7 @@ async function openChat(chatId, title) {
       content: m.content
     }));
   } catch (e) {
+    console.error('openChat history error', e);
     currentMessages = [{
       role: 'assistant',
       content: 'Не получилось загрузить историю чата, но я всё равно могу помочь 🙂'
@@ -1818,7 +1713,7 @@ function openNewChatWindow(title) {
   currentChatId = null;
   currentMessages = [{
     role: 'assistant',
-    content: 'Окей. Опиши бизнес: ниша/продукт, аудитория, где продажи сейчас и цель на месяц.'
+    content: 'Привет! Я твой ассистент. Чем могу помочь?'
   }];
   $('#current-chat-title').textContent = pendingChatTitle;
   $('#chat-window-overlay').classList.add('active');
@@ -1852,32 +1747,41 @@ function addMessage(role, content) {
   renderChatMessages();
 }
 
+/* ✅ FIX: для телефона — таймаут + retry, и не подменяем ИИ "сбоем" */
 async function sendChatMessage() {
   const text = $('#chat-input').value.trim();
   if (!text) return;
 
-  if (!currentChatId && !pendingChatTitle) {
-    pendingChatTitle = 'Новый чат';
-  }
+  if (!currentChatId && !pendingChatTitle) pendingChatTitle = 'Новый чат';
 
   $('#chat-input').value = '';
   addMessage('user', text);
 
-  try {
-    const payload = { text };
-    if (currentChatId) payload.chat_id = currentChatId;
-    if (!currentChatId && pendingChatTitle) payload.chat_title = pendingChatTitle;
+  const payload = { text };
+  if (currentChatId) payload.chat_id = currentChatId;
+  if (!currentChatId && pendingChatTitle) payload.chat_title = pendingChatTitle;
 
-    const r = await api('/api/chat', 'POST', payload);
-    const replyText = r.reply || 'Окей, понял. Что делаем дальше?';
-    addMessage('assistant', replyText);
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const r = await api('/api/chat', 'POST', payload, { timeoutMs: 20000 });
 
-    if (r.chat_id && !currentChatId) {
-      currentChatId = r.chat_id;
+      const replyText = (r.reply || '').trim() || 'Ок. Что дальше?';
+      addMessage('assistant', replyText);
+
+      if (r.chat_id && !currentChatId) currentChatId = r.chat_id;
+
+      loadChatsFromServer().catch(()=>{});
+      return;
+    } catch (e) {
+      console.error('sendChatMessage attempt', attempt, e);
+      if (attempt === 1) {
+        await new Promise(res => setTimeout(res, 600));
+        continue;
+      }
+      showToast('Не удалось подключиться к серверу');
+      addMessage('assistant', 'Похоже, связь с сервером на телефоне временно пропала. Попробуй отправить ещё раз через несколько секунд.');
+      return;
     }
-    loadChatsFromServer();
-  } catch (e) {
-    addMessage('assistant', 'Сейчас нет связи с сервером. Напиши цель/цифры — я помогу планом и гипотезами.');
   }
 }
 
@@ -1926,10 +1830,7 @@ async function loadAll(){
 
   try{
     const t = await api('/api/tasks','GET');
-    tasks = (t.items || []).map(x => ({
-      ...x,
-      team_id: x.team_id == null ? null : Number(x.team_id)
-    }));
+    tasks = t.items || [];
   }catch(e){
     tasks = [];
   }
@@ -1953,5 +1854,6 @@ loadAll();
   }).catch(()=>{});
 })();
 </script>
+
 </body>
 </html>
