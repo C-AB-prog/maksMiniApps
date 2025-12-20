@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   await ensureSchema();
 
   const tgId = getTgId(req);
-  if (!tgId) return res.status(400).json({ ok:false, error:'tg_id required' });
+  if (!tgId) return res.status(400).json({ ok: false, error: 'tg_id required' });
 
   const meUserId = await getOrCreateUserId(tgId);
 
@@ -15,17 +15,16 @@ export default async function handler(req, res) {
 
   const myTeams = await userTeamIds(meUserId);
   if (!myTeams.length) {
-    return res.json({ ok:true, items:[], me_is_admin:false, team_id:null });
+    return res.json({ ok: true, members: [], me_is_owner: false, team_id: null });
   }
 
   if (!teamId) teamId = myTeams[0];
-
-  if (!myTeams.includes(teamId)) return res.status(403).json({ ok:false, error:'forbidden' });
+  if (!myTeams.includes(teamId)) return res.status(403).json({ ok: false, error: 'forbidden' });
 
   const owner = await isTeamOwner(meUserId, teamId);
 
   const r = await q(
-    `SELECT u.id as user_id, u.tg_id, u.username,
+    `SELECT u.id as user_id, u.tg_id, u.username, u.first_name, u.last_name,
             m.joined_at
      FROM team_members m
      JOIN users u ON u.id = m.user_id
@@ -34,12 +33,16 @@ export default async function handler(req, res) {
     [teamId]
   );
 
-  const items = r.rows.map((x, idx) => ({
+  // ВАЖНО: фронт читает m.username / m.first_name / m.last_name / m.tg_id
+  // А также ему по сути всё равно "is_admin", но мы можем дать owner-флаг для первого участника.
+  const members = r.rows.map((x, idx) => ({
     user_id: Number(x.user_id),
     tg_id: Number(x.tg_id),
     username: x.username || null,
-    is_admin: idx === 0
+    first_name: x.first_name || null,
+    last_name: x.last_name || null,
+    is_owner: idx === 0, // если у тебя нет owner_user_id в таблице teams
   }));
 
-  return res.json({ ok:true, items, me_is_admin: owner, team_id: teamId });
+  return res.json({ ok: true, members, me_is_owner: owner, team_id: teamId });
 }
