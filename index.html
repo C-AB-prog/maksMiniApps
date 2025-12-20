@@ -106,7 +106,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   appearance:none; border:none; padding:12px 16px; border-radius:14px;
   background:linear-gradient(135deg, var(--brand), var(--brand-2));
   color:#fff; cursor:pointer; font-weight:800; letter-spacing:.2px;
-  box-shadow:var(--shadow-2); 
+  box-shadow:var(--shadow-2);
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
@@ -114,13 +114,10 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   user-select: none;
   touch-action: manipulation;
 }
-
-/* Анимация для тач-устройств */
 .btn:active {
   transform: scale(0.95);
   box-shadow: 0 4px 12px rgba(91,108,255,.3);
 }
-
 .btn.secondary{
   background:#fff;color:var(--ink); border:1px solid var(--line); box-shadow:none; font-weight:700;
 }
@@ -151,24 +148,21 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   user-select: none;
   touch-action: manipulation;
 }
-
-/* Анимация для тач-устройств */
 .floating-action-btn:active {
   transform: scale(0.85);
   box-shadow: 0 4px 15px rgba(91,108,255,.3);
-  animation: none; /* Останавливаем пульсацию при нажатии */
+  animation: none;
 }
-
 @keyframes pulse {
-  0% { 
+  0% {
     transform: scale(1);
     box-shadow: 0 8px 25px rgba(91,108,255,.4);
   }
-  50% { 
+  50% {
     transform: scale(1.05);
     box-shadow: 0 12px 35px rgba(91,108,255,.6);
   }
-  100% { 
+  100% {
     transform: scale(1);
     box-shadow: 0 8px 25px rgba(91,108,255,.4);
   }
@@ -190,12 +184,10 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   user-select: none;
   touch-action: manipulation;
 }
-
 .seg .chip:active,
 .plan-filters .chip:active {
   transform: scale(0.95);
 }
-
 .seg .chip.active,
 .plan-filters .chip.active{
   background:linear-gradient(135deg, var(--brand), var(--brand-2));
@@ -216,12 +208,10 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   touch-action: manipulation;
   position: relative;
 }
-
 .task:active {
   transform: scale(0.98);
   background: #f8faff;
 }
-
 .task .ttl{flex:1; font-size:14px; line-height:1.4; font-weight:500; padding-right: 8px;}
 .task.done{opacity:.7}
 .task.done .ttl{text-decoration: line-through; color: var(--muted);}
@@ -243,10 +233,10 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .badge.due{color:#7c2d12;border-color:#f59e0b;background:#fffbeb}
 .badge.dead{color:#991b1b;border-color:#ef4444;background:#fef2f2}
 .badge.team{
-  margin-left:0; 
-  font-size:10px; 
-  background:#eef2ff; 
-  border-color:#c7d2fe; 
+  margin-left:0;
+  font-size:10px;
+  background:#eef2ff;
+  border-color:#c7d2fe;
   color:#4f46e5;
   display: flex;
   align-items: center;
@@ -257,7 +247,18 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   font-size: 9px;
 }
 
-/* Специальный стиль для командных задач как на скриншоте */
+.badge.assignee{
+  font-size:10px;
+  background:#f0fdf4;
+  border-color:#bbf7d0;
+  color:#166534;
+}
+.badge.assignee::before{
+  content:"🎯";
+  margin-right:4px;
+}
+
+/* Специальный стиль для командных задач */
 .task.team-task {
   border-left: 4px solid #c7d2fe;
   background: linear-gradient(to right, #f8faff, #ffffff);
@@ -302,23 +303,22 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   gap:10px;
   flex-wrap:wrap;
 }
-
 @keyframes gentlePulse {
-  0% { 
+  0% {
     box-shadow: 0 0 0 0 rgba(91,108,255,0.1);
     transform: scale(1);
   }
-  50% { 
+  50% {
     box-shadow: 0 0 0 4px rgba(91,108,255,0.05);
     transform: scale(1.005);
   }
-  100% { 
+  100% {
     box-shadow: 0 0 0 0 rgba(91,108,255,0.1);
     transform: scale(1);
   }
 }
 
-/* CHAT – список чатов с анимацией мигания */
+/* CHAT */
 .chat-container{display:flex;flex-direction:column;gap:14px}
 .chat-list{
   display:grid;
@@ -344,20 +344,17 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   user-select: none;
   touch-action: manipulation;
 }
-
 .chat-item:active{
   transform: scale(0.95);
   border-color:var(--brand);
   background: linear-gradient(135deg,#f8faff,#f0f4ff);
 }
-
 .chat-item.active{
   border-color:var(--brand);
   background:linear-gradient(135deg,#f8faff,#f0f4ff);
   box-shadow:0 8px 25px rgba(91,108,255,.15);
   animation: chatPulse 2s infinite;
 }
-
 .chat-item.new{
   border:2px dashed var(--muted);
   background:transparent;
@@ -372,24 +369,22 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .chat-item:active .chat-icon{opacity:1}
 .chat-title{font-weight:600;font-size:13px;line-height:1.3;margin-bottom:4px}
 .chat-date{font-size:11px;color:var(--muted)}
-
-/* Анимация мигания синей рамки для активного чата */
 @keyframes chatPulse {
-  0% { 
+  0% {
     border-color: var(--brand);
     box-shadow: 0 0 0 0 rgba(91,108,255,.3);
   }
-  50% { 
+  50% {
     border-color: var(--brand-2);
     box-shadow: 0 0 0 4px rgba(91,108,255,.1);
   }
-  100% { 
+  100% {
     border-color: var(--brand);
     box-shadow: 0 0 0 0 rgba(91,108,255,.3);
   }
 }
 
-/* CHAT WINDOW – ПОЛНОЭКРАННЫЙ */
+/* CHAT WINDOW */
 .chat-window-overlay{
   display:none;position:fixed;top:0;left:0;right:0;bottom:0;
   background:rgba(0,0,0,.35);z-index:1000;
@@ -431,12 +426,10 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   display:flex;gap:10px;padding:12px 16px;
   border-top:1px solid var(--line);background:#fff;flex-shrink:0;
 }
-
 @keyframes slideUp {
   from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
-
 @keyframes bubbleIn {
   from { opacity: 0; transform: scale(0.9); }
   to { opacity: 1; transform: scale(1); }
@@ -455,7 +448,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   animation: modalIn 0.3s ease;
 }
 .modal-title{margin:0 0 16px 0;font-size:18px;font-weight:700}
-
 @keyframes modalIn {
   from { transform: scale(0.9); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
@@ -481,12 +473,10 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   user-select: none;
   touch-action: manipulation;
 }
-
 .nav .item:active {
   transform: scale(0.9);
   background: rgba(91,108,255,0.1);
 }
-
 .nav .item svg{opacity:.6;transition:opacity .15s, transform .06s}
 .nav .item.active{color:var(--brand); background: rgba(91,108,255,0.08);}
 .nav .item.active svg{
@@ -505,12 +495,10 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 }
 .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace}
 .muted{color:var(--muted)}
-
 @keyframes toastIn {
   from { opacity: 0; transform: translate(-50%, 20px); }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
-
 @keyframes toastOut {
   from { opacity: 1; transform: translate(-50%, 0); }
   to { opacity: 0; transform: translate(-50%, 20px); }
@@ -528,13 +516,11 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   user-select: none;
   touch-action: manipulation;
 }
-
 .profile-btn:active {
   transform: scale(0.98);
   background: var(--bg);
   border-color: var(--brand);
 }
-
 .profile-btn .arrow{color:var(--muted);font-size:14px}
 .lang-switch{display:flex;gap:8px;margin-top:8px}
 .lang-btn{
@@ -545,11 +531,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   user-select: none;
   touch-action: manipulation;
 }
-
-.lang-btn:active {
-  transform: scale(0.95);
-}
-
+.lang-btn:active { transform: scale(0.95); }
 .lang-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);}
 
 /* PLAN UI */
@@ -568,11 +550,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   user-select: none;
   touch-action: manipulation;
 }
-
-.plan-mode .pill:active {
-  transform: scale(0.95);
-}
-
+.plan-mode .pill:active { transform: scale(0.95); }
 .plan-mode .pill.active{
   background:linear-gradient(135deg,var(--brand),var(--brand-2));
   color:#fff;
@@ -599,13 +577,11 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   user-select: none;
   touch-action: manipulation;
 }
-
 .team-list-item:active {
   transform: scale(0.98);
   border-color: var(--brand);
   background: #f8faff;
 }
-
 .team-list-item span.name{font-weight:600}
 .team-list-empty{text-align:center;padding:24px 12px}
 
@@ -628,62 +604,31 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   user-select: none;
   touch-action: manipulation;
 }
-
 .team-members-toggle:active {
   transform: scale(0.98);
   background: #f8faff;
 }
-
 .team-members-box{margin-top:4px;padding-left:4px}
 .team-members-box ul{margin:4px 0 0 14px;padding:0}
 .team-members-box li{font-size:13px;margin-bottom:2px}
 
 /* Quick-add team row */
-.quick-team-row{display:none;gap:8px}
+.quick-team-row{display:none;gap:8px; flex-direction:column}
 .quick-team-row.visible{display:flex}
 
 /* MOBILE tweaks */
 @media (max-width: 600px){
-  .container {
-    padding: 12px 10px 110px;
-  }
-  
-  .card {
-    padding: 14px;
-  }
-  
+  .container { padding: 12px 10px 110px; }
+  .card { padding: 14px; }
   .task{align-items:flex-start;padding:9px 9px}
   .team-detail-header{flex-direction:column;align-items:flex-start}
   .team-header-actions{justify-content:flex-start}
-  
-  .appbar {
-    padding: calc(10px + var(--safe-top)) 14px 10px;
-  }
-  
-  .appbar h1 {
-    font-size: 20px;
-  }
-  
-  .grid-2 {
-    gap: 12px;
-  }
-  
-  .nav .item {
-    min-width: 56px;
-    font-size: 11px;
-  }
-  
-  .stats-grid .card-mini {
-    min-width: calc(50% - 6px);
-  }
-  
-  .floating-action-btn {
-    width: 56px;
-    height: 56px;
-    bottom: 80px;
-    right: 16px;
-    font-size: 22px;
-  }
+  .appbar { padding: calc(10px + var(--safe-top)) 14px 10px; }
+  .appbar h1 { font-size: 20px; }
+  .grid-2 { gap: 12px; }
+  .nav .item { min-width: 56px; font-size: 11px; }
+  .stats-grid .card-mini { min-width: calc(50% - 6px); }
+  .floating-action-btn { width: 56px; height: 56px; bottom: 80px; right: 16px; font-size: 22px; }
 }
 
 /* STATS */
@@ -697,10 +642,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   user-select: none;
   touch-action: manipulation;
 }
-
-.stats-grid .card-mini:active {
-  transform: scale(0.98);
-}
+.stats-grid .card-mini:active { transform: scale(0.98); }
 
 /* Week chart */
 #week-chart{
@@ -708,7 +650,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   gap:4px;margin-top:20px;
 }
 
-/* Loading animation */
+/* Loading */
 .loading {
   display: inline-block;
   width: 20px;
@@ -718,39 +660,19 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   border-top-color: var(--brand);
   animation: spin 1s ease-in-out infinite;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Улучшения для тач-устройств */
+/* touch improvements */
 @media (hover: none) and (pointer: coarse) {
-  /* Убираем hover-эффекты для тач-устройств */
   .card:hover,
   .task:hover,
   .team-list-item:hover,
   .profile-btn:hover,
-  .stats-grid .card-mini:hover {
-    transform: none;
-  }
-  
-  /* Увеличиваем тач-таргеты для мобильных */
-  .btn, .chip, .nav .item, .profile-btn {
-    min-height: 44px;
-  }
-  
-  .btn.icon {
-    min-width: 44px;
-    min-height: 44px;
-  }
-  
-  .task {
-    min-height: 60px;
-  }
-  
-  .team-list-item {
-    min-height: 50px;
-  }
+  .stats-grid .card-mini:hover { transform: none; }
+  .btn, .chip, .nav .item, .profile-btn { min-height: 44px; }
+  .btn.icon { min-width: 44px; min-height: 44px; }
+  .task { min-height: 60px; }
+  .team-list-item { min-height: 50px; }
 }
 </style>
 </head>
@@ -769,7 +691,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     <div class="card">
       <h3>Фокус</h3>
 
-      <!-- текущий фокус -->
       <div id="focus-current" class="focus-current" style="display:none">
         <div class="focus-current-top">
           <span>Текущий фокус</span>
@@ -778,7 +699,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
         <div id="focus-current-text" class="focus-current-text"></div>
       </div>
 
-      <!-- режим редактирования -->
       <div id="focus-edit-row">
         <label id="focus-edit-label">Самое главное сегодня</label>
         <div class="focus-edit-fields">
@@ -799,11 +719,20 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       <div style="display:flex;flex-direction:column;gap:8px">
         <input id="quick-title" class="input" type="text" placeholder="Название задачи" />
         <input id="quick-due" class="input" type="datetime-local" />
+
+        <!-- обновлено: команда + исполнитель -->
         <div class="quick-team-row" id="quick-team-row">
           <select id="quick-team-select" class="input">
             <option value="">Выберите команду</option>
           </select>
+          <select id="quick-assignee-select" class="input">
+            <option value="">Исполнитель (не назначать)</option>
+          </select>
+          <div class="muted" style="font-size:12px">
+            Назначение по @username доступно только владельцу команды.
+          </div>
         </div>
+
         <button id="quick-add" class="btn">Добавить задачу</button>
       </div>
     </div>
@@ -860,6 +789,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
           <div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
               <span style="font-weight:600;font-size:14px">Задачи команды</span>
+              <span class="muted" style="font-size:12px" id="team-role-hint"></span>
             </div>
             <div id="team-tasks-list" class="list"></div>
           </div>
@@ -921,7 +851,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     <div class="card">
       <h3>Профиль</h3>
       <div class="muted" style="margin-bottom:16px">Telegram ID: <span id="profile-id" class="mono">–</span></div>
-      
+
       <div class="profile-section">
         <h4>Настройки</h4>
         <label>Язык интерфейса</label>
@@ -977,7 +907,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   </div>
 </div>
 
-<!-- CHAT WINDOW (полноэкранный) -->
+<!-- CHAT WINDOW -->
 <div id="chat-window-overlay" class="chat-window-overlay">
   <div class="chat-window">
     <div class="chat-header">
@@ -1035,9 +965,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 <div id="toast" class="toast" style="display:none"></div>
 
 <script>
-// JavaScript код остается таким же как в предыдущей версии
-// (не изменялся по требованиям)
-
 /* helpers */
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
@@ -1233,6 +1160,7 @@ function updateQuickTeamVisibility(){
 
   const sel = $('#quick-team-select');
   if (!sel) return;
+
   sel.innerHTML = '<option value="">Выберите команду</option>';
   ownedTeams.forEach(t=>{
     const opt = document.createElement('option');
@@ -1240,7 +1168,27 @@ function updateQuickTeamVisibility(){
     opt.textContent = t.name;
     sel.appendChild(opt);
   });
+
+  // assignee select
+  const assSel = $('#quick-assignee-select');
+  if (assSel) {
+    assSel.innerHTML = '<option value="">Исполнитель (не назначать)</option>';
+    // заполним по текущей выбранной команде, если есть
+    const chosenTeamId = Number(sel.value || 0) || (ownedTeams[0]?.team_id || 0);
+    const teamObj = teamList.find(t => t.team_id === chosenTeamId) || null;
+    const members = teamObj?.members || [];
+
+    members.forEach(m => {
+      if (!m.username) return;
+      const opt = document.createElement('option');
+      opt.value = String(m.username);
+      opt.textContent = '@' + m.username;
+      assSel.appendChild(opt);
+    });
+  }
 }
+
+$('#quick-team-select').addEventListener('change', () => updateQuickTeamVisibility());
 
 $('#quick-add').onclick = async ()=>{
   const title = $('#quick-title').value.trim();
@@ -1259,22 +1207,43 @@ $('#quick-add').onclick = async ()=>{
   }
 
   let team_id = null;
+  let assignee_username = null;
+
   if (quickPrio === 'team') {
     const selVal = $('#quick-team-select').value;
     if (!selVal) return showToast('Выберите команду');
     team_id = Number(selVal);
+
+    const ass = ($('#quick-assignee-select')?.value || '').trim();
+    assignee_username = ass ? ass.replace(/^@/, '') : null;
   }
 
   try{
     const payload = { title, due_ts, priority: quickPrio };
     if (team_id) payload.team_id = team_id;
+
     const r = await api('/api/tasks','POST', payload);
-    tasks.unshift(r.task);
+    const created = r.task;
+    tasks.unshift(created);
+
+    // если выбрали исполнителя — назначаем через /api/tasks/assign
+    if (team_id && assignee_username && created?.id) {
+      try{
+        await api('/api/tasks/assign', 'POST', {
+          task_id: created.id,
+          assignee_username
+        });
+      } catch (e) {
+        // не валим создание
+        console.log('assign error', e);
+      }
+    }
+
   }catch(e){
-    const fake = { 
-      id: 'tmp_'+Date.now(), 
-      title, 
-      due_ts, 
+    const fake = {
+      id: 'tmp_'+Date.now(),
+      title,
+      due_ts,
       is_done: false,
       team_id: team_id || null,
       created_at: new Date().toISOString()
@@ -1290,26 +1259,22 @@ $('#quick-add').onclick = async ()=>{
   showToast('Задача добавлена');
 };
 
-/* task row - ОБНОВЛЕННАЯ ФУНКЦИЯ ДЛЯ УЛУЧШЕННОГО ВИДА */
-function rowTask(t, showTeamBadge=false, readonly=false){
-  const el = document.createElement('div'); 
+/* task row */
+function rowTask(t, showTeamBadge=false, readonlyDelete=false){
+  const el = document.createElement('div');
   el.className='task'+(t.is_done?' done':'')+(t.team_id?' team-task':'');
 
+  // ✅ теперь ВСЕ участники могут отмечать выполнено
   const left = document.createElement('button');
   left.className='btn icon';
   left.textContent = t.is_done?'✓':'○';
-  if (readonly){
-    left.disabled = true;
-    left.style.opacity = '0.4';
-  } else {
-    left.onclick = async ()=>{
-      t.is_done = !t.is_done;
-      renderHome(); renderPlan(); renderStats();
-      try{
-        await api('/api/tasks/toggle?id='+encodeURIComponent(t.id),'POST',{});
-      }catch(e){}
-    };
-  }
+  left.onclick = async ()=>{
+    t.is_done = !t.is_done;
+    renderHome(); renderPlan(); renderStats();
+    try{
+      await api('/api/tasks/toggle?id='+encodeURIComponent(t.id),'POST',{});
+    }catch(e){}
+  };
 
   const center = document.createElement('div');
   center.className='ttl';
@@ -1317,7 +1282,7 @@ function rowTask(t, showTeamBadge=false, readonly=false){
 
   const meta = document.createElement('div');
   meta.className = 'task-meta';
-  
+
   const badge = document.createElement('span');
   badge.className='badge';
   if (t.due_ts == null){
@@ -1337,10 +1302,47 @@ function rowTask(t, showTeamBadge=false, readonly=false){
     meta.appendChild(tb);
   }
 
+  // ассайни бейдж (если сервер отдаёт assigned_username — покажем)
+  if (t.assigned_username){
+    const ab = document.createElement('span');
+    ab.className='badge assignee';
+    ab.textContent='@'+t.assigned_username;
+    meta.appendChild(ab);
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'task-actions';
+  actions.appendChild(meta);
+
+  // 🎯 назначение — только owner команды
+  if (t.team_id && isOwnerOfTeam(t.team_id)) {
+    const assignBtn = document.createElement('button');
+    assignBtn.className = 'btn secondary icon';
+    assignBtn.textContent = '🎯';
+    assignBtn.title = 'Назначить @username (или снять)';
+    assignBtn.onclick = async ()=>{
+      const pick = prompt('Кому назначить? Введи @username (или оставь пусто, чтобы снять назначение).');
+      if (pick === null) return;
+      const uname = pick.trim().replace(/^@/, '');
+      try{
+        await api('/api/tasks/assign','POST',{
+          task_id: t.id,
+          assignee_username: uname || null
+        });
+        showToast(uname ? `Назначено @${uname}` : 'Назначение снято');
+        await loadAll(); // чтобы обновилось красиво
+      }catch(e){
+        showToast('Не удалось назначить: ' + e.message);
+      }
+    };
+    actions.appendChild(assignBtn);
+  }
+
+  // delete (личные — можно, командные — только owner)
   const right = document.createElement('button');
   right.className='btn secondary icon';
   right.textContent='✕';
-  if (readonly){
+  if (readonlyDelete){
     right.style.display='none';
   } else {
     right.onclick = async ()=>{
@@ -1351,10 +1353,6 @@ function rowTask(t, showTeamBadge=false, readonly=false){
       }catch(e){}
     };
   }
-
-  const actions = document.createElement('div');
-  actions.className = 'task-actions';
-  actions.appendChild(meta);
   actions.appendChild(right);
 
   el.append(left, center, actions);
@@ -1379,8 +1377,9 @@ function renderHome(){
     return;
   }
   today.forEach(t=>{
-    const readonly = t.team_id && !isOwnerOfTeam(t.team_id);
-    box.appendChild(rowTask(t, !!t.team_id, !!readonly));
+    // удаление командных задач — только owner
+    const readonlyDelete = t.team_id && !isOwnerOfTeam(t.team_id);
+    box.appendChild(rowTask(t, !!t.team_id, !!readonlyDelete));
   });
 }
 
@@ -1412,7 +1411,7 @@ myFilterChips.forEach(ch=>{
 (myFilterChips.find(c=>c.dataset.planFilter==='all')||{}).classList?.add('active');
 
 function renderPlanMy(){
-  let arr = tasks.filter(t => !t.team_id); // только личные
+  let arr = tasks.filter(t => !t.team_id);
   const now = new Date();
 
   if (planFilter === 'today'){
@@ -1504,16 +1503,16 @@ function fillTeamDetail(){
 
   const isOwner = !!teamInfo.is_owner;
 
+  $('#team-role-hint').textContent = isOwner ? 'Вы — админ (можете назначать)' : 'Вы — участник';
+
   $('#team-name-label').textContent = teamInfo.name || ('Команда '+teamInfo.team_id);
 
   const fullCode = teamInfo.join_code || '';
   const short = fullCode ? (fullCode.slice(0,4)+'••••') : '••••';
   $('#team-code-short').textContent = short;
 
-  // права
   $('#team-rename').style.display   = isOwner ? 'inline-flex' : 'none';
   $('#team-delete').style.display   = isOwner ? 'block'      : 'none';
-  // код копировать можно всем
   $('#team-code-copy').style.display = 'inline-flex';
 
   const ul = $('#team-members-list');
@@ -1540,7 +1539,11 @@ function fillTeamDetail(){
   if (!arr.length){
     box.innerHTML='<div class="muted">В этой команде пока нет задач.</div>';
   } else {
-    arr.forEach(t => box.appendChild(rowTask(t,true,!isOwner)));
+    arr.forEach(t => {
+      // delete — только owner
+      const readonlyDelete = !isOwner;
+      box.appendChild(rowTask(t,true,readonlyDelete));
+    });
   }
 }
 
@@ -1629,6 +1632,18 @@ async function loadTeamInfo(){
       members: []
     }));
 
+    // подгружаем участников для owned команд (чтобы quick-assign работал)
+    for (const team of teamList) {
+      try{
+        const r = await api('/api/team/members?team_id='+encodeURIComponent(team.team_id),'GET');
+        // твой members endpoint возвращает items, но index раньше ожидал members → фиксируем:
+        const items = r.items || r.members || [];
+        team.members = items || [];
+      }catch(e){
+        team.members = [];
+      }
+    }
+
     if (!teamList.length) {
       teamInfo = null;
       teamDetailOpen = false;
@@ -1645,14 +1660,6 @@ async function loadTeamInfo(){
       if (found) teamInfo = found;
     }
 
-    try{
-      const r = await api('/api/team/members?team_id='+encodeURIComponent(teamInfo.team_id),'GET');
-      teamInfo.members = r.members || [];
-    }catch(e){
-      console.log('members error', e);
-      teamInfo.members = [];
-    }
-
     renderTeamList();
     if (teamDetailOpen) fillTeamDetail();
     syncQuickTeamChip();
@@ -1667,11 +1674,11 @@ async function loadTeamInfo(){
   }
 }
 
-/* FLOATING BUTTON MANAGEMENT */
+/* FLOATING BUTTON */
 function updateFloatingButtonVisibility() {
   const fab = $('#team-fab-btn');
   const currentScreen = Object.values(screens).find(s => s.classList.contains('active'));
-  
+
   if (currentScreen && currentScreen.id === 'screen-plan' && planMode === 'team') {
     fab.style.display = 'flex';
   } else {
@@ -1679,7 +1686,7 @@ function updateFloatingButtonVisibility() {
   }
 }
 
-/* TEAM UI buttons */
+/* TEAM UI */
 $('#team-fab-btn').onclick = ()=>{
   $('#team-menu').classList.add('active');
 };
@@ -1768,7 +1775,7 @@ $('#team-delete').onclick = async ()=>{
   if (!confirm('Расформировать команду "'+(teamInfo.name||'')+'"?')) return;
   try{
     await api('/api/team/delete','POST',{
-      team_id: teamInfo.team_id   // только team_id
+      team_id: teamInfo.team_id
     });
     await loadTeamInfo();
     teamDetailOpen = false;
@@ -1787,10 +1794,10 @@ $('#team-members-toggle').onclick = ()=>{
 
 /* ======================= CHAT: БД-сессии ======================= */
 
-let chats = [];              // список чатов из БД
-let currentChatId = null;    // id сессии в БД
-let currentMessages = [];    // сообщения текущего чата
-let pendingChatTitle = null; // название для нового чата до первого сообщения
+let chats = [];
+let currentChatId = null;
+let currentMessages = [];
+let pendingChatTitle = null;
 
 async function loadChatsFromServer() {
   try {
@@ -1803,7 +1810,6 @@ async function loadChatsFromServer() {
   renderChatList();
 }
 
-/* Удаление чата по долгому тапу / правому клику */
 async function deleteChat(chatId, title) {
   if (!confirm(`Удалить чат "${title}"?`)) return;
   try {
@@ -1844,7 +1850,6 @@ function renderChatList() {
       <div class="chat-date">${dateStr}</div>
     `;
 
-    // обычный клик — открыть чат
     chatEl.onclick = () => {
       if (chatEl._skipClickOnce) {
         chatEl._skipClickOnce = false;
@@ -1853,7 +1858,6 @@ function renderChatList() {
       openChat(chat.id, title);
     };
 
-    // долгий тап (mobile) + длинное нажатие мышкой
     let pressTimer = null;
     const startPress = (ev) => {
       ev.preventDefault();
@@ -1862,7 +1866,7 @@ function renderChatList() {
         pressTimer = null;
         chatEl._skipClickOnce = true;
         deleteChat(chat.id, title);
-      }, 500); // 0.5 секунды
+      }, 500);
     };
     const cancelPress = () => {
       if (pressTimer) {
@@ -1875,13 +1879,12 @@ function renderChatList() {
     chatEl.addEventListener('touchend', cancelPress);
     chatEl.addEventListener('touchcancel', cancelPress);
     chatEl.addEventListener('mousedown', (ev) => {
-      if (ev.button !== 0) return; // только левая кнопка
+      if (ev.button !== 0) return;
       startPress(ev);
     });
     chatEl.addEventListener('mouseup', cancelPress);
     chatEl.addEventListener('mouseleave', cancelPress);
 
-    // правый клик (desktop)
     chatEl.addEventListener('contextmenu', (ev) => {
       ev.preventDefault();
       chatEl._skipClickOnce = true;
@@ -1945,7 +1948,6 @@ function closeChat() {
   currentMessages = [];
   $('#chat-window-overlay').classList.remove('active');
   $('#chat-body').innerHTML = '';
-  // обновим список чатов, чтобы новый чат появился/исчез
   loadChatsFromServer().catch(()=>{});
 }
 
@@ -1970,9 +1972,7 @@ async function sendChatMessage() {
   const text = $('#chat-input').value.trim();
   if (!text) return;
 
-  if (!currentChatId && !pendingChatTitle) {
-    pendingChatTitle = 'Новый чат';
-  }
+  if (!currentChatId && !pendingChatTitle) pendingChatTitle = 'Новый чат';
 
   $('#chat-input').value = '';
   addMessage('user', text);
@@ -1986,10 +1986,8 @@ async function sendChatMessage() {
     const replyText = r.reply || 'Я обработал запрос и готов помочь дальше!';
     addMessage('assistant', replyText);
 
-  if (r.chat_id && !currentChatId) {
-      currentChatId = r.chat_id;
-    }
-    loadChatsFromServer(); // после ответа обновляем список сессий
+    if (r.chat_id && !currentChatId) currentChatId = r.chat_id;
+    loadChatsFromServer();
   } catch (e) {
     console.error('sendChatMessage error', e);
     addMessage(
@@ -2000,7 +1998,6 @@ async function sendChatMessage() {
   }
 }
 
-/* CHAT handlers */
 $('#close-chat').onclick = closeChat;
 $('#create-first-chat').onclick = () => { $('#new-chat-modal').classList.add('active'); };
 $('#cancel-new-chat').onclick = () => {
@@ -2058,7 +2055,7 @@ async function loadAll(){
 }
 loadAll();
 
-/* sync profile to backend */
+/* sync profile to backend (как у тебя было) */
 (function syncProfile(){
   const u = window.Telegram?.WebApp?.initDataUnsafe?.user;
   if (!u) return;
