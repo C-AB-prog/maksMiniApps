@@ -4,38 +4,41 @@ import { getTgId, getOrCreateUserId } from '../_utils.js';
 
 export default async function handler(req, res) {
   await ensureSchema();
-  if (req.method !== 'GET') return res.status(405).end();
 
   const tgId = getTgId(req);
-  if (!tgId) {
-    return res.status(400).json({ ok: false, error: 'tg_id required' });
-  }
+  if (!tgId) return res.status(400).json({ ok: false, error: 'tg_id required' });
+
   const userId = await getOrCreateUserId(tgId);
 
-  // ВСЕ команды, где пользователь состоит + флаг, владелец ли он
+  // owner = тот, кто первый вступил (самый ранний joined_at)
   const r = await q(
     `
     SELECT
       t.id,
       t.name,
-      t.join_token AS join_code,
+      t.join_code,
+      t.created_at,
       (
-        SELECT user_id
+        SELECT m2.user_id
         FROM team_members m2
         WHERE m2.team_id = t.id
         ORDER BY m2.joined_at ASC
         LIMIT 1
-      ) = $1 AS is_owner
+      ) AS owner_user_id
     FROM teams t
     JOIN team_members m ON m.team_id = t.id
     WHERE m.user_id = $1
-    ORDER BY t.id ASC
+    ORDER BY t.created_at DESC
     `,
-    [userId],
+    [userId]
   );
 
-  res.json({
-    ok: true,
-    teams: r.rows,
-  });
+  const teams = r.rows.map(x => ({
+    id: Number(x.id),
+    name: x.name,
+    join_code: x.join_code,
+    is_owner: Number(x.owner_user_id) === Number(userId)
+  }));
+
+  return res.json({ ok: true, teams });
 }
