@@ -28,7 +28,7 @@ export async function q(text, params = []) {
 
 /**
  * Создаём / обновляем схему (таблицы, индексы).
- * Можно безопасно вызывать при каждом запросе (но лучше один раз при старте).
+ * Можно безопасно вызывать при каждом запросе.
  */
 export async function ensureSchema() {
   // USERS
@@ -62,7 +62,8 @@ export async function ensureSchema() {
       due_ts BIGINT NULL,
       is_done BOOLEAN NOT NULL DEFAULT false,
       created_at TIMESTAMPTZ DEFAULT now(),
-      team_id BIGINT NULL
+      team_id BIGINT NULL,
+      assigned_to_user_id BIGINT NULL
     );
   `);
 
@@ -108,6 +109,24 @@ export async function ensureSchema() {
   `);
 
   await q(`CREATE INDEX IF NOT EXISTS idx_tasks_team ON tasks(team_id);`);
+
+  // FK tasks.assigned_to_user_id → users.id (если ещё нет)
+  await q(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE table_name = 'tasks'
+          AND constraint_name = 'fk_tasks_assigned_to'
+      ) THEN
+        ALTER TABLE tasks
+          ADD CONSTRAINT fk_tasks_assigned_to
+          FOREIGN KEY (assigned_to_user_id) REFERENCES users(id) ON DELETE SET NULL;
+      END IF;
+    END $$;
+  `);
+
+  await q(`CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON tasks(assigned_to_user_id);`);
 
   // TASK NOTIFICATIONS
   await q(`
