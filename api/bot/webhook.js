@@ -1,89 +1,108 @@
 // api/bot/webhook.js
-import OpenAI from 'openai';
-import { ensureSchema } from '../_db.js';
-import { getOrCreateUserId } from '../_utils.js';
+const OpenAI = require("openai");
+const { ensureSchema, query, getOrCreateUserIdByTgId } = require("../_db");
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.BOT_TOKEN || '';
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-async function sendMessage(chatId, text) {
-  if (!BOT_TOKEN) return;
-  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-  await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      parse_mode: 'HTML',
-      disable_web_page_preview: true,
-    }),
-  }).catch(() => null);
+async function tgSendMessage(chatId, text, extra = {}) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) throw new Error("Missing TELEGRAM_BOT_TOKEN");
+
+  const url = `https://api.telegram.org/bot${token}/sendMessage`;
+
+  const payload = {
+    chat_id: chatId,
+    text,
+    parse_mode: "HTML",
+    disable_web_page_preview: true,
+    ...extra,
+  };
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await resp.json();
+  if (!data.ok) throw new Error(`Telegram sendMessage failed: ${data.description}`);
+  return data;
 }
 
-function sysPromptForBot() {
-  const now = new Date();
-  const todayISO = now.toISOString().slice(0, 10);
-  return [
-    `Ты — Growth Assistant в Telegram-боте.`,
-    `Сегодня ${todayISO}. Отвечай кратко и по делу.`,
-    `Ты помогаешь: планировать, разбивать задачи, ставить дедлайны, напоминать.`,
-    `Если пользователь просит: “добавь задачу …” — скажи ему сделать это в мини-аппе или напиши формат, который он должен отправить (MVP).`,
-    `Не выдумывай, если данных нет.`,
-  ].join('\n');
+async function getLatestFocusText(user_id) {
+  const f = await query(
+    `SELECT text FROM focuses WHERE user_id=$1 ORDER BY id DESC LIMIT 1`,
+    [user_id]
+  );
+  return f.rows[0]?.text || "";
 }
 
-export default async function handler(req, res) {
-  await ensureSchema();
-
-  if (req.method !== 'POST') return res.status(405).end();
-  if (!BOT_TOKEN) return res.status(200).json({ ok: true, skipped: 'BOT_TOKEN missing' });
-
+module.exports = async (req, res) => {
   try {
-    const update = req.body && typeof req.body === 'object' ? req.body : {};
-    const msg = update.message || update.edited_message;
-    if (!msg?.chat?.id) return res.status(200).json({ ok: true });
+    await ensureSchema();
 
-    const chatId = msg.chat.id;
-    const text = (msg.text || '').toString().trim();
-    const tgId = msg.from?.id ? Number(msg.from.id) : null;
-
-    if (!text) {
-      await sendMessage(chatId, 'Напиши текстом 🙂');
+    // Telegram sends POST updates
+    if (req.method !== "POST") {
       return res.status(200).json({ ok: true });
     }
 
-    if (tgId) {
-      // создадим пользователя в БД, чтобы дальше можно было связывать
-      await getOrCreateUserId(tgId);
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+    const msg = body?.message;
+
+    if (!msg || !msg.chat || !msg.text) {
+      return res.status(200).json({ ok: true });
     }
 
-    // команды бота
-    if (text === '/start') {
-      await sendMessage(
+    const chatId = msg.chat.id;
+    const text = (msg.text || "").trim();
+
+    // /start
+    if (text === "/start") {
+      await tgSendMessage(
         chatId,
-        `Привет! Я Growth Assistant.\n\n` +
-        `Могу помочь составить план, разобрать задачу на шаги, подсказать приоритеты.\n` +
-        `Чтобы управлять задачами (создать/закрыть/команды) — используй мини-аппу.`
+        "Привет! Я бизнес-ассистент. Пиши вопрос — помогу планом действий, текстами, стратегией и идеями."
       );
       return res.status(200).json({ ok: true });
     }
 
-    const resp = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      temperature: 0.35,
-      messages: [
-        { role: 'system', content: sysPromptForBot() },
-        { role: 'user', content: text },
-      ],
+    // User mapping by tg_id
+    const tg_id = msg.from?.id;
+    if (!tg_id) {
+      await tgSendMessage(chatId, "Не вижу tg_id пользователя. Попробуй ещё раз.");
+      return res.status(200).json({ ok: true });
+    }
+
+    const user_id = await getOrCreateUserIdByTgId(tg_id);
+    const focus = await getLatestFocusText(user_id);
+
+    const systemPrompt = `
+Ты — бизнес-ассистент: стратегия, маркетинг, продажи, продукт, процессы.
+Дай чёткие шаги и варианты. Меньше воды, больше действий.
+Если у пользователя есть текущий фокус — учитывай его.
+    `.trim();
+
+    const messages = [
+      { role: "system", content: systemPrompt + (focus ? `\nТекущий фокус пользователя: ${focus}` : "") },
+      { role: "user", content: text },
+    ];
+
+    const completion = await client.chat.completions.create({
+      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+      messages,
+      temperature: 0.6,
+      max_tokens: 700,
     });
 
-    const answer = (resp.choices?.[0]?.message?.content || '').trim() || 'Ок. Давай уточним: что именно нужно получить?';
-    await sendMessage(chatId, answer);
+    const answer =
+      completion?.choices?.[0]?.message?.content?.trim() ||
+      "Не получилось ответить. Попробуй иначе сформулировать.";
+
+    await tgSendMessage(chatId, answer);
 
     return res.status(200).json({ ok: true });
   } catch (e) {
-    console.error('[bot/webhook] error', e);
+    console.error("bot/webhook error:", e);
+    // Telegram expects 200 to stop retries sometimes, but Vercel ok with 200 anyway
     return res.status(200).json({ ok: true });
   }
-}
+};
