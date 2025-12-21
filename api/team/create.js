@@ -1,63 +1,62 @@
 // api/team/create.js
-import { ensureSchema, q } from '../_db.js';
-import { getTgId, getOrCreateUserId } from '../_utils.js';
+const crypto = require("crypto");
+const { ensureSchema, query, getOrCreateUserIdByTgId } = require("../_db");
+const { getTgId } = require("../_utils");
 
-function genCode(len = 10) {
-  const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // без похожих символов
-  let out = '';
-  for (let i = 0; i < len; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
-  return out;
+function makeJoinToken() {
+  return crypto.randomBytes(8).toString("hex"); // 16 chars
 }
 
-export default async function handler(req, res) {
-  await ensureSchema();
-  if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
-
-  const tgId = getTgId(req);
-  if (!tgId) return res.status(400).json({ ok: false, error: 'tg_id required' });
-
-  const userId = await getOrCreateUserId(tgId);
-
-  const nameRaw = (req.body?.name || '').toString().trim();
-  const name = (nameRaw || 'Команда').slice(0, 60);
-
-  // генерим join_code + join_token так, чтобы не упасть на UNIQUE
-  let join_code = '';
-  let join_token = '';
-  for (let i = 0; i < 6; i++) {
-    join_code = genCode(10);
-    join_token = genCode(22);
-    const exists = await q(
-      'SELECT 1 FROM teams WHERE join_code = $1 OR join_token = $2 LIMIT 1',
-      [join_code, join_token]
-    );
-    if (!exists.rows.length) break;
-  }
-  if (!join_code || !join_token) {
-    return res.status(500).json({ ok: false, error: 'cannot_generate_code' });
-  }
-
+module.exports = async (req, res) => {
   try {
-    const ins = await q(
-      `INSERT INTO teams (name, join_token, join_code)
-       VALUES ($1, $2, $3)
-       RETURNING id, name, join_code, join_token, created_at`,
-      [name, join_token, join_code]
+    await ensureSchema();
+
+    if (req.method !== "POST") {
+      return res.status(405).json({ ok: false, error: "Method not allowed" });
+    }
+
+    const tg_id = getTgId(req);
+    if (!tg_id) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+
+    const user_id = await getOrCreateUserIdByTgId(tg_id);
+
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+    const name = (body?.name || "").trim();
+
+    if (!name) {
+      return res.status(400).json({ ok: false, error: "Team name required" });
+    }
+
+    // generate unique join_token (retry a few times)
+    let join_token = makeJoinToken();
+    for (let i = 0; i < 5; i++) {
+      const exists = await query(`SELECT 1 FROM teams WHERE join_token=$1`, [join_token]);
+      if (exists.rows.length === 0) break;
+      join_token = makeJoinToken();
+    }
+
+    const created = await query(
+      `INSERT INTO teams (name, join_token, created_by_user_id)
+       VALUES ($1,$2,$3)
+       RETURNING id, name, join_token, created_by_user_id, created_at`,
+      [name, join_token, user_id]
     );
 
-    const team = ins.rows[0];
+    const team = created.rows[0];
 
-    // создатель = участник команды
-    await q(
+    // add creator as member
+    await query(
       `INSERT INTO team_members (team_id, user_id)
-       VALUES ($1, $2)
+       VALUES ($1,$2)
        ON CONFLICT DO NOTHING`,
-      [team.id, userId]
+      [team.id, user_id]
     );
 
-    return res.json({ ok: true, team });
+    return res.status(200).json({ ok: true, team });
   } catch (e) {
-    console.error('[team/create] error:', e);
-    return res.status(200).json({ ok: false, error: 'create_failed' });
+    console.error("team/create error:", e);
+    return res.status(500).json({ ok: false, error: e?.message || "Server error" });
   }
-}
+};
