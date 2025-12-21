@@ -1,12 +1,12 @@
 // api/team/list.js
-import { ensureSchema, q } from '../_db.js';
-import { getTgId, getOrCreateUserId } from '../_utils.js';
+import { ensureSchema, q } from "../_db.js";
+import { getTgId, getOrCreateUserId } from "../_utils.js";
 
 export default async function handler(req, res) {
   await ensureSchema();
 
   const tgId = getTgId(req);
-  if (!tgId) return res.status(400).json({ ok: false, error: 'tg_id required' });
+  if (!tgId) return res.status(400).json({ ok: false, error: "tg_id required" });
 
   const userId = await getOrCreateUserId(tgId);
 
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     SELECT
       t.id,
       t.name,
-      t.join_code,
+      t.join_token AS join_code,
       t.created_at,
       (
         SELECT m2.user_id
@@ -33,11 +33,11 @@ export default async function handler(req, res) {
     [userId]
   );
 
-  const teams = r.rows.map(x => ({
+  const teams = (r.rows || []).map((x) => ({
     id: Number(x.id),
     name: x.name,
-    join_code: x.join_code,
-    is_owner: Number(x.owner_user_id) === Number(userId)
+    join_code: x.join_code, // это join_token, просто под именем join_code для фронта
+    is_owner: Number(x.owner_user_id) === Number(userId),
   }));
 
   return res.json({ ok: true, teams });
