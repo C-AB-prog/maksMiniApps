@@ -112,14 +112,12 @@ function buildSystemPrompt(ctx) {
     const due = ms ? `до ${fmtDate(ms)}` : 'без срока';
     const mark = t.is_done ? '✓' : '•';
     const team = t.team_id ? ' [команда]' : '';
-    const assigned = t.assigned_to_username
-      ? ` [→ @${t.assigned_to_username}]`
-      : (t.assigned_to_user_id ? ' [назначено]' : '');
+    const assigned = t.assigned_to_username ? ` [→ @${t.assigned_to_username}]` : (t.assigned_to_user_id ? ' [назначено]' : '');
     return `${mark} ${t.title} (${due})${team}${assigned}`;
   }).join('\n');
 
   return [
-    `Ты — бизнес-ассистент уровня сильного продакта/маркетолога/операционного менеджера.`,
+    `Ты — Growth Assistant: сильный практичный ассистент предпринимателя.`,
     `Твоя задача — помогать пользователю расти: продукт, продажи, маркетинг, финансы, найм, процессы.`,
     ``,
     `Сегодня: ${todayISO}. Любые "сегодня/завтра/через неделю" считай относительно этой даты.`,
@@ -226,7 +224,7 @@ export default async function handler(req, res) {
     const messages = [
       { role: 'system', content: systemPrompt },
       ...history.map(m => ({
-        role: m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
+        role: m.role === 'assistant' ? 'assistant' : 'user',
         content: m.content,
       })),
     ];
@@ -374,13 +372,15 @@ export default async function handler(req, res) {
          VALUES ($1, 'assistant', $2)`,
         [sessionId, replyText]
       );
-
-      // ✅ FIX: НЕ переименовываем чат автоматически.
       await client.query(
         `UPDATE chat_sessions
-         SET updated_at = now()
+         SET updated_at = now(),
+             title = CASE
+               WHEN title = 'Новый чат' THEN left($2, 80)
+               ELSE title
+             END
          WHERE id = $1`,
-        [sessionId]
+        [sessionId, replyText]
       );
     });
 
@@ -444,11 +444,11 @@ async function tool_list_tasks(baseUrl, tgId, args) {
 }
 
 async function tool_delete_task(baseUrl, tgId, args) {
-  const queryStr = (args?.query || '').toString().toLowerCase().trim();
+  const query = (args?.query || '').toString().toLowerCase().trim();
   const r = await fetch(`${baseUrl}/api/tasks`, { headers: headersJson(tgId) });
   const j = await r.json().catch(() => ({}));
   const items = j.items || [];
-  const candidates = items.filter(t => (t.title || '').toLowerCase().includes(queryStr));
+  const candidates = items.filter(t => (t.title || '').toLowerCase().includes(query));
   if (!candidates.length) return { ok: false, error: 'not_found' };
   if (candidates.length > 1) {
     return { ok: false, error: 'ambiguous', sample: candidates.slice(0, 5).map(t => t.title) };
@@ -464,11 +464,11 @@ async function tool_delete_task(baseUrl, tgId, args) {
 }
 
 async function tool_complete_task(baseUrl, tgId, args) {
-  const queryStr = (args?.query || '').toString().toLowerCase().trim();
+  const query = (args?.query || '').toString().toLowerCase().trim();
   const r = await fetch(`${baseUrl}/api/tasks`, { headers: headersJson(tgId) });
   const j = await r.json().catch(() => ({}));
   const items = j.items || [];
-  const candidates = items.filter(t => (t.title || '').toLowerCase().includes(queryStr));
+  const candidates = items.filter(t => (t.title || '').toLowerCase().includes(query));
   if (!candidates.length) return { ok: false, error: 'not_found' };
   if (candidates.length > 1) {
     return { ok: false, error: 'ambiguous', sample: candidates.slice(0, 5).map(t => t.title) };
