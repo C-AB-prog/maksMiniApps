@@ -112,12 +112,14 @@ function buildSystemPrompt(ctx) {
     const due = ms ? `до ${fmtDate(ms)}` : 'без срока';
     const mark = t.is_done ? '✓' : '•';
     const team = t.team_id ? ' [команда]' : '';
-    const assigned = t.assigned_to_username ? ` [→ @${t.assigned_to_username}]` : (t.assigned_to_user_id ? ' [назначено]' : '');
+    const assigned = t.assigned_to_username
+      ? ` [→ @${t.assigned_to_username}]`
+      : (t.assigned_to_user_id ? ' [назначено]' : '');
     return `${mark} ${t.title} (${due})${team}${assigned}`;
   }).join('\n');
 
   return [
-    `Ты — Growth Assistant: сильный практичный ассистент предпринимателя.`,
+    `Ты — бизнес-ассистент уровня сильного продакта/маркетолога/операционного менеджера.`,
     `Твоя задача — помогать пользователю расти: продукт, продажи, маркетинг, финансы, найм, процессы.`,
     ``,
     `Сегодня: ${todayISO}. Любые "сегодня/завтра/через неделю" считай относительно этой даты.`,
@@ -221,12 +223,10 @@ export default async function handler(req, res) {
 
     const systemPrompt = buildSystemPrompt(ctx);
 
-    // Не дублируем userText дважды (он уже в history) — но так безопаснее оставить как есть?
-    // Оставим только историю, без повторного добавления.
     const messages = [
       { role: 'system', content: systemPrompt },
       ...history.map(m => ({
-        role: m.role === 'assistant' ? 'assistant' : 'user',
+        role: m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
         content: m.content,
       })),
     ];
@@ -374,15 +374,13 @@ export default async function handler(req, res) {
          VALUES ($1, 'assistant', $2)`,
         [sessionId, replyText]
       );
+
+      // ✅ FIX: НЕ переименовываем чат автоматически.
       await client.query(
         `UPDATE chat_sessions
-         SET updated_at = now(),
-             title = CASE
-               WHEN title = 'Новый чат' THEN left($2, 80)
-               ELSE title
-             END
+         SET updated_at = now()
          WHERE id = $1`,
-        [sessionId, replyText]
+        [sessionId]
       );
     });
 
@@ -446,11 +444,11 @@ async function tool_list_tasks(baseUrl, tgId, args) {
 }
 
 async function tool_delete_task(baseUrl, tgId, args) {
-  const query = (args?.query || '').toString().toLowerCase().trim();
+  const queryStr = (args?.query || '').toString().toLowerCase().trim();
   const r = await fetch(`${baseUrl}/api/tasks`, { headers: headersJson(tgId) });
   const j = await r.json().catch(() => ({}));
   const items = j.items || [];
-  const candidates = items.filter(t => (t.title || '').toLowerCase().includes(query));
+  const candidates = items.filter(t => (t.title || '').toLowerCase().includes(queryStr));
   if (!candidates.length) return { ok: false, error: 'not_found' };
   if (candidates.length > 1) {
     return { ok: false, error: 'ambiguous', sample: candidates.slice(0, 5).map(t => t.title) };
@@ -466,11 +464,11 @@ async function tool_delete_task(baseUrl, tgId, args) {
 }
 
 async function tool_complete_task(baseUrl, tgId, args) {
-  const query = (args?.query || '').toString().toLowerCase().trim();
+  const queryStr = (args?.query || '').toString().toLowerCase().trim();
   const r = await fetch(`${baseUrl}/api/tasks`, { headers: headersJson(tgId) });
   const j = await r.json().catch(() => ({}));
   const items = j.items || [];
-  const candidates = items.filter(t => (t.title || '').toLowerCase().includes(query));
+  const candidates = items.filter(t => (t.title || '').toLowerCase().includes(queryStr));
   if (!candidates.length) return { ok: false, error: 'not_found' };
   if (candidates.length > 1) {
     return { ok: false, error: 'ambiguous', sample: candidates.slice(0, 5).map(t => t.title) };
