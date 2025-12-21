@@ -143,9 +143,23 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .floating-action-btn:active { transform: scale(0.85); box-shadow: 0 4px 15px rgba(91,108,255,.3); animation:none; }
 @keyframes pulse {
   0% { transform: scale(1); box-shadow: 0 8px 25px rgba(91,108,255,.4); }
+
+
   50% { transform: scale(1.05); box-shadow: 0 12px 35px rgba(91,108,255,.6); }
   100% { transform: scale(1); box-shadow: 0 8px 25px rgba(91,108,255,.4); }
 }
+/* ASSISTANT FLOATING BUTTON (always доступен) */
+.floating-action-btn.assistant-fab{
+  right:auto;
+  left:20px;
+  bottom:90px;
+  animation:none;
+}
+@media (max-width: 600px){
+  .floating-action-btn.assistant-fab{ left:16px; bottom:80px; }
+}
+
+
 
 /* CHIPS */
 .seg{display:flex;gap:8px;flex-wrap:wrap}
@@ -323,7 +337,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .modal.active{display:flex}
 .modal-content{
   background:#fff;border-radius:20px;padding:24px;
-  max-width:420px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.2);
+  max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.2);
   animation: modalIn 0.3s ease;
 }
 .modal-title{margin:0 0 16px 0;font-size:18px;font-weight:700}
@@ -568,20 +582,11 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       <div style="display:flex;flex-direction:column;gap:8px">
         <input id="quick-title" class="input" type="text" placeholder="Название задачи" />
         <input id="quick-due" class="input" type="datetime-local" />
-
         <div class="quick-team-row" id="quick-team-row">
           <select id="quick-team-select" class="input">
             <option value="">Выберите команду</option>
           </select>
         </div>
-
-        <!-- ✅ выбор кому назначить (только для владельца команды) -->
-        <div class="quick-team-row" id="quick-assignee-row">
-          <select id="quick-assignee-select" class="input">
-            <option value="">Кому назначить (опционально)</option>
-          </select>
-        </div>
-
         <button id="quick-add" class="btn">Добавить задачу</button>
       </div>
     </div>
@@ -598,7 +603,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       <div class="plan-top">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <h3 style="margin:0">План задач</h3>
-          <button id="btn-export-cal" class="btn secondary" style="padding:10px 12px;font-size:12px;white-space:nowrap">Экспорт в календарь</button>
         </div>
         <div class="plan-mode">
           <div id="mode-my"   class="pill active">Мои</div>
@@ -640,8 +644,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
           <div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
               <span style="font-weight:600;font-size:14px">Задачи команды</span>
-              <!-- ✅ добавление командной задачи -->
-              <button id="team-add-task" class="btn ghost" style="padding:8px 10px;font-size:12px;display:none">+ Задача</button>
             </div>
             <div id="team-tasks-list" class="list"></div>
           </div>
@@ -744,8 +746,11 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   </section>
 </div>
 
-<!-- FLOATING ACTION BUTTON -->
+<!-- FLOATING ACTION BUTTON (Команды) -->
 <button id="team-fab-btn" class="floating-action-btn" style="display: none;">+</button>
+
+<!-- FLOATING ACTION BUTTON (Бизнес-помощник) -->
+<button id="assistant-fab-btn" class="floating-action-btn assistant-fab" title="Бизнес-помощник">💡</button>
 
 <!-- TEAM MENU -->
 <div id="team-menu" class="modal">
@@ -755,25 +760,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       <button id="team-menu-create" class="btn">Создать команду</button>
       <button id="team-menu-join" class="btn secondary">Вступить по коду</button>
       <button id="team-menu-close" class="btn ghost" style="margin-top: 8px;">Отмена</button>
-    </div>
-  </div>
-</div>
-
-<!-- TEAM ADD TASK MODAL -->
-<div id="team-add-task-modal" class="modal">
-  <div class="modal-content">
-    <h3 class="modal-title">Новая задача команде</h3>
-    <label>Название</label>
-    <input type="text" id="team-task-title" class="input" placeholder="Например: Запустить рекламу" style="margin-bottom:12px;">
-    <label>Дедлайн</label>
-    <input type="datetime-local" id="team-task-due" class="input" style="margin-bottom:12px;">
-    <label>Кому назначить</label>
-    <select id="team-task-assignee" class="input" style="margin-bottom:16px;">
-      <option value="">Никому (общая)</option>
-    </select>
-    <div style="display:flex; gap:10px;">
-      <button class="btn secondary" id="team-task-cancel" style="flex:1;">Отмена</button>
-      <button class="btn" id="team-task-create" style="flex:1;">Создать</button>
     </div>
   </div>
 </div>
@@ -788,7 +774,7 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
       </div>
     </div>
     <div id="chat-body" class="chat-body">
-      <div class="bubble bot">Привет! Я твой бизнес-ассистент. Скажи нишу/продукт/цель — и я соберу план действий.</div>
+      <div class="bubble bot">Привет! Я твой ассистент по продуктивности. Чем могу помочь?</div>
     </div>
     <div class="chat-foot">
       <input id="chat-input" class="input" type="text" placeholder="Напишите сообщение..." />
@@ -805,21 +791,6 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
     <div style="display: flex; gap: 10px;">
       <button class="btn secondary" id="cancel-new-chat" style="flex: 1;">Отмена</button>
       <button class="btn" id="confirm-new-chat" style="flex: 1;">Создать</button>
-    </div>
-  </div>
-</div>
-
-<!-- EXPORT MODAL -->
-<div id="export-modal" class="modal">
-  <div class="modal-content">
-    <h3 class="modal-title">Экспорт в календарь</h3>
-    <div class="muted" style="font-size:13px;margin-bottom:14px">
-      Выгрузим задачи с дедлайнами как файл <b>.ics</b>. Его можно импортировать в Google Calendar и Яндекс.Календарь.
-    </div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <button id="export-google" class="btn">Скачать .ics (Google)</button>
-      <button id="export-yandex" class="btn secondary">Скачать .ics (Яндекс)</button>
-      <button id="export-close" class="btn ghost" style="margin-top:6px">Закрыть</button>
     </div>
   </div>
 </div>
@@ -845,6 +816,10 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   <div class="item" data-go="profile">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4.42 0-8 2.24-8 5v3h16v-3c0-2.76-3.58-5-8-5z"/></svg>
     Профиль
+  </div>
+  <div class="item" id="open-assistant">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-2h2zm1.07-7.75-.9.92A1.49 1.49 0 0 0 13 12h-2v-.5a2.5 2.5 0 0 1 .73-1.77l1.24-1.26A1.5 1.5 0 1 0 10.5 7H9a3 3 0 1 1 5.07 2.25z"/></svg>
+    Помощник
   </div>
 </nav>
 
@@ -974,7 +949,8 @@ $$('.nav .item').forEach(it=>{
     it.classList.add('active');
     const to = it.dataset.go;
     Object.values(screens).forEach(s=>s.classList.remove('active'));
-    screens[to].classList.add('active');
+    if (to && screens[to]) screens[to].classList.add('active');
+
     if (to === 'chat') loadChatsFromServer();
     if (to === 'plan') {
       renderPlan();
@@ -1062,16 +1038,13 @@ function syncQuickTeamChip(){
 
 function updateQuickTeamVisibility(){
   const row = $('#quick-team-row');
-  const rowAss = $('#quick-assignee-row');
-  if (!row || !rowAss) return;
-
+  if (!row) return;
   const ownedTeams = teamList.filter(t => t.is_owner);
   const need = quickPrio === 'team' && ownedTeams.length;
-
   row.classList.toggle('visible', need);
-  rowAss.classList.toggle('visible', need);
 
   const sel = $('#quick-team-select');
+  if (!sel) return;
   sel.innerHTML = '<option value="">Выберите команду</option>';
   ownedTeams.forEach(t=>{
     const opt = document.createElement('option');
@@ -1079,41 +1052,7 @@ function updateQuickTeamVisibility(){
     opt.textContent = t.name;
     sel.appendChild(opt);
   });
-
-  // assignees will be filled when team selected
-  fillQuickAssigneeSelect(null);
 }
-
-function fillQuickAssigneeSelect(teamId){
-  const sel = $('#quick-assignee-select');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">Кому назначить (опционально)</option>';
-
-  if (!teamId) return;
-  const t = teamList.find(x => x.team_id === Number(teamId));
-  const members = (t?.members || []);
-  members.forEach(m=>{
-    const name = m.username ? '@'+m.username : ([m.first_name,m.last_name].filter(Boolean).join(' ') || String(m.tg_id));
-    const opt = document.createElement('option');
-    opt.value = String(m.tg_id);
-    opt.textContent = name;
-    sel.appendChild(opt);
-  });
-}
-
-$('#quick-team-select').addEventListener('change', async ()=>{
-  const teamId = Number($('#quick-team-select').value || 0);
-  if (!teamId) { fillQuickAssigneeSelect(null); return; }
-  // ensure members loaded
-  const t = teamList.find(x => x.team_id === teamId);
-  if (t && (!t.members || !t.members.length)){
-    try{
-      const r = await api('/api/team/members?team_id='+encodeURIComponent(teamId),'GET');
-      t.members = r.members || r.items || [];
-    }catch{ t.members = []; }
-  }
-  fillQuickAssigneeSelect(teamId);
-});
 
 $('#quick-add').onclick = async ()=>{
   const title = $('#quick-title').value.trim();
@@ -1132,22 +1071,15 @@ $('#quick-add').onclick = async ()=>{
   }
 
   let team_id = null;
-  let assigned_to_tg_id = null;
-
   if (quickPrio === 'team') {
     const selVal = $('#quick-team-select').value;
     if (!selVal) return showToast('Выберите команду');
     team_id = Number(selVal);
-
-    const assTg = String($('#quick-assignee-select')?.value || '').trim();
-    if (assTg) assigned_to_tg_id = Number(assTg);
   }
 
   try{
     const payload = { title, due_ts, priority: quickPrio };
     if (team_id) payload.team_id = team_id;
-    if (assigned_to_tg_id) payload.assigned_to_tg_id = assigned_to_tg_id;
-
     const r = await api('/api/tasks','POST', payload);
     tasks.unshift(r.task);
   }catch(e){
@@ -1157,7 +1089,6 @@ $('#quick-add').onclick = async ()=>{
       due_ts,
       is_done: false,
       team_id: team_id || null,
-      assigned_to_user_id: assigned_to_tg_id ? -1 : null,
       created_at: new Date().toISOString()
     };
     tasks.unshift(fake);
@@ -1370,17 +1301,6 @@ function renderTeamList(){
   });
 }
 
-function fillTeamAssigneeSelect(selEl, team){
-  selEl.innerHTML = '<option value="">Никому (общая)</option>';
-  (team?.members || []).forEach(m=>{
-    const name = m.username ? '@'+m.username : ([m.first_name,m.last_name].filter(Boolean).join(' ') || String(m.tg_id));
-    const opt = document.createElement('option');
-    opt.value = String(m.tg_id);
-    opt.textContent = name;
-    selEl.appendChild(opt);
-  });
-}
-
 function fillTeamDetail(){
   const detailBox = $('#team-detail-box');
   const listBox   = $('#team-list-box');
@@ -1405,9 +1325,6 @@ function fillTeamDetail(){
   $('#team-rename').style.display   = isOwner ? 'inline-flex' : 'none';
   $('#team-delete').style.display   = isOwner ? 'block'      : 'none';
   $('#team-code-copy').style.display = 'inline-flex';
-
-  // show add task button only owner
-  $('#team-add-task').style.display = isOwner ? 'inline-flex' : 'none';
 
   const ul = $('#team-members-list');
   ul.innerHTML='';
@@ -1538,16 +1455,6 @@ async function loadTeamInfo(){
       if (found) teamInfo = found;
     }
 
-    // preload members for owned teams (for assignee select)
-    for (const t of teamList) {
-      if (!t.is_owner) continue;
-      try{
-        const r = await api('/api/team/members?team_id='+encodeURIComponent(t.team_id),'GET');
-        t.members = r.members || r.items || [];
-      }catch{ t.members = []; }
-    }
-
-    // also load members for current teamInfo if not loaded
     try{
       const r = await api('/api/team/members?team_id='+encodeURIComponent(teamInfo.team_id),'GET');
       teamInfo.members = r.members || r.items || [];
@@ -1616,7 +1523,7 @@ $('#team-menu-join').onclick = async ()=>{
   const token = prompt('Введите код приглашения');
   if (!token || !token.trim()) return;
   try{
-    await api('/api/team/join','POST',{ join_token: token.trim(), token: token.trim() });
+    await api('/api/team/join','POST',{ token: token.trim() });
     await loadTeamInfo();
     setPlanMode('team');
     showToast('Вы присоединились к команде');
@@ -1686,53 +1593,36 @@ $('#team-members-toggle').onclick = ()=>{
   $('#team-members-arrow').textContent = teamMembersOpen ? '▴' : '▾';
 };
 
-/* team add task modal */
-$('#team-add-task').onclick = async ()=>{
-  if (!teamInfo || !teamInfo.is_owner) return;
-  // fill members in modal
-  const sel = $('#team-task-assignee');
-  fillTeamAssigneeSelect(sel, teamInfo);
-  $('#team-task-title').value = '';
-  $('#team-task-due').value = '';
-  $('#team-add-task-modal').classList.add('active');
-};
-$('#team-task-cancel').onclick = ()=> $('#team-add-task-modal').classList.remove('active');
-$('#team-add-task-modal').onclick = (e)=>{ if (e.target === $('#team-add-task-modal')) $('#team-add-task-modal').classList.remove('active'); };
-$('#team-task-create').onclick = async ()=>{
-  if (!teamInfo || !teamInfo.is_owner) return;
-  const title = ($('#team-task-title').value || '').trim();
-  if (!title) return showToast('Введите название');
-
-  const dueStr = $('#team-task-due').value;
-  let due_ts = null;
-  if (dueStr) {
-    const ms = Date.parse(dueStr);
-    if (!isNaN(ms)) due_ts = ms;
-  }
-
-  const assTg = String($('#team-task-assignee').value || '').trim();
-  const assigned_to_tg_id = assTg ? Number(assTg) : null;
-
-  try{
-    const payload = { title, due_ts, team_id: teamInfo.team_id };
-    if (assigned_to_tg_id) payload.assigned_to_tg_id = assigned_to_tg_id;
-    const r = await api('/api/tasks','POST', payload);
-    tasks.unshift(r.task);
-    $('#team-add-task-modal').classList.remove('active');
-    fillTeamDetail();
-    renderHome(); renderStats();
-    showToast('Командная задача добавлена');
-  }catch(e){
-    console.error(e);
-    showToast('Не удалось создать задачу');
-  }
-};
-
 /* ======================= CHAT: БД-сессии ======================= */
 let chats = [];
 let currentChatId = null;
 let currentMessages = [];
 let pendingChatTitle = null;
+let assistantMode = false;
+const ASSISTANT_CHAT_KEY = 'ga_assistant_chat_id';
+
+function getAssistantChatId(){
+  try { return Number(localStorage.getItem(ASSISTANT_CHAT_KEY) || '') || null; } catch { return null; }
+}
+function setAssistantChatId(id){
+  try { localStorage.setItem(ASSISTANT_CHAT_KEY, String(id)); } catch {}
+}
+
+/* Открыть бизнес-помощника (один постоянный диалог, без списка чатов) */
+async function openAssistant(){
+  assistantMode = true;
+  const saved = getAssistantChatId();
+  if (saved){
+    try{
+      await openChat(saved, 'Бизнес-помощник');
+      return;
+    }catch(e){
+      currentChatId = null;
+    }
+  }
+  openNewChatWindow('Бизнес-помощник');
+}
+
 
 async function loadChatsFromServer() {
   try {
@@ -1870,7 +1760,7 @@ function openNewChatWindow(title) {
   currentChatId = null;
   currentMessages = [{
     role: 'assistant',
-    content: 'Привет! Я бизнес-ассистент. Опиши цель/нишу/продукт — соберу понятный план.'
+    content: 'Привет! Я бизнес-ассистент. Задай вопрос про продажи/маркетинг/продукт/финансы — и я соберу конкретный план.'
   }];
   $('#current-chat-title').textContent = pendingChatTitle;
   $('#chat-window-overlay').classList.add('active');
@@ -1881,6 +1771,7 @@ function openNewChatWindow(title) {
 function closeChat() {
   currentChatId = null;
   pendingChatTitle = null;
+  assistantMode = false;
   currentMessages = [];
   $('#chat-window-overlay').classList.remove('active');
   $('#chat-body').innerHTML = '';
@@ -1904,7 +1795,7 @@ function addMessage(role, content) {
   renderChatMessages();
 }
 
-/* ✅ FIX: для телефона — таймаут + retry */
+/* ✅ FIX: для телефона — таймаут + retry, и не подменяем ИИ "сбоем" */
 async function sendChatMessage() {
   const text = $('#chat-input').value.trim();
   if (!text) return;
@@ -1926,6 +1817,7 @@ async function sendChatMessage() {
       addMessage('assistant', replyText);
 
       if (r.chat_id && !currentChatId) currentChatId = r.chat_id;
+      if (assistantMode && r.chat_id) setAssistantChatId(r.chat_id);
 
       loadChatsFromServer().catch(()=>{});
       return;
@@ -1936,7 +1828,7 @@ async function sendChatMessage() {
         continue;
       }
       showToast('Не удалось подключиться к серверу');
-      addMessage('assistant', 'Похоже, связь с сервером временно пропала. Попробуй ещё раз через несколько секунд.');
+      addMessage('assistant', 'Похоже, связь с сервером на телефоне временно пропала. Попробуй отправить ещё раз через несколько секунд.');
       return;
     }
   }
@@ -1961,6 +1853,11 @@ $('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendC
 $('#new-chat-modal').onclick = (e) => { if (e.target === $('#new-chat-modal')) $('#new-chat-modal').classList.remove('active'); };
 $('#chat-window-overlay').onclick = (e) => { if (e.target === $('#chat-window-overlay')) closeChat(); };
 
+
+/* помощник доступен везде */
+$('#assistant-fab-btn').onclick = () => openAssistant();
+$('#open-assistant').onclick = () => openAssistant();
+
 /* profile */
 $$('.lang-btn').forEach(btn => {
   btn.onclick = () => {
@@ -1974,69 +1871,6 @@ $('#btn-tariff').onclick = () => showToast('Раздел "Тарифы" в ра�
 $('#btn-help').onclick   = () => showToast('Раздел "Помощь" в разработке');
 $('#btn-guide').onclick  = () => showToast('Раздел "Как пользоваться" в разработке');
 $('#btn-consult').onclick= () => showToast('Раздел "Консультация" в разработке');
-
-/* EXPORT to calendar (.ics) */
-function icsEscape(s){
-  return String(s||'').replace(/\\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');
-}
-function toIcsDate(ms){
-  const d = new Date(ms);
-  const pad = n => String(n).padStart(2,'0');
-  // UTC
-  return d.getUTCFullYear()
-    + pad(d.getUTCMonth()+1)
-    + pad(d.getUTCDate())
-    + 'T'
-    + pad(d.getUTCHours())
-    + pad(d.getUTCMinutes())
-    + pad(d.getUTCSeconds())
-    + 'Z';
-}
-function buildIcs(){
-  const now = toIcsDate(Date.now());
-  const items = (tasks || []).filter(t => !t.is_done && normalizeDue(t.due_ts)!=null).slice(0, 200);
-
-  const lines = [];
-  lines.push('BEGIN:VCALENDAR');
-  lines.push('VERSION:2.0');
-  lines.push('PRODID:-//Growth Assistant//Tasks Export//RU');
-  lines.push('CALSCALE:GREGORIAN');
-  lines.push('METHOD:PUBLISH');
-
-  items.forEach(t=>{
-    const due = normalizeDue(t.due_ts);
-    const uid = `task-${t.id}@growth-assistant`;
-    const summary = icsEscape(t.title);
-    lines.push('BEGIN:VEVENT');
-    lines.push('UID:'+uid);
-    lines.push('DTSTAMP:'+now);
-    lines.push('DTSTART:'+toIcsDate(due));
-    lines.push('DTEND:'+toIcsDate(due));
-    lines.push('SUMMARY:'+summary);
-    if (t.team_id) lines.push('CATEGORIES:Team');
-    lines.push('END:VEVENT');
-  });
-
-  lines.push('END:VCALENDAR');
-  return lines.join('\r\n');
-}
-function downloadIcs(filename){
-  const ics = buildIcs();
-  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-$('#btn-export-cal').onclick = ()=> $('#export-modal').classList.add('active');
-$('#export-close').onclick = ()=> $('#export-modal').classList.remove('active');
-$('#export-modal').onclick = (e)=>{ if (e.target === $('#export-modal')) $('#export-modal').classList.remove('active'); };
-$('#export-google').onclick = ()=> downloadIcs('growth-assistant-tasks.ics');
-$('#export-yandex').onclick = ()=> downloadIcs('growth-assistant-tasks.ics');
 
 /* init */
 async function loadAll(){
