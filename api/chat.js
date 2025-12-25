@@ -24,10 +24,10 @@ function headersJson(tgId) {
 }
 
 function normalizeDue(v) {
-  if (v === null || v === undefined) return null;
+  if (v === null || v === undefined || v === '') return null;
   const num = Number(v);
   if (!Number.isNaN(num)) {
-    const ms = num < 1e12 ? num * 1000 : num;
+    const ms = num < 1e12 ? num * 1000 : num; // sec -> ms
     return ms;
   }
   const ms = Date.parse(v);
@@ -45,26 +45,44 @@ function fmtDate(ms) {
   });
 }
 
-async function getContextSnapshot(baseUrl, tgId) {
+/**
+ * Вместо fetch к самому себе (что замедляет и иногда ломается в serverless),
+ * берём быстрый снэпшот прямо из БД.
+ */
+async function getContextSnapshotFast(userId) {
   const ctx = { focus: null, tasks: [] };
+
   try {
-    const f = await fetch(`${baseUrl}/api/focus?tg_id=${encodeURIComponent(tgId)}`, {
-      headers: headersJson(tgId),
-    });
-    if (f.ok) {
-      const j = await f.json().catch(() => ({}));
-      ctx.focus = j.focus || null;
-    }
+    const f = await q(
+      `SELECT id, text
+       FROM focuses
+       WHERE user_id = $1
+       ORDER BY id DESC
+       LIMIT 1`,
+      [userId],
+    );
+    ctx.focus = f.rows[0] || null;
   } catch {}
+
   try {
-    const t = await fetch(`${baseUrl}/api/tasks?tg_id=${encodeURIComponent(tgId)}`, {
-      headers: headersJson(tgId),
-    });
-    if (t.ok) {
-      const j = await t.json().catch(() => ({}));
-      ctx.tasks = (j.items || []).slice(0, 60);
-    }
+    const t = await q(
+      `SELECT id, title, due_ts, is_done, team_id, assigned_to_user_id
+       FROM tasks
+       WHERE user_id = $1 AND team_id IS NULL
+       ORDER BY COALESCE(due_ts, 9223372036854775807), id DESC
+       LIMIT 20`,
+      [userId],
+    );
+
+    ctx.tasks = (t.rows || []).map(x => ({
+      ...x,
+      id: Number(x.id),
+      due_ts: x.due_ts == null ? null : Number(x.due_ts),
+      team_id: x.team_id == null ? null : Number(x.team_id),
+      assigned_to_user_id: x.assigned_to_user_id == null ? null : Number(x.assigned_to_user_id),
+    }));
   } catch {}
+
   return ctx;
 }
 
@@ -79,43 +97,37 @@ function buildSystemPrompt(ctx) {
     ? `ФОКУС СЕГОДНЯ: ${ctx.focus.text}`
     : `ФОКУС СЕГОДНЯ не задан.`;
 
-  const tasks = (ctx.tasks || []).slice(0, 14).map(t => {
+  const tasks = (ctx.tasks || []).slice(0, 12).map(t => {
     const ms = normalizeDue(t.due_ts);
     const due = ms ? `до ${fmtDate(ms)}` : 'без срока';
     const mark = t.is_done ? '✓' : '•';
-    const team = t.team_id ? ' [команда]' : '';
-    const assigned = t.assigned_to_username
-      ? ` [→ @${t.assigned_to_username}]`
-      : (t.assigned_to_user_id ? ' [назначено]' : '');
-    return `${mark} ${t.title} (${due})${team}${assigned}`;
+    return `${mark} ${t.title} (${due})`;
   }).join('\n');
 
   return [
     `Ты — Growth Assistant: сильный практичный ассистент предпринимателя.`,
-    `Твоя задача — помогать пользователю расти: продукт, продажи, маркетинг, финансы, найм, процессы.`,
+    `Помогай расти: продукт, продажи, маркетинг, финансы, найм, процессы.`,
     ``,
     `Сегодня: ${todayISO}. Любые "сегодня/завтра/через неделю" считай относительно этой даты.`,
     ``,
     `Стиль ответа:`,
-    `- По делу. Сначала 2–4 предложения сути, затем структурированный план (3–8 пунктов).`,
-    `- Если данных не хватает — задай ОДИН уточняющий вопрос (максимум один).`,
-    `- Давай конкретные действия: что сделать сегодня/за 60 минут/за неделю.`,
+    `- По делу. Сначала 2–4 предложения сути, затем план (3–8 пунктов).`,
+    `- Если данных не хватает — задай ОДИН уточняющий вопрос.`,
     ``,
     `Инструменты (tasks/focus):`,
     `- Используй инструменты ТОЛЬКО когда пользователь явно просит: добавить/удалить/закрыть задачу, показать задачи, поставить фокус.`,
-    `- Не превращай каждый бизнес-разбор в задачи автоматически. Предлагай — но не навязывай.`,
     ``,
-    `Контекст пользователя (для справки):`,
+    `Контекст пользователя:`,
     focusStr,
     tasks ? `ЗАДАЧИ (верхние):\n${tasks}` : 'ЗАДАЧ нет.',
   ].join('\n');
 }
 
-/* ====== инструменты через /api/tasks и /api/focus ===== */
+/* ====== инструменты через /api/tasks и /api/focus (оставляем как было) ===== */
 
 async function tool_add_task(baseUrl, tgId, args) {
   const title = (args?.title || '').toString().slice(0, 200);
-  const due_ts = typeof args?.due_ts === 'number' ? args.due_ts : null;
+  const due_ts = normalizeDue(args?.due_ts);
 
   const r = await fetch(`${baseUrl}/api/tasks?tg_id=${encodeURIComponent(tgId)}`, {
     method: 'POST',
@@ -123,9 +135,8 @@ async function tool_add_task(baseUrl, tgId, args) {
     body: JSON.stringify({ title, due_ts }),
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok || j.ok === false) {
-    return { ok: false, error: j?.error || `HTTP ${r.status}` };
-  }
+  if (!r.ok || j.ok === false) return { ok: false, error: j?.error || `HTTP ${r.status}` };
+
   const when = due_ts ? fmtDate(due_ts) : 'без срока';
   return { ok: true, note: `задача создана (до ${when})` };
 }
@@ -138,20 +149,16 @@ async function tool_set_focus(baseUrl, tgId, args) {
     body: JSON.stringify({ text }),
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok || j.ok === false) {
-    return { ok: false, error: j?.error || `HTTP ${r.status}` };
-  }
+  if (!r.ok || j.ok === false) return { ok: false, error: j?.error || `HTTP ${r.status}` };
   return { ok: true, note: 'фокус обновлён' };
 }
 
-async function tool_list_tasks(baseUrl, tgId, args) {
+async function tool_list_tasks(baseUrl, tgId) {
   const r = await fetch(`${baseUrl}/api/tasks?tg_id=${encodeURIComponent(tgId)}`, {
     headers: headersJson(tgId),
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok || j.ok === false) {
-    return { ok: false, error: j?.error || `HTTP ${r.status}` };
-  }
+  if (!r.ok || j.ok === false) return { ok: false, error: j?.error || `HTTP ${r.status}` };
   return { ok: true, items: (j.items || []).slice(0, 80) };
 }
 
@@ -162,9 +169,8 @@ async function tool_delete_task(baseUrl, tgId, args) {
   const items = j.items || [];
   const candidates = items.filter(t => (t.title || '').toLowerCase().includes(query));
   if (!candidates.length) return { ok: false, error: 'not_found' };
-  if (candidates.length > 1) {
-    return { ok: false, error: 'ambiguous', sample: candidates.slice(0, 5).map(t => t.title) };
-  }
+  if (candidates.length > 1) return { ok: false, error: 'ambiguous', sample: candidates.slice(0, 5).map(t => t.title) };
+
   const t = candidates[0];
   const del = await fetch(`${baseUrl}/api/tasks/delete?id=${encodeURIComponent(t.id)}&tg_id=${encodeURIComponent(tgId)}`, {
     method: 'POST',
@@ -182,9 +188,8 @@ async function tool_complete_task(baseUrl, tgId, args) {
   const items = j.items || [];
   const candidates = items.filter(t => (t.title || '').toLowerCase().includes(query));
   if (!candidates.length) return { ok: false, error: 'not_found' };
-  if (candidates.length > 1) {
-    return { ok: false, error: 'ambiguous', sample: candidates.slice(0, 5).map(t => t.title) };
-  }
+  if (candidates.length > 1) return { ok: false, error: 'ambiguous', sample: candidates.slice(0, 5).map(t => t.title) };
+
   const t = candidates[0];
   const upd = await fetch(`${baseUrl}/api/tasks/toggle?id=${encodeURIComponent(t.id)}&tg_id=${encodeURIComponent(tgId)}`, {
     method: 'POST',
@@ -193,6 +198,48 @@ async function tool_complete_task(baseUrl, tgId, args) {
   });
   if (!upd.ok) return { ok: false, error: `HTTP ${upd.status}` };
   return { ok: true, note: `задача "${t.title}" отмечена выполненной` };
+}
+
+/* ============ OpenAI with model fallback ============ */
+
+function uniq(arr) {
+  const out = [];
+  const s = new Set();
+  for (const x of arr) {
+    const v = (x || '').toString().trim();
+    if (!v) continue;
+    if (s.has(v)) continue;
+    s.add(v);
+    out.push(v);
+  }
+  return out;
+}
+
+function isModelError(e) {
+  const status = Number(e?.status || e?.response?.status || 0);
+  const msg = String(e?.message || '').toLowerCase();
+  // 400/404/403 часто бывают при неправильной модели или отсутствии доступа
+  return status === 400 || status === 403 || status === 404 || msg.includes('model');
+}
+
+async function createChatCompletionWithFallback(openai, params) {
+  const candidates = uniq([
+    process.env.OPENAI_MODEL,
+    'gpt-4o-mini',
+    'gpt-4.1-mini',
+  ]);
+
+  let lastErr = null;
+  for (const model of candidates) {
+    try {
+      return await openai.chat.completions.create({ ...params, model });
+    } catch (e) {
+      lastErr = e;
+      if (!isModelError(e)) break;
+      // пробуем следующую модель
+    }
+  }
+  throw lastErr;
 }
 
 /* ============ HTTP handler ============ */
@@ -206,30 +253,24 @@ export default async function handler(req, res) {
   }
 
   const tgId = getTgId(req) || (safeJson(req.body)?.tg_id ? String(safeJson(req.body).tg_id) : '');
-  if (!tgId) {
-    return res.status(400).json({ ok: false, error: 'tg_id required' });
-  }
+  if (!tgId) return res.status(400).json({ ok: false, error: 'tg_id required' });
 
   const body = safeJson(req.body);
   const userText = (body?.text || '').toString().trim();
-  if (!userText) {
-    return res.status(400).json({ ok: false, error: 'Empty message' });
-  }
+  if (!userText) return res.status(400).json({ ok: false, error: 'Empty message' });
 
   const baseUrl = getBaseUrl(req);
 
   // 1) DB: user + session + message
   let sessionId = null;
+  let userId = null;
   try {
-    const userId = await getOrCreateUserId(tgId);
+    userId = await getOrCreateUserId(tgId);
 
     // session
     let sid = Number(body?.chat_id) || null;
     if (sid) {
-      const s = await q(
-        'SELECT id FROM chat_sessions WHERE id = $1 AND user_id = $2',
-        [sid, userId],
-      );
+      const s = await q('SELECT id FROM chat_sessions WHERE id = $1 AND user_id = $2', [sid, userId]);
       if (!s.rows.length) sid = null;
     }
 
@@ -250,13 +291,11 @@ export default async function handler(req, res) {
       [sid, userText],
     );
 
-    // обновляем updated_at (НО НЕ ТРОГАЕМ title — он должен быть ровно как задал пользователь)
     await q(`UPDATE chat_sessions SET updated_at = now() WHERE id = $1`, [sid]);
 
     sessionId = sid;
   } catch (e) {
     console.error('[chat] db error:', e);
-    // даже если БД легла — вернём ответ без падения клиента
     return res.status(200).json({
       ok: true,
       reply: 'Сейчас сервер БД недоступен. Попробуй ещё раз через минуту.',
@@ -264,15 +303,15 @@ export default async function handler(req, res) {
     });
   }
 
-  // 2) Prepare prompt + history
-  const ctx = await getContextSnapshot(baseUrl, tgId);
+  // 2) Prepare prompt + history (короче для скорости)
+  const ctx = await getContextSnapshotFast(userId);
 
   const history = await q(
     `SELECT role, content
      FROM chat_messages
      WHERE chat_id = $1
      ORDER BY id ASC
-     LIMIT 30`,
+     LIMIT 20`,
     [sessionId],
   ).then(r => r.rows || []).catch(() => []);
 
@@ -280,10 +319,9 @@ export default async function handler(req, res) {
 
   const messages = [
     { role: 'system', content: systemPrompt },
-    ...history.map(m => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: m.content,
-    })),
+    ...history
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => ({ role: m.role, content: m.content })),
   ];
 
   const tools = [
@@ -296,7 +334,7 @@ export default async function handler(req, res) {
           type: 'object',
           properties: {
             title: { type: 'string', description: 'Короткий заголовок задачи (≤200 символов)' },
-            due_ts: { type: ['integer', 'null'], description: 'Дедлайн в миллисекундах UNIX. null — без срока.' },
+            due_ts: { type: ['integer', 'string', 'null'], description: 'Дедлайн (ms UNIX или дата/строка). null — без срока.' },
           },
           required: ['title'],
         },
@@ -319,11 +357,7 @@ export default async function handler(req, res) {
       function: {
         name: 'list_tasks',
         description: 'Получить задачи (для ответа пользователю)',
-        parameters: {
-          type: 'object',
-          properties: { period: { type: 'string', description: 'today|tomorrow|week|backlog|overdue|all' } },
-          required: ['period'],
-        },
+        parameters: { type: 'object', properties: {} },
       },
     },
     {
@@ -352,74 +386,68 @@ export default async function handler(req, res) {
     },
   ];
 
-  // 3) OpenAI (если сломается — всё равно отдадим нормальный ответ и сохраним chat_id)
+  // 3) OpenAI (fallback model)
   let replyText = '';
   try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      timeout: 60_000,
+    });
 
-    let steps = 0;
+    // один проход + максимум один раунд tool-calls (чтобы не висеть)
+    const resp1 = await createChatCompletionWithFallback(openai, {
+      temperature: 0.35,
+      max_tokens: 700,
+      messages,
+      tools,
+      tool_choice: 'auto',
+    });
 
-    while (steps < 3) {
-      const resp = await openai.chat.completions.create({
-        model,
-        temperature: 0.35,
-        messages,
-        tools,
-        tool_choice: 'auto',
-      });
+    const msg1 = resp1.choices?.[0]?.message;
+    const calls = msg1?.tool_calls || [];
 
-      const msg = resp.choices?.[0]?.message;
-      if (!msg) break;
+    if (calls.length) {
+      messages.push({ role: 'assistant', content: msg1.content || '', tool_calls: calls });
 
-      const calls = msg.tool_calls || [];
-      if (calls.length) {
-        messages.push({
-          role: 'assistant',
-          content: msg.content || '',
-          tool_calls: calls,
-        });
+      for (const c of calls) {
+        const name = c.function?.name;
+        let args = {};
+        try { args = JSON.parse(c.function?.arguments || '{}'); } catch {}
 
-        for (const c of calls) {
-          const name = c.function?.name;
-          let args = {};
-          try { args = JSON.parse(c.function?.arguments || '{}'); } catch {}
-
-          let toolResult = {};
-          try {
-            if (name === 'add_task') toolResult = await tool_add_task(baseUrl, tgId, args);
-            else if (name === 'set_focus') toolResult = await tool_set_focus(baseUrl, tgId, args);
-            else if (name === 'list_tasks') toolResult = await tool_list_tasks(baseUrl, tgId, args);
-            else if (name === 'delete_task') toolResult = await tool_delete_task(baseUrl, tgId, args);
-            else if (name === 'complete_task') toolResult = await tool_complete_task(baseUrl, tgId, args);
-            else toolResult = { ok: false, error: 'unknown_tool' };
-          } catch (e) {
-            toolResult = { ok: false, error: String(e?.message || e) };
-          }
-
-          messages.push({
-            role: 'tool',
-            tool_call_id: c.id,
-            content: JSON.stringify(toolResult),
-          });
+        let toolResult = {};
+        try {
+          if (name === 'add_task') toolResult = await tool_add_task(baseUrl, tgId, args);
+          else if (name === 'set_focus') toolResult = await tool_set_focus(baseUrl, tgId, args);
+          else if (name === 'list_tasks') toolResult = await tool_list_tasks(baseUrl, tgId);
+          else if (name === 'delete_task') toolResult = await tool_delete_task(baseUrl, tgId, args);
+          else if (name === 'complete_task') toolResult = await tool_complete_task(baseUrl, tgId, args);
+          else toolResult = { ok: false, error: 'unknown_tool' };
+        } catch (e) {
+          toolResult = { ok: false, error: String(e?.message || e) };
         }
 
-        steps += 1;
-        continue;
+        messages.push({ role: 'tool', tool_call_id: c.id, content: JSON.stringify(toolResult) });
       }
 
-      replyText = (msg.content || '').trim() || 'Готово.';
-      break;
+      const resp2 = await createChatCompletionWithFallback(openai, {
+        temperature: 0.35,
+        max_tokens: 700,
+        messages,
+      });
+
+      replyText = (resp2.choices?.[0]?.message?.content || '').trim();
+    } else {
+      replyText = (msg1?.content || '').trim();
     }
   } catch (e) {
     console.error('[chat] openai error:', e);
-    replyText =
-      'Похоже, ИИ сейчас временно недоступен. Напиши: ниша, продукт, цель на месяц и что уже пробовал — я соберу план.';
+    // IMPORTANT: показываем причину (коротко), чтобы ты сразу понял где затык
+    const status = e?.status || e?.response?.status;
+    const msg = String(e?.message || 'openai_error').slice(0, 160);
+    replyText = `ИИ не отвечает. Проверь OPENAI_API_KEY и OPENAI_MODEL в Vercel. Ошибка${status ? ' '+status : ''}: ${msg}`;
   }
 
-  if (!replyText) {
-    replyText = 'Окей. Скажи нишу/аудиторию/цель (выручка/лиды), и я соберу план на неделю.';
-  }
+  if (!replyText) replyText = 'Окей. Скажи нишу/аудиторию/цель, и я соберу план на неделю.';
 
   // 4) Save assistant message
   try {
@@ -433,9 +461,5 @@ export default async function handler(req, res) {
     console.error('[chat] save assistant error:', e);
   }
 
-  return res.status(200).json({
-    ok: true,
-    reply: replyText,
-    chat_id: sessionId,
-  });
+  return res.status(200).json({ ok: true, reply: replyText, chat_id: sessionId });
 }
