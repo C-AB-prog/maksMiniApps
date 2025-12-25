@@ -74,7 +74,10 @@ body{
   backdrop-filter: var(--card-blur);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.card:active { transform: scale(0.98); }
+/* Тап-эффект только для touch-устройств — иначе иногда мешает фокусу инпутов на десктопе */
+@media (hover: none) and (pointer: coarse) {
+  .card:active { transform: scale(0.98); }
+}
 h3{margin:0 0 14px 0; font-size:16px; font-weight:700}
 
 section{display:none;gap:16px; animation: fadeIn 0.3s ease;}
@@ -532,6 +535,9 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
   .task { min-height:60px; }
   .team-list-item { min-height:50px; }
 }
+/* input-select-fix */
+input, textarea{ -webkit-user-select:text; user-select:text; touch-action:auto; }
+
 </style>
 </head>
 
@@ -860,6 +866,18 @@ function fmt(ts){
   return d.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
 }
 
+// --- normalize rows from Postgres (Neon часто отдаёт BIGINT как строку) ---
+function normalizeTaskRow(t){
+  if (!t || typeof t !== 'object') return t;
+  const toNum = (v) => (v === null || v === undefined || v === '' ? null : Number(v));
+  const id = t.id != null ? Number(t.id) : t.id;
+  const team_id = t.team_id == null ? null : Number(t.team_id);
+  const assigned_to_user_id = t.assigned_to_user_id == null ? null : Number(t.assigned_to_user_id);
+  const due_ts = normalizeDue(t.due_ts);
+  const is_done = !!t.is_done;
+  return { ...t, id, team_id, assigned_to_user_id, due_ts, is_done };
+}
+
 /* tg id (устойчиво: query → Telegram → localStorage) */
 let tgId = 0;
 
@@ -1118,7 +1136,7 @@ $('#quick-add').onclick = async ()=>{
     const payload = { title, due_ts, priority: quickPrio };
     if (team_id) payload.team_id = team_id;
     const r = await api('/api/tasks','POST', payload);
-    tasks.unshift(r.task);
+    tasks.unshift(normalizeTaskRow(r.task));
   }catch(e){
     const fake = {
       id: 'tmp_'+Date.now(),
@@ -1353,6 +1371,9 @@ function fillTeamDetail(){
 
   const isOwner = !!teamInfo.is_owner;
 
+  $('#team-name-label').textContent = teamInfo.name || ('Команда '+teamInfo
+  const isOwner = !!teamInfo.is_owner;
+
   $('#team-name-label').textContent = teamInfo.name || ('Команда '+teamInfo.team_id);
 
   const fullCode = teamInfo.join_code || '';
@@ -1445,524 +1466,461 @@ function renderWeekChart(){
       height: ${height}%;
       min-height: 8px;
       position: relative;
+      opacity: ${totalCount > 0 ? 1 : 0.2};
     `;
-    const label = document.createElement('div');
-    label.style.cssText = `
-      position: absolute;
-      bottom: -18px;
-      left: 0;
-      right: 0;
-      text-align: center;
-      font-size: 10px;
-      color: var(--muted);
-    `;
-    label.textContent = day.toLocaleDateString('ru-RU', { weekday: 'short' });
-    bar.appendChild(label);
+    bar.title = `${day.toLocaleDateString('ru-RU',{weekday:'short',day:'2-digit',month:'2-digit'})}: ${doneCount}/${totalCount}`;
     chart.appendChild(bar);
   }
 }
 
-/* TEAM API */
-async function loadTeamInfo(){
+/* =========================
+   CHAT
+========================= */
+
+let chatSessions = [];
+let currentChatId = null;
+
+function openChatOverlay(){
+  $('#chat-window-overlay').classList.add('active');
+}
+function closeChatOverlay(){
+  $('#chat-window-overlay').classList.remove('active');
+  currentChatId = null;
+}
+$('#close-chat').onclick = closeChatOverlay;
+
+// ✅ чтобы на телефоне overlay закрывался кликом по фону, но не ломал клики по окну
+$('#chat-window-overlay').addEventListener('click', (e)=>{
+  if (e.target === $('#chat-window-overlay')) closeChatOverlay();
+});
+
+function chatBubble(role, text){
+  const b = document.createElement('div');
+  b.className = 'bubble ' + (role === 'user' ? 'me' : 'bot');
+  b.textContent = text;
+  return b;
+}
+
+function renderChatList(){
+  const list = $('#chat-list');
+  const empty = $('#no-chats-message');
+  list.innerHTML='';
+
+  if (!chatSessions.length){
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  chatSessions.forEach(s=>{
+    const it = document.createElement('div');
+    it.className = 'chat-item';
+    it.innerHTML = `
+      <div class="chat-icon">💬</div>
+      <div class="chat-title"></div>
+      <div class="chat-date"></div>
+    `;
+    it.querySelector('.chat-title').textContent = s.title || 'Чат';
+    it.querySelector('.chat-date').textContent  = s.updated_at ? new Date(s.updated_at).toLocaleDateString('ru-RU') : '';
+
+    // ✅ FIX: делаем нормальный тап/клик по мобилке
+    it.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      openChatSession(s.id);
+    }, { passive: true });
+
+    // ✅ long-press на мобилке — удаление (не блокирует обычный клик)
+    let pressTimer = null;
+    let moved = false;
+
+    const startPress = () => {
+      moved = false;
+      clearTimeout(pressTimer);
+      pressTimer = setTimeout(()=>{
+        if (moved) return;
+        askDeleteChat(s.id, s.title || 'Чат');
+      }, 650);
+    };
+    const cancelPress = () => clearTimeout(pressTimer);
+
+    it.addEventListener('touchstart', startPress, { passive: true });
+    it.addEventListener('touchmove',  ()=>{ moved = true; }, { passive: true });
+    it.addEventListener('touchend',   cancelPress, { passive: true });
+    it.addEventListener('touchcancel',cancelPress, { passive: true });
+
+    list.appendChild(it);
+  });
+
+  // new chat tile
+  const newTile = document.createElement('div');
+  newTile.className='chat-item new';
+  newTile.innerHTML = `<div class="chat-icon">＋</div><div class="chat-title">Новый чат</div><div class="chat-date">создать</div>`;
+  newTile.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    openNewChatModal();
+  }, { passive: true });
+  list.appendChild(newTile);
+}
+
+async function loadChatsFromServer(){
   try{
-    const listResp = await api('/api/team/list','GET');
-    const teams = listResp.teams || [];
-
-    teamList = teams.map(t => ({
-      team_id: t.id,
-      name: t.name,
-      join_code: t.join_code,
-      is_owner: !!t.is_owner,
-      members: []
+    const r = await api('/api/chats','GET');
+    chatSessions = (r.items || []).map(x=>({
+      ...x,
+      id: Number(x.id),
     }));
-
-    if (!teamList.length) {
-      teamInfo = null;
-      teamDetailOpen = false;
-      teamMembersOpen = false;
-      renderTeamList();
-      syncQuickTeamChip();
-      return;
-    }
-
-    if (!teamInfo || !teamList.some(x => x.team_id === teamInfo.team_id)) {
-      teamInfo = teamList[0];
-    } else {
-      const found = teamList.find(x => x.team_id === teamInfo.team_id);
-      if (found) teamInfo = found;
-    }
-
-    try{
-      const r = await api('/api/team/members?team_id='+encodeURIComponent(teamInfo.team_id),'GET');
-      teamInfo.members = r.members || r.items || [];
-    }catch(e){
-      console.log('members error', e);
-      teamInfo.members = [];
-    }
-
-    renderTeamList();
-    if (teamDetailOpen) fillTeamDetail();
-    syncQuickTeamChip();
   }catch(e){
-    console.log('loadTeamInfo error', e);
-    teamList = [];
-    teamInfo = null;
-    teamDetailOpen = false;
-    teamMembersOpen = false;
-    renderTeamList();
-    syncQuickTeamChip();
+    chatSessions = [];
+  }
+  renderChatList();
+}
+
+function openNewChatModal(){
+  $('#new-chat-title').value = '';
+  $('#new-chat-modal').classList.add('active');
+  setTimeout(()=>$('#new-chat-title').focus(), 0);
+}
+function closeNewChatModal(){
+  $('#new-chat-modal').classList.remove('active');
+}
+$('#cancel-new-chat').onclick = closeNewChatModal;
+
+$('#create-first-chat').onclick = openNewChatModal;
+
+$('#confirm-new-chat').onclick = async ()=>{
+  const title = $('#new-chat-title').value.trim() || 'Новый чат';
+  closeNewChatModal();
+  try{
+    const r = await api('/api/chats','POST',{ title });
+    const id = Number(r.id);
+    await loadChatsFromServer();
+    openChatSession(id);
+  }catch(e){
+    showToast('Не удалось создать чат');
+  }
+};
+
+async function openChatSession(chatId){
+  currentChatId = Number(chatId);
+  openChatOverlay();
+
+  const s = chatSessions.find(x=>x.id === currentChatId);
+  $('#current-chat-title').textContent = s?.title || 'Чат';
+
+  $('#chat-body').innerHTML = '';
+  $('#chat-body').appendChild(chatBubble('assistant','Загружаю историю...'));
+
+  try{
+    const r = await api('/api/chats/messages?chat_id='+encodeURIComponent(currentChatId),'GET');
+    const items = (r.items || []);
+    $('#chat-body').innerHTML = '';
+    if (!items.length){
+      $('#chat-body').appendChild(chatBubble('assistant','Привет! Чем могу помочь?'));
+    } else {
+      items.forEach(m=>{
+        const role = (m.role === 'user') ? 'user' : 'assistant';
+        $('#chat-body').appendChild(chatBubble(role, m.content));
+      });
+    }
+    $('#chat-body').scrollTop = $('#chat-body').scrollHeight;
+  }catch(e){
+    $('#chat-body').innerHTML = '';
+    $('#chat-body').appendChild(chatBubble('assistant','Не удалось загрузить историю.'));
   }
 }
 
-/* FLOATING BUTTON MANAGEMENT */
-function updateFloatingButtonVisibility() {
-  const fab = $('#team-fab-btn');
+async function askDeleteChat(chatId, title){
+  const ok = confirm(`Удалить чат "${title}"?`);
+  if (!ok) return;
+  try{
+    await api('/api/chats/delete?chat_id='+encodeURIComponent(chatId), 'POST', {});
+    if (currentChatId === chatId) closeChatOverlay();
+    await loadChatsFromServer();
+    showToast('Чат удалён');
+  }catch(e){
+    showToast('Не удалось удалить чат');
+  }
+}
+
+async function sendChatMessage(){
+  const inp = $('#chat-input');
+  const text = inp.value.trim();
+  if (!text) return;
+
+  inp.value = '';
+  const body = $('#chat-body');
+
+  body.appendChild(chatBubble('user', text));
+  body.scrollTop = body.scrollHeight;
+
+  const loading = document.createElement('div');
+  loading.className = 'bubble bot';
+  loading.innerHTML = `<span class="loading"></span>`;
+  body.appendChild(loading);
+  body.scrollTop = body.scrollHeight;
+
+  try{
+    const r = await api('/api/chat','POST',{ text, chat_id: currentChatId });
+    body.removeChild(loading);
+    body.appendChild(chatBubble('assistant', r.reply || ''));
+    body.scrollTop = body.scrollHeight;
+
+    // обновим список чатов (updated_at)
+    await loadChatsFromServer();
+  }catch(e){
+    body.removeChild(loading);
+    body.appendChild(chatBubble('assistant', 'Сейчас сервер недоступен. Попробуй ещё раз.'));
+    body.scrollTop = body.scrollHeight;
+  }
+}
+$('#chat-send').onclick = sendChatMessage;
+$('#chat-input').addEventListener('keydown',(e)=>{
+  if (e.key === 'Enter') sendChatMessage();
+});
+
+/* =========================
+   TEAMS UI + FAB
+========================= */
+
+function updateFloatingButtonVisibility(){
+  const btn = $('#team-fab-btn');
   const exportBar = $('#export-bar');
 
-  const currentScreen = Object.values(screens).find(s => s.classList.contains('active'));
-  const isPlan = currentScreen && currentScreen.id === 'screen-plan';
+  // FAB только на вкладке "План" и режиме "Команды"
+  const planActive = screens.plan.classList.contains('active');
+  const showFab = planActive && planMode === 'team';
+  btn.style.display = showFab ? 'flex' : 'none';
 
-  // Team FAB: только на экране Plan -> Команды
-  if (isPlan && planMode === 'team') {
-    fab.style.display = 'flex';
-  } else {
-    fab.style.display = 'none';
-  }
-
-  // Export bar: только на экране Plan
-  if (isPlan) {
-    exportBar.style.display = 'block';
-  } else {
-    exportBar.style.display = 'none';
-  }
+  // экспорт — только на плане (мои задачи)
+  const showExport = planActive && planMode === 'my';
+  exportBar.style.display = showExport ? 'block' : 'none';
 }
 
-/* ======================= CALENDAR EXPORT ======================= */
-async function exportTasksToCalendar(){
-  if (!tgId) return showToast('Не найден TG ID');
-  const url = `${BASE_URL}/api/calendar/feed.ics?tg_id=${encodeURIComponent(tgId)}`;
-
-  // В Telegram WebApp удобнее открыть ссылку — дальше пользователь импортирует .ics в Google/Яндекс
-  try{
-    if (window.Telegram?.WebApp?.openLink) {
-      window.Telegram.WebApp.openLink(url);
-      return;
-    }
-  }catch(_){}
-
-  // Фолбэк: скачиваем файл
-  try{
-    const r = await fetch(url, { cache:'no-store' });
-    if (!r.ok) throw new Error('HTTP '+r.status);
-    const blob = await r.blob();
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'growth-tasks.ics';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
-  }catch(e){
-    console.error(e);
-    showToast('Не удалось экспортировать');
-  }
-}
-$('#export-calendar').onclick = exportTasksToCalendar;
-
-/* TEAM UI buttons */
 $('#team-fab-btn').onclick = ()=>{
   $('#team-menu').classList.add('active');
 };
+$('#team-menu-close').onclick = ()=>{
+  $('#team-menu').classList.remove('active');
+};
+
+// close modal on outside click
+$('#team-menu').addEventListener('click',(e)=>{
+  if (e.target === $('#team-menu')) $('#team-menu').classList.remove('active');
+});
 
 $('#team-menu-create').onclick = async ()=>{
   $('#team-menu').classList.remove('active');
-  const nameInput = prompt('Введите название команды (например: Отдел продаж)');
-  const name = nameInput && nameInput.trim() ? nameInput.trim() : '';
+  const name = prompt('Название команды:');
+  if (!name) return;
   try{
-    const resp = await api('/api/team/create','POST', name ? { name } : {});
-    await loadTeamInfo();
-    if (resp.team && resp.team.id){
-      const found = teamList.find(t => t.team_id === resp.team.id);
-      if (found){
-        teamInfo = found;
-        teamDetailOpen = true;
-        teamMembersOpen = false;
-        fillTeamDetail();
-      }
-    }
+    await api('/api/teams/create', 'POST', { name });
+    await loadTeams();
     setPlanMode('team');
     showToast('Команда создана');
   }catch(e){
-    console.error(e);
     showToast('Не удалось создать команду');
   }
 };
 
 $('#team-menu-join').onclick = async ()=>{
   $('#team-menu').classList.remove('active');
-  const token = prompt('Введите код приглашения');
-  if (!token || !token.trim()) return;
+  const code = prompt('Введите код команды:');
+  if (!code) return;
   try{
-    await api('/api/team/join','POST',{ token: token.trim() });
-    await loadTeamInfo();
+    await api('/api/teams/join', 'POST', { code });
+    await loadTeams();
     setPlanMode('team');
-    showToast('Вы присоединились к команде');
+    showToast('Вы вступили в команду');
   }catch(e){
-    console.error(e);
-    showToast('Не удалось вступить в команду');
+    showToast('Не удалось вступить');
   }
-};
-
-$('#team-menu-close').onclick = ()=>{
-  $('#team-menu').classList.remove('active');
 };
 
 $('#team-back').onclick = ()=>{
   teamDetailOpen = false;
-  teamMembersOpen = false;
-  renderTeamList();
-  $('#team-detail-box').style.display='none';
+  teamInfo = null;
+  renderPlan();
 };
 
-$('#team-rename').onclick = async ()=>{
-  if (!teamInfo || !teamInfo.is_owner) return;
-  const nameInput = prompt('Новое название команды', teamInfo.name || '');
-  if (!nameInput || !nameInput.trim()) return;
-  try{
-    await api('/api/team/rename','POST',{
-      team_id: teamInfo.team_id,
-      name: nameInput.trim()
-    });
-    await loadTeamInfo();
-    teamDetailOpen = true;
-    fillTeamDetail();
-    showToast('Название обновлено');
-  }catch(e){
-    console.error(e);
-    showToast('Не удалось переименовать');
-  }
+$('#team-members-toggle').onclick = ()=>{
+  teamMembersOpen = !teamMembersOpen;
+  fillTeamDetail();
 };
 
 $('#team-code-copy').onclick = async ()=>{
-  if (!teamInfo || !teamInfo.join_code) return showToast('Код недоступен');
+  const full = teamInfo?.join_code || '';
+  if (!full) return;
   try{
-    await navigator.clipboard.writeText(teamInfo.join_code);
+    await navigator.clipboard.writeText(full);
     showToast('Код скопирован');
   }catch(e){
     showToast('Не удалось скопировать');
   }
 };
 
-$('#team-delete').onclick = async ()=>{
-  if (!teamInfo || !teamInfo.is_owner) return;
-  if (!confirm('Расформировать команду "'+(teamInfo.name||'')+'"?')) return;
+$('#team-rename').onclick = async ()=>{
+  if (!teamInfo) return;
+  const n = prompt('Новое название:', teamInfo.name || '');
+  if (!n) return;
   try{
-    await api('/api/team/delete','POST',{ team_id: teamInfo.team_id });
-    await loadTeamInfo();
-    teamDetailOpen = false;
-    showToast('Команда расформирована');
+    await api('/api/teams/rename','POST',{ team_id: teamInfo.team_id, name: n });
+    await loadTeams();
+    // обновим teamInfo ссылку
+    teamInfo = teamList.find(t=>t.team_id === teamInfo.team_id) || teamInfo;
+    fillTeamDetail();
+    showToast('Переименовано');
   }catch(e){
-    console.error(e);
+    showToast('Не удалось переименовать');
+  }
+};
+
+$('#team-delete').onclick = async ()=>{
+  if (!teamInfo) return;
+  const ok = confirm('Расформировать команду? Это удалит участников из команды (задачи останутся).');
+  if (!ok) return;
+  try{
+    await api('/api/teams/delete','POST',{ team_id: teamInfo.team_id });
+    teamDetailOpen = false;
+    teamInfo = null;
+    await loadTeams();
+    renderPlan();
+    showToast('Команда удалена');
+  }catch(e){
     showToast('Не удалось удалить');
   }
 };
 
-$('#team-members-toggle').onclick = ()=>{
-  teamMembersOpen = !teamMembersOpen;
-  $('#team-members-box').style.display = teamMembersOpen ? 'block' : 'none';
-  $('#team-members-arrow').textContent = teamMembersOpen ? '▴' : '▾';
-};
+/* =========================
+   DATA LOADERS
+========================= */
 
-/* ======================= CHAT: БД-сессии ======================= */
-let chats = [];
-let currentChatId = null;
-let currentMessages = [];
-let pendingChatTitle = null;
-
-async function loadChatsFromServer() {
-  try {
-    const data = await api('/api/chat_sessions','GET');
-    chats = data.sessions || [];
-  } catch (e) {
-    console.error('loadChatsFromServer error', e);
-    chats = [];
-  }
-  renderChatList();
-}
-
-/* Удаление чата */
-async function deleteChat(chatId, title) {
-  if (!confirm(`Удалить чат "${title}"?`)) return;
-  try {
-    await api('/api/chat_delete','POST',{ chat_id: chatId });
-    if (currentChatId === chatId) {
-      closeChat();
-    } else {
-      await loadChatsFromServer();
-    }
-    showToast('Чат удалён');
-  } catch (e) {
-    console.error('deleteChat error', e);
-    showToast('Не удалось удалить чат');
-  }
-}
-
-function renderChatList() {
-  const container = $('#chat-list');
-  container.innerHTML = '';
-
-  if (!chats.length) {
-    $('#no-chats-message').style.display = 'block';
-  } else {
-    $('#no-chats-message').style.display = 'none';
-  }
-
-  chats.forEach(chat => {
-    const chatEl = document.createElement('div');
-    chatEl.className = 'chat-item';
-    const dateStr = chat.updated_at
-      ? new Date(chat.updated_at).toLocaleDateString('ru-RU')
-      : '';
-    const title = chat.title || 'Чат';
-
-    chatEl.innerHTML = `
-      <div class="chat-icon">💬</div>
-      <div class="chat-title">${title}</div>
-      <div class="chat-date">${dateStr}</div>
-    `;
-
-    chatEl.onclick = () => {
-      if (chatEl._skipClickOnce) {
-        chatEl._skipClickOnce = false;
-        return;
-      }
-      openChat(chat.id, title);
-    };
-
-    let pressTimer = null;
-    const startPress = (ev) => {
-      ev.preventDefault();
-      if (pressTimer) clearTimeout(pressTimer);
-      pressTimer = setTimeout(() => {
-        pressTimer = null;
-        chatEl._skipClickOnce = true;
-        deleteChat(chat.id, title);
-      }, 500);
-    };
-    const cancelPress = () => {
-      if (pressTimer) {
-        clearTimeout(pressTimer);
-        pressTimer = null;
-      }
-    };
-
-    chatEl.addEventListener('touchstart', startPress);
-    chatEl.addEventListener('touchend', cancelPress);
-    chatEl.addEventListener('touchcancel', cancelPress);
-    chatEl.addEventListener('mousedown', (ev) => {
-      if (ev.button !== 0) return;
-      startPress(ev);
-    });
-    chatEl.addEventListener('mouseup', cancelPress);
-    chatEl.addEventListener('mouseleave', cancelPress);
-
-    chatEl.addEventListener('contextmenu', (ev) => {
-      ev.preventDefault();
-      chatEl._skipClickOnce = true;
-      deleteChat(chat.id, title);
-    });
-
-    container.appendChild(chatEl);
-  });
-
-  const newChatEl = document.createElement('div');
-  newChatEl.className = 'chat-item new';
-  newChatEl.innerHTML = `
-    <div class="chat-icon">+</div>
-    <div class="chat-title">Новый чат</div>
-  `;
-  newChatEl.onclick = () => $('#new-chat-modal').classList.add('active');
-  container.appendChild(newChatEl);
-}
-
-async function openChat(chatId, title) {
-  currentChatId = chatId;
-  pendingChatTitle = null;
-  $('#current-chat-title').textContent = title || 'Чат';
-  $('#chat-window-overlay').classList.add('active');
-  currentMessages = [];
-
-  try {
-    const data = await api('/api/chat_history?chat_id=' + encodeURIComponent(chatId),'GET');
-    currentMessages = (data.messages || []).map(m => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: m.content
-    }));
-  } catch (e) {
-    console.error('openChat history error', e);
-    currentMessages = [];
-  }
-
-  if (!currentMessages.length) {
-    currentMessages = [{
-      role: 'assistant',
-      content: 'Привет! Я бизнес-ассистент. Могу помочь с продажами, маркетингом, продуктом, наймом и планом задач. Что делаем?'
-    }];
-  }
-
-  renderChatMessages();
-  setTimeout(() => $('#chat-input').focus(), 50);
-}
-
-function openNewChatWindow(title) {
-  pendingChatTitle = (title || 'Новый чат').trim() || 'Новый чат';
-  currentChatId = null;
-  currentMessages = [{
-    role: 'assistant',
-    content: 'Привет! Я твой ассистент. Чем могу помочь?'
-  }];
-  $('#current-chat-title').textContent = pendingChatTitle;
-  $('#chat-window-overlay').classList.add('active');
-  renderChatMessages();
-  setTimeout(() => $('#chat-input').focus(), 50);
-}
-
-function closeChat() {
-  currentChatId = null;
-  pendingChatTitle = null;
-  currentMessages = [];
-  $('#chat-window-overlay').classList.remove('active');
-  $('#chat-body').innerHTML = '';
-  loadChatsFromServer().catch(()=>{});
-}
-
-function renderChatMessages() {
-  const container = $('#chat-body');
-  container.innerHTML = '';
-  currentMessages.forEach(msg => {
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble ' + (msg.role === 'user' ? 'me' : 'bot');
-    bubble.textContent = msg.content;
-    container.appendChild(bubble);
-  });
-  container.scrollTop = container.scrollHeight;
-}
-
-function addMessage(role, content) {
-  currentMessages.push({ role, content, timestamp: new Date().toISOString() });
-  renderChatMessages();
-}
-
-/* ✅ FIX: для телефона — таймаут + retry, и не подменяем ИИ "сбоем" */
-async function sendChatMessage() {
-  const text = $('#chat-input').value.trim();
-  if (!text) return;
-
-  if (!currentChatId && !pendingChatTitle) pendingChatTitle = 'Новый чат';
-
-  $('#chat-input').value = '';
-  addMessage('user', text);
-
-  const payload = { text };
-  if (currentChatId) payload.chat_id = currentChatId;
-  if (!currentChatId && pendingChatTitle) payload.chat_title = pendingChatTitle;
-
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      const r = await api('/api/chat', 'POST', payload, { timeoutMs: 20000 });
-
-      const replyText = (r.reply || '').trim() || 'Ок. Что дальше?';
-      addMessage('assistant', replyText);
-
-      if (r.chat_id && !currentChatId) currentChatId = r.chat_id;
-
-      loadChatsFromServer().catch(()=>{});
-      return;
-    } catch (e) {
-      console.error('sendChatMessage attempt', attempt, e);
-      if (attempt === 1) {
-        await new Promise(res => setTimeout(res, 600));
-        continue;
-      }
-      showToast('Не удалось подключиться к серверу');
-      addMessage('assistant', 'Похоже, связь с сервером на телефоне временно пропала. Попробуй отправить ещё раз через несколько секунд.');
-      return;
-    }
-  }
-}
-
-/* CHAT handlers */
-$('#close-chat').onclick = closeChat;
-$('#create-first-chat').onclick = () => { $('#new-chat-modal').classList.add('active'); };
-$('#cancel-new-chat').onclick = () => {
-  $('#new-chat-modal').classList.remove('active');
-  $('#new-chat-title').value = '';
-};
-$('#confirm-new-chat').onclick = async () => {
-  const title = ($('#new-chat-title').value.trim() || 'Новый чат').slice(0,80) || 'Новый чат';
-  $('#new-chat-modal').classList.remove('active');
-  $('#new-chat-title').value = '';
-
+async function loadFocus(){
   try{
-    // ✅ создаём пустую сессию сразу, чтобы чат появился в списке
-    const r = await api('/api/chat_sessions','POST',{ title });
-    await loadChatsFromServer();
-    const sid = r?.session?.id;
-    if (sid) {
-      await openChat(sid, title);
-    } else {
-      openNewChatWindow(title); // fallback
-    }
-    showToast('Чат создан');
-  }catch(e){
-    console.error('create chat session error', e);
-    // офлайн-фолбэк: откроем локально, появится после первой отправки
-    openNewChatWindow(title);
-    showToast('Чат создан (локально)');
-  }
-};
-$('#chat-send').onclick = sendChatMessage;
-$('#chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChatMessage(); });
-$('#new-chat-modal').onclick = (e) => { if (e.target === $('#new-chat-modal')) $('#new-chat-modal').classList.remove('active'); };
-$('#chat-window-overlay').onclick = (e) => { if (e.target === $('#chat-window-overlay')) closeChat(); };
-
-/* profile */
-$$('.lang-btn').forEach(btn => {
-  btn.onclick = () => {
-    $$('.lang-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const map = {ru:'Русский', en:'English'};
-    showToast(`Язык изменен на ${map[btn.dataset.lang] || btn.textContent}`);
-  };
-});
-$('#btn-tariff').onclick = () => showToast('Раздел "Тарифы" в разработке');
-$('#btn-help').onclick   = () => showToast('Раздел "Помощь" в разработке');
-$('#btn-guide').onclick  = () => showToast('Раздел "Как пользоваться" в разработке');
-$('#btn-consult').onclick= () => showToast('Раздел "Консультация" в разработке');
-
-/* init */
-async function loadAll(){
-  try{
-    const f = await api('/api/focus','GET');
-    focus = f.focus || null;
+    const r = await api('/api/focus','GET');
+    focus = r.focus || null;
   }catch(e){
     focus = null;
   }
+  focusEditing = false;
   renderFocus();
+}
 
+async function loadTasks(){
   try{
-    const t = await api('/api/tasks','GET');
-    tasks = t.items || [];
+    const r = await api('/api/tasks','GET');
+    tasks = (r.items || []).map(normalizeTaskRow);
   }catch(e){
     tasks = [];
   }
-
-  await loadTeamInfo();
   renderHome();
   renderPlan();
   renderStats();
+}
+
+async function loadTeams(){
+  try{
+    const r = await api('/api/teams','GET');
+    teamList = (r.items || []).map(x=>({
+      ...x,
+      team_id: Number(x.team_id),
+      is_owner: !!x.is_owner,
+      members: (x.members || []),
+    }));
+
+    // важное: если teamInfo открыт — пересвяжем объект
+    if (teamInfo){
+      const same = teamList.find(t=>t.team_id === teamInfo.team_id);
+      if (same) teamInfo = same;
+    }
+  }catch(e){
+    teamList = [];
+  }
+  syncQuickTeamChip();
+  updateQuickTeamVisibility();
+  renderPlan();
+}
+
+async function loadAll(){
+  await Promise.allSettled([loadFocus(), loadTasks(), loadTeams()]);
   updateFloatingButtonVisibility();
 }
+
+/* =========================
+   EXPORT TO CALENDAR (.ics)
+========================= */
+
+function toICSDate(ms){
+  const d = new Date(ms);
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
+}
+
+function exportICS(){
+  const mine = tasks.filter(t => !t.team_id && !t.is_done && t.due_ts != null);
+  if (!mine.length){
+    showToast('Нет задач со сроком');
+    return;
+  }
+
+  const lines = [];
+  lines.push('BEGIN:VCALENDAR');
+  lines.push('VERSION:2.0');
+  lines.push('PRODID:-//Growth Assistant//Tasks//RU');
+  lines.push('CALSCALE:GREGORIAN');
+
+  mine.slice(0, 200).forEach(t=>{
+    const due = normalizeDue(t.due_ts);
+    if (!due) return;
+    const uid = `task-${t.id}@growth-assistant`;
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:${uid}`);
+    lines.push(`DTSTAMP:${toICSDate(Date.now())}`);
+    lines.push(`DTSTART:${toICSDate(due)}`);
+    lines.push(`DTEND:${toICSDate(due + 30*60*1000)}`);
+    const summary = (t.title || '').replace(/\n/g,' ').replace(/,/g,'\\,').slice(0, 120);
+    lines.push(`SUMMARY:${summary}`);
+    lines.push('END:VEVENT');
+  });
+
+  lines.push('END:VCALENDAR');
+
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'tasks.ics';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast('Файл .ics скачан');
+}
+
+$('#export-calendar').onclick = exportICS;
+
+/* =========================
+   PROFILE UI (простые демо-кнопки)
+========================= */
+$('#btn-help').onclick = ()=>alert('Напиши в поддержку: @your_support');
+$('#btn-guide').onclick = ()=>alert('Главная → Фокус и быстрые задачи. План → фильтры и команды. Чат → ассистент. Статистика → прогресс.');
+$('#btn-consult').onclick = ()=>alert('Консультация: оставь контакт в чате с админом.');
+
+$$('.lang-btn').forEach(b=>{
+  b.onclick = ()=>{
+    $$('.lang-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    showToast('Язык: '+(b.dataset.lang==='ru'?'Русский':'English'));
+  };
+});
+
+/* init */
+window.addEventListener('focus', ()=>{
+  // при возврате в приложение обновим данные
+  loadTasks();
+  loadTeams();
+});
+
 loadAll();
 
 /* sync profile to backend */
