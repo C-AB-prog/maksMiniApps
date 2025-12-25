@@ -1,48 +1,69 @@
-// api/_db.js
-const { Pool } = require("pg");
+// api/_db.js (ESM)
+// Единый модуль работы с БД для всех /api/*
+//
+// В проекте много роутов импортируют { q, ensureSchema, pool }.
+// Раньше этот файл был в формате CommonJS и экспортировал только query(),
+// из-за чего q был undefined → list/chat_sessions/tasks падали и фронт
+// видел пустые списки, а /api/chat отвечал "Сейчас сервер БД недоступен...".
+
+import pg from 'pg';
+
+const { Pool } = pg;
 
 let _pool;
 
-/**
- * Берём connection string из переменных окружения:
- * - DATABASE_URL (стандарт для Vercel/Neon)
- * - POSTGRES_URL (иногда используют так)
- */
-function getPool() {
+function pickConnectionString() {
+  // На Vercel + Neon/POSTGRES integration корректнее предпочесть pooled URL.
+  // Если POSTGRES_URL не задан — используем DATABASE_URL/другие фолбэки.
+  return (
+    process.env.POSTGRES_URL ||
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.POSTGRES_CONNECTION_STRING ||
+    process.env.MANUAL_POSTGRES_URL
+  );
+}
+
+export function getPool() {
   if (_pool) return _pool;
 
-  const connectionString =
-    process.env.DATABASE_URL ||
-    process.env.POSTGRES_URL ||
-    process.env.POSTGRES_CONNECTION_STRING;
-
+  const connectionString = pickConnectionString();
   if (!connectionString) {
     throw new Error(
-      "Missing DATABASE_URL/POSTGRES_URL env var. Set it in Vercel project settings."
+      'Missing DB connection string. Set POSTGRES_URL (preferred) or DATABASE_URL in Vercel env.'
     );
   }
 
   _pool = new Pool({
     connectionString,
+    // Neon/Vercel требуют SSL. rejectUnauthorized=false — стандартный вариант для serverless.
     ssl: { rejectUnauthorized: false },
+    // В serverless лучше держать мало коннектов.
+    max: 5,
+    idleTimeoutMillis: 10_000,
+    connectionTimeoutMillis: 10_000,
   });
 
   return _pool;
 }
 
-async function query(text, params) {
-  const pool = getPool();
+// Публичные экспорты, которые ждут роуты
+export const pool = getPool();
+
+export async function q(text, params = []) {
   return pool.query(text, params);
 }
 
+// Алиас для старых мест, если где-то ещё используется query()
+export const query = q;
+
 /**
  * Создаёт/обновляет схему БД (idempotent).
- * Важно: если у тебя уже есть дамп с DROP TABLE — просто накати дамп.
- * Но эта функция должна быть безопасной и совместимой с текущими изменениями.
+ * Важно: функция вызывается из многих роутов.
  */
-async function ensureSchema() {
+export async function ensureSchema() {
   // USERS
-  await query(`
+  await q(`
     CREATE TABLE IF NOT EXISTS users (
       id         BIGSERIAL PRIMARY KEY,
       tg_id      BIGINT UNIQUE NOT NULL,
@@ -54,7 +75,7 @@ async function ensureSchema() {
   `);
 
   // FOCUSES
-  await query(`
+  await q(`
     CREATE TABLE IF NOT EXISTS focuses (
       id         BIGSERIAL PRIMARY KEY,
       user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -62,11 +83,10 @@ async function ensureSchema() {
       created_at TIMESTAMPTZ DEFAULT now()
     );
   `);
-
-  await query(`CREATE INDEX IF NOT EXISTS idx_focuses_user ON focuses(user_id);`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_focuses_user ON focuses(user_id);`);
 
   // TEAMS
-  await query(`
+  await q(`
     CREATE TABLE IF NOT EXISTS teams (
       id                 BIGSERIAL PRIMARY KEY,
       name               TEXT NOT NULL,
@@ -77,7 +97,7 @@ async function ensureSchema() {
   `);
 
   // FK for teams.creator
-  await query(`
+  await q(`
     DO $$
     BEGIN
       IF NOT EXISTS (
@@ -85,18 +105,18 @@ async function ensureSchema() {
         FROM information_schema.table_constraints tc
         WHERE tc.constraint_type = 'FOREIGN KEY'
           AND tc.table_name = 'teams'
-          AND tc.constraint_name = 'fk_teams_creator'
+          AND tc.constraint_name = 'fk_teams_created_by'
       ) THEN
         ALTER TABLE teams
-          ADD CONSTRAINT fk_teams_creator
+          ADD CONSTRAINT fk_teams_created_by
           FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL;
       END IF;
     END $$;
   `);
+  await q(`CREATE INDEX IF NOT EXISTS idx_teams_created_by ON teams(created_by_user_id);`);
 
-  await query(`CREATE INDEX IF NOT EXISTS idx_teams_created_by ON teams(created_by_user_id);`);
-
-  await query(`
+  // TEAM MEMBERS
+  await q(`
     CREATE TABLE IF NOT EXISTS team_members (
       team_id   BIGINT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
       user_id   BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -104,11 +124,10 @@ async function ensureSchema() {
       PRIMARY KEY (team_id, user_id)
     );
   `);
-
-  await query(`CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id);`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id);`);
 
   // TASKS
-  await query(`
+  await q(`
     CREATE TABLE IF NOT EXISTS tasks (
       id                  BIGSERIAL PRIMARY KEY,
       user_id             BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -122,7 +141,7 @@ async function ensureSchema() {
   `);
 
   // FK tasks.team_id
-  await query(`
+  await q(`
     DO $$
     BEGIN
       IF NOT EXISTS (
@@ -140,7 +159,7 @@ async function ensureSchema() {
   `);
 
   // FK tasks.assigned_to_user_id
-  await query(`
+  await q(`
     DO $$
     BEGIN
       IF NOT EXISTS (
@@ -148,24 +167,23 @@ async function ensureSchema() {
         FROM information_schema.table_constraints tc
         WHERE tc.constraint_type = 'FOREIGN KEY'
           AND tc.table_name = 'tasks'
-          AND tc.constraint_name = 'fk_tasks_assignee'
+          AND tc.constraint_name = 'fk_tasks_assigned_to'
       ) THEN
         ALTER TABLE tasks
-          ADD CONSTRAINT fk_tasks_assignee
+          ADD CONSTRAINT fk_tasks_assigned_to
           FOREIGN KEY (assigned_to_user_id) REFERENCES users(id) ON DELETE SET NULL;
       END IF;
     END $$;
   `);
 
-  // Indices
-  await query(`CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id);`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_tasks_due_ts ON tasks(due_ts);`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_tasks_due_active ON tasks(due_ts) WHERE is_done = false;`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_tasks_team ON tasks(team_id);`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON tasks(assigned_to_user_id);`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id);`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_tasks_due_ts ON tasks(due_ts);`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_tasks_due_active ON tasks(due_ts) WHERE is_done = false;`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_tasks_team ON tasks(team_id);`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON tasks(assigned_to_user_id);`);
 
   // TASK NOTIFICATIONS
-  await query(`
+  await q(`
     CREATE TABLE IF NOT EXISTS task_notifications (
       task_id          BIGINT PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
       sent_due_warning BOOLEAN NOT NULL DEFAULT false,
@@ -175,7 +193,7 @@ async function ensureSchema() {
   `);
 
   // CHATS
-  await query(`
+  await q(`
     CREATE TABLE IF NOT EXISTS chat_sessions (
       id         BIGSERIAL PRIMARY KEY,
       user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -184,11 +202,10 @@ async function ensureSchema() {
       updated_at TIMESTAMPTZ DEFAULT now()
     );
   `);
+  await q(`CREATE INDEX IF NOT EXISTS idx_chat_sessions_user ON chat_sessions(user_id);`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_chat_sessions_user_updated ON chat_sessions(user_id, updated_at DESC);`);
 
-  await query(`CREATE INDEX IF NOT EXISTS idx_chat_sessions_user ON chat_sessions(user_id);`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_chat_sessions_user_updated ON chat_sessions(user_id, updated_at DESC);`);
-
-  await query(`
+  await q(`
     CREATE TABLE IF NOT EXISTS chat_messages (
       id         BIGSERIAL PRIMARY KEY,
       chat_id    BIGINT NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
@@ -197,31 +214,28 @@ async function ensureSchema() {
       created_at TIMESTAMPTZ DEFAULT now()
     );
   `);
-
-  await query(`CREATE INDEX IF NOT EXISTS idx_chat_messages_chat ON chat_messages(chat_id, created_at);`);
+  await q(`CREATE INDEX IF NOT EXISTS idx_chat_messages_chat ON chat_messages(chat_id, created_at);`);
 }
 
-async function getOrCreateUserByTg(tgUser) {
-  if (!tgUser || !tgUser.id) {
-    throw new Error("Missing tg user data (tgUser.id).");
-  }
+// Утилиты, которые используют некоторые роуты/бот
+export async function getOrCreateUserByTg(tgUser) {
+  if (!tgUser || !tgUser.id) throw new Error('Missing tg user data (tgUser.id).');
 
   const tg_id = Number(tgUser.id);
   const username = tgUser.username || null;
   const first_name = tgUser.first_name || null;
   const last_name = tgUser.last_name || null;
 
-  const existing = await query(`SELECT * FROM users WHERE tg_id = $1`, [tg_id]);
+  const existing = await q(`SELECT * FROM users WHERE tg_id = $1`, [tg_id]);
   if (existing.rows.length) {
-    // update basic fields (optional, but helpful)
-    await query(
+    await q(
       `UPDATE users SET username=$2, first_name=$3, last_name=$4 WHERE tg_id=$1`,
       [tg_id, username, first_name, last_name]
     );
     return existing.rows[0];
   }
 
-  const created = await query(
+  const created = await q(
     `INSERT INTO users (tg_id, username, first_name, last_name)
      VALUES ($1,$2,$3,$4)
      RETURNING *`,
@@ -231,21 +245,14 @@ async function getOrCreateUserByTg(tgUser) {
   return created.rows[0];
 }
 
-async function getOrCreateUserIdByTgId(tg_id) {
+export async function getOrCreateUserIdByTgId(tg_id) {
   const tgIdNum = Number(tg_id);
-  const res = await query(`SELECT id FROM users WHERE tg_id=$1`, [tgIdNum]);
-  if (res.rows.length) return res.rows[0].id;
+  const res = await q(`SELECT id FROM users WHERE tg_id=$1`, [tgIdNum]);
+  if (res.rows.length) return Number(res.rows[0].id);
 
-  const created = await query(
+  const created = await q(
     `INSERT INTO users (tg_id) VALUES ($1) RETURNING id`,
     [tgIdNum]
   );
-  return created.rows[0].id;
+  return Number(created.rows[0].id);
 }
-
-module.exports = {
-  query,
-  ensureSchema,
-  getOrCreateUserByTg,
-  getOrCreateUserIdByTgId,
-};
