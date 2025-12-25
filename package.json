@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "description": "Growth Assistant mini-app (Vercel + Neon)",
+  "type": "module",
   "main": "index.html",
   "scripts": {
     "start": "node server.js"
