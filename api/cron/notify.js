@@ -1,19 +1,19 @@
-// api/cron/notify.js
-const { ensureSchema, query } = require("../_db");
+// api/cron/notify.js (ESM)
+import { ensureSchema, q } from '../_db.js';
 
 async function tgSendMessage(chatId, text) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  if (!token) throw new Error("Missing TELEGRAM_BOT_TOKEN");
+  if (!token) throw new Error('Missing TELEGRAM_BOT_TOKEN');
 
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
 
   const resp = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       chat_id: chatId,
       text,
-      parse_mode: "HTML",
+      parse_mode: 'HTML',
       disable_web_page_preview: true,
     }),
   });
@@ -24,30 +24,28 @@ async function tgSendMessage(chatId, text) {
 }
 
 async function getLatestFocusText(user_id) {
-  const f = await query(
+  const f = await q(
     `SELECT text FROM focuses WHERE user_id=$1 ORDER BY id DESC LIMIT 1`,
     [user_id]
   );
-  return f.rows[0]?.text || "";
+  return f.rows[0]?.text || '';
 }
 
 function formatDueTs(due_ts) {
-  if (!due_ts) return "";
+  if (!due_ts) return '';
   const d = new Date(Number(due_ts));
-  return d.toLocaleString("ru-RU");
+  return d.toLocaleString('ru-RU');
 }
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
     await ensureSchema();
 
-    // allow GET/POST for cron pings
     const nowMs = Date.now();
-
-    // Find tasks to warn: due in next 60 minutes and not sent warning
     const warnWindowMs = 60 * 60 * 1000;
 
-    const warnTasks = await query(
+    // due in next 60 minutes
+    const warnTasks = await q(
       `
       SELECT t.id, t.title, t.due_ts, t.user_id, t.assigned_to_user_id
       FROM tasks t
@@ -63,8 +61,8 @@ module.exports = async (req, res) => {
       [nowMs + warnWindowMs, nowMs]
     );
 
-    // Find tasks overdue: due_ts < now and not sent overdue
-    const overdueTasks = await query(
+    // overdue
+    const overdueTasks = await q(
       `
       SELECT t.id, t.title, t.due_ts, t.user_id, t.assigned_to_user_id
       FROM tasks t
@@ -79,17 +77,15 @@ module.exports = async (req, res) => {
       [nowMs]
     );
 
-    // helper: send to tg_id of a user_id
     async function sendToUser(user_id, text) {
-      // Here we assume telegram chat_id == tg_id (common for direct bot chats)
-      const u = await query(`SELECT tg_id FROM users WHERE id=$1`, [user_id]);
+      // В личных чатах bot обычно шлёт в tg_id
+      const u = await q(`SELECT tg_id FROM users WHERE id=$1`, [user_id]);
       const tg_id = u.rows[0]?.tg_id;
       if (!tg_id) return false;
 
       const focus = await getLatestFocusText(user_id);
       const fullText =
-        text +
-        (focus ? `\n\n<b>Твой фокус:</b> ${focus}` : "\n\n<b>Фокус:</b> (не задан)");
+        text + (focus ? `\n\n<b>Твой фокус:</b> ${focus}` : '\n\n<b>Фокус:</b> (не задан)');
 
       await tgSendMessage(tg_id, fullText);
       return true;
@@ -97,7 +93,6 @@ module.exports = async (req, res) => {
 
     let sent = 0;
 
-    // Process warnings
     for (const t of warnTasks.rows) {
       const receiverUserId = t.assigned_to_user_id || t.user_id;
 
@@ -109,8 +104,7 @@ module.exports = async (req, res) => {
 
       const ok = await sendToUser(receiverUserId, msg);
 
-      // mark notification
-      await query(
+      await q(
         `
         INSERT INTO task_notifications (task_id, sent_due_warning, sent_overdue, updated_at)
         VALUES ($1, true, false, now())
@@ -124,7 +118,6 @@ module.exports = async (req, res) => {
       if (ok) sent += 1;
     }
 
-    // Process overdue
     for (const t of overdueTasks.rows) {
       const receiverUserId = t.assigned_to_user_id || t.user_id;
 
@@ -136,7 +129,7 @@ module.exports = async (req, res) => {
 
       const ok = await sendToUser(receiverUserId, msg);
 
-      await query(
+      await q(
         `
         INSERT INTO task_notifications (task_id, sent_due_warning, sent_overdue, updated_at)
         VALUES ($1, false, true, now())
@@ -157,7 +150,7 @@ module.exports = async (req, res) => {
       overdue_count: overdueTasks.rows.length,
     });
   } catch (e) {
-    console.error("cron/notify error:", e);
-    return res.status(500).json({ ok: false, error: e?.message || "Server error" });
+    console.error('cron/notify error:', e);
+    return res.status(500).json({ ok: false, error: e?.message || 'Server error' });
   }
-};
+}
