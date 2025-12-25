@@ -1,156 +1,106 @@
-// api/cron/notify.js (ESM)
-import { ensureSchema, q } from '../_db.js';
+// api/cron/notify.js
+const { ensureSchema, query } = require("../_db");
+const { buildDigestText } = require("../notify/_digest");
 
 async function tgSendMessage(chatId, text) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  if (!token) throw new Error('Missing TELEGRAM_BOT_TOKEN');
+  const token =
+    process.env.TELEGRAM_BOT_TOKEN ||
+    process.env.BOT_TOKEN ||
+    process.env.TG_BOT_TOKEN ||
+    process.env.TELEGRAM_TOKEN;
+
+  if (!token) throw new Error("Missing TELEGRAM_BOT_TOKEN (or BOT_TOKEN)");
 
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
 
   const resp = await fetch(url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    method: "POST",
+    headers: { "content-type": "application/json" },
     body: JSON.stringify({
       chat_id: chatId,
       text,
-      parse_mode: 'HTML',
+      parse_mode: "HTML",
       disable_web_page_preview: true,
     }),
   });
 
-  const data = await resp.json();
-  if (!data.ok) throw new Error(`Telegram sendMessage failed: ${data.description}`);
+  const data = await resp.json().catch(() => ({}));
+  if (!data.ok) throw new Error(`Telegram sendMessage failed: ${data.description || "unknown"}`);
   return data;
 }
 
-async function getLatestFocusText(user_id) {
-  const f = await q(
-    `SELECT text FROM focuses WHERE user_id=$1 ORDER BY id DESC LIMIT 1`,
-    [user_id]
-  );
-  return f.rows[0]?.text || '';
-}
-
-function formatDueTs(due_ts) {
-  if (!due_ts) return '';
-  const d = new Date(Number(due_ts));
-  return d.toLocaleString('ru-RU');
-}
-
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   try {
     await ensureSchema();
 
+    // Protect cron endpoint (recommended)
+    const cronSecret = process.env.CRON_SECRET;
+    if (cronSecret) {
+      const auth = String(req.headers.authorization || "").trim();
+      const qSecret = (req.query && req.query.secret) ? String(req.query.secret) : "";
+      if (auth !== ("Bearer " + cronSecret) && qSecret !== cronSecret) {
+        return res.status(401).json({ ok: false, error: "unauthorized" });
+      }
+    }
+
     const nowMs = Date.now();
-    const warnWindowMs = 60 * 60 * 1000;
 
-    // due in next 60 minutes
-    const warnTasks = await q(
+    // Digest notifications (focus + today tasks + overdue) —
+    // send at slots: start_hour + N*interval_hours, only in first 10 minutes of that hour.
+    const prefs = await query(
       `
-      SELECT t.id, t.title, t.due_ts, t.user_id, t.assigned_to_user_id
-      FROM tasks t
-      LEFT JOIN task_notifications n ON n.task_id = t.id
-      WHERE t.is_done = false
-        AND t.due_ts IS NOT NULL
-        AND t.due_ts <= $1
-        AND t.due_ts >= $2
-        AND COALESCE(n.sent_due_warning, false) = false
-      ORDER BY t.due_ts ASC
-      LIMIT 200
-      `,
-      [nowMs + warnWindowMs, nowMs]
+      SELECT p.user_id, p.interval_hours, p.start_hour, p.end_hour, p.tz_offset_min, p.last_sent_at, u.tg_id
+      FROM notification_prefs p
+      JOIN users u ON u.id = p.user_id
+      WHERE p.enabled = true
+      `
     );
 
-    // overdue
-    const overdueTasks = await q(
-      `
-      SELECT t.id, t.title, t.due_ts, t.user_id, t.assigned_to_user_id
-      FROM tasks t
-      LEFT JOIN task_notifications n ON n.task_id = t.id
-      WHERE t.is_done = false
-        AND t.due_ts IS NOT NULL
-        AND t.due_ts < $1
-        AND COALESCE(n.sent_overdue, false) = false
-      ORDER BY t.due_ts ASC
-      LIMIT 200
-      `,
-      [nowMs]
-    );
+    let digest_sent = 0;
 
-    async function sendToUser(user_id, text) {
-      // В личных чатах bot обычно шлёт в tg_id
-      const u = await q(`SELECT tg_id FROM users WHERE id=$1`, [user_id]);
-      const tg_id = u.rows[0]?.tg_id;
-      if (!tg_id) return false;
+    for (const p of prefs.rows) {
+      const interval = Number(p.interval_hours || 4);
+      const startH = Number(p.start_hour || 9);
+      const endH = Number(p.end_hour || 21);
+      const offset = Number(p.tz_offset_min || 0);
 
-      const focus = await getLatestFocusText(user_id);
-      const fullText =
-        text + (focus ? `\n\n<b>Твой фокус:</b> ${focus}` : '\n\n<b>Фокус:</b> (не задан)');
+      // tz_offset_min is JS getTimezoneOffset (minutes): e.g. Moscow = -180
+      const localMs = nowMs - offset * 60000;
+      const d = new Date(localMs);
+      const h = d.getUTCHours();
+      const m = d.getUTCMinutes();
 
-      await tgSendMessage(tg_id, fullText);
-      return true;
-    }
+      if (h < startH || h > endH) continue;
+      const mod = ((h - startH) % interval + interval) % interval;
+      if (mod !== 0 || m > 10) continue;
 
-    let sent = 0;
+      // already sent for this slot recently
+      if (p.last_sent_at) {
+        const lastMs = new Date(p.last_sent_at).getTime();
+        if (nowMs - lastMs < interval * 3600000 - 600000) continue;
+      }
 
-    for (const t of warnTasks.rows) {
-      const receiverUserId = t.assigned_to_user_id || t.user_id;
+      if (!p.tg_id) continue;
 
-      const msg =
-        `⏰ <b>Скоро дедлайн</b>\n` +
-        `Задача: <b>${t.title}</b>\n` +
-        `Дедлайн: ${formatDueTs(t.due_ts)}\n` +
-        `\nНапиши мне сюда, если нужно: разбить на шаги / приоритезировать / сделать план.`;
+      const text = await buildDigestText({
+        query,
+        userId: p.user_id,
+        tzOffsetMin: offset,
+        nowMs,
+      });
 
-      const ok = await sendToUser(receiverUserId, msg);
-
-      await q(
-        `
-        INSERT INTO task_notifications (task_id, sent_due_warning, sent_overdue, updated_at)
-        VALUES ($1, true, false, now())
-        ON CONFLICT (task_id) DO UPDATE
-          SET sent_due_warning = true,
-              updated_at = now()
-        `,
-        [t.id]
+      await tgSendMessage(p.tg_id, text);
+      await query(
+        `UPDATE notification_prefs SET last_sent_at = now(), updated_at = now() WHERE user_id = $1`,
+        [p.user_id]
       );
 
-      if (ok) sent += 1;
+      digest_sent += 1;
     }
 
-    for (const t of overdueTasks.rows) {
-      const receiverUserId = t.assigned_to_user_id || t.user_id;
-
-      const msg =
-        `🔥 <b>Просрочено</b>\n` +
-        `Задача: <b>${t.title}</b>\n` +
-        `Дедлайн был: ${formatDueTs(t.due_ts)}\n` +
-        `\nХочешь — помогу: что делегировать, что выкинуть, как закрыть быстро.`;
-
-      const ok = await sendToUser(receiverUserId, msg);
-
-      await q(
-        `
-        INSERT INTO task_notifications (task_id, sent_due_warning, sent_overdue, updated_at)
-        VALUES ($1, false, true, now())
-        ON CONFLICT (task_id) DO UPDATE
-          SET sent_overdue = true,
-              updated_at = now()
-        `,
-        [t.id]
-      );
-
-      if (ok) sent += 1;
-    }
-
-    return res.status(200).json({
-      ok: true,
-      sent,
-      warn_count: warnTasks.rows.length,
-      overdue_count: overdueTasks.rows.length,
-    });
+    return res.status(200).json({ ok: true, digest_sent });
   } catch (e) {
-    console.error('cron/notify error:', e);
-    return res.status(500).json({ ok: false, error: e?.message || 'Server error' });
+    console.error("cron/notify error:", e);
+    return res.status(500).json({ ok: false, error: e?.message || "Server error" });
   }
-}
+};
