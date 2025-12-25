@@ -408,6 +408,16 @@ label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
 .lang-btn:active { transform: scale(0.95); }
 .lang-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);}
 
+  /* Notification switch */
+  .notify-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 12px;}
+  .switch{position:relative;display:inline-block;width:52px;height:30px;flex-shrink:0;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#e5e7eb;transition:.2s;border-radius:999px;}
+  .slider:before{position:absolute;content:"";height:24px;width:24px;left:3px;top:3px;background:#fff;transition:.2s;border-radius:999px;box-shadow:0 4px 12px rgba(0,0,0,.15);}
+  .switch input:checked + .slider{background:linear-gradient(135deg,var(--brand),var(--brand-2));}
+  .switch input:checked + .slider:before{transform:translateX(22px);}
+
+
 /* PLAN UI */
 .plan-top{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .plan-mode{display:flex;gap:6px}
@@ -724,6 +734,55 @@ input, textarea{ -webkit-user-select:text; user-select:text; touch-action:auto; 
       </div>
 
       <div class="profile-section">
+        <h4>Уведомления</h4>
+        <div class="notify-row">
+          <div>
+            <div style="font-weight:600">Фокус + задачи (каждые 4 часа)</div>
+            <div class="muted" style="margin-top:4px">Приходит в Telegram сообщением от бота</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="notify-enabled">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <button class="btn secondary" id="notify-send-now" style="margin-top:8px;width:100%">Отправить сейчас</button>
+
+        <div id="notify-settings-box" style="display:none">
+          <label>Первое уведомление (по твоему времени)</label>
+          <select id="notify-start-hour" class="input" style="margin-top:6px">
+                        <option value="0">00:00</option>
+            <option value="1">01:00</option>
+            <option value="2">02:00</option>
+            <option value="3">03:00</option>
+            <option value="4">04:00</option>
+            <option value="5">05:00</option>
+            <option value="6">06:00</option>
+            <option value="7">07:00</option>
+            <option value="8">08:00</option>
+            <option value="9">09:00</option>
+            <option value="10">10:00</option>
+            <option value="11">11:00</option>
+            <option value="12">12:00</option>
+            <option value="13">13:00</option>
+            <option value="14">14:00</option>
+            <option value="15">15:00</option>
+            <option value="16">16:00</option>
+            <option value="17">17:00</option>
+            <option value="18">18:00</option>
+            <option value="19">19:00</option>
+            <option value="20">20:00</option>
+            <option value="21">21:00</option>
+            <option value="22">22:00</option>
+            <option value="23">23:00</option>
+          </select>
+
+          <button class="btn" id="notify-save" style="margin-top:10px;width:100%">Сохранить</button>
+          <div class="muted" style="margin-top:10px;font-size:12px;line-height:1.35">Чтобы уведомления могли приходить, открой чат с ботом и нажми <span class="mono">/start</span> хотя бы один раз.</div>
+        </div>
+      </div>
+
+      <div class="profile-section">
         <h4>Аккаунт</h4>
         <div class="profile-actions">
           <div class="profile-btn" id="btn-tariff">
@@ -802,7 +861,7 @@ input, textarea{ -webkit-user-select:text; user-select:text; touch-action:auto; 
 
 <!-- CALENDAR EXPORT BAR (shown on Plan screen) -->
 <div id="export-bar" class="export-bar">
-  <button id="export-calendar" class="btn">Экспорт задач</button>
+  <button id="export-calendar" class="btn">Экспорт задач в календарь (.ics)</button>
 </div>
 
 <!-- NAV -->
@@ -1016,6 +1075,7 @@ $$('.nav .item').forEach(it=>{
       renderPlan();
       syncQuickTeamChip();
     }
+    if (to === 'profile') loadNotifySettings();
     updateFloatingButtonVisibility();
   };
 });
@@ -2068,6 +2128,68 @@ $('#btn-help').onclick   = () => showToast('Раздел "Помощь" в ра�
 $('#btn-guide').onclick  = () => showToast('Раздел "Как пользоваться" в разработке');
 $('#btn-consult').onclick= () => showToast('Раздел "Консультация" в разработке');
 
+
+// NOTIFICATIONS (Telegram bot digest)
+function buildNotifyHoursOptions() {
+  const sel = $('#notify-start-hour');
+  if (!sel) return;
+  if (sel.options && sel.options.length > 0) return;
+  for (let h = 0; h < 24; h++) {
+    const o = document.createElement('option');
+    o.value = String(h);
+    o.textContent = String(h).padStart(2,'0') + ':00';
+    sel.appendChild(o);
+  }
+}
+
+async function loadNotifySettings() {
+  try {
+    buildNotifyHoursOptions();
+    const r = await api('/api/notify/settings', 'GET');
+    const s = (r && r.settings) ? r.settings : {};
+    const enabled = !!s.enabled;
+    const startHour = (s.start_hour ?? 9);
+
+    if ($('#notify-enabled')) $('#notify-enabled').checked = enabled;
+    if ($('#notify-start-hour')) $('#notify-start-hour').value = String(startHour);
+
+    if ($('#notify-settings-box')) $('#notify-settings-box').style.display = enabled ? 'block' : 'none';
+  } catch (e) {
+    // ignore
+  }
+}
+
+async function saveNotifySettings() {
+  const enabled = !!($('#notify-enabled') && $('#notify-enabled').checked);
+  const start_hour = Number($('#notify-start-hour') ? $('#notify-start-hour').value : 9);
+  const tz_offset_min = new Date().getTimezoneOffset();
+
+  try {
+    await api('/api/notify/settings', 'POST', { enabled, start_hour, tz_offset_min });
+    if ($('#notify-settings-box')) $('#notify-settings-box').style.display = enabled ? 'block' : 'none';
+    showToast('Сохранено');
+  } catch (e) {
+    showToast('Не удалось сохранить');
+  }
+}
+
+if ($('#notify-enabled')) {
+  $('#notify-enabled').addEventListener('change', saveNotifySettings);
+}
+if ($('#notify-save')) {
+  $('#notify-save').onclick = saveNotifySettings;
+}
+if ($('#notify-send-now')) {
+  $('#notify-send-now').onclick = async () => {
+    try {
+      await api('/api/notify/send_now', 'POST', {});
+      showToast('Отправил в Telegram');
+    } catch (e) {
+      showToast('Не удалось отправить');
+    }
+  };
+}
+
 /* init */
 async function loadAll(){
   try{
@@ -2090,6 +2212,7 @@ async function loadAll(){
   renderPlan();
   renderStats();
   updateFloatingButtonVisibility();
+  await loadNotifySettings();
 }
 loadAll();
 
