@@ -4,41 +4,72 @@ const { Pool } = require("pg");
 let _pool;
 
 /**
- * Берём connection string из переменных окружения:
- * - DATABASE_URL (стандарт для Vercel/Neon)
- * - POSTGRES_URL (иногда используют так)
+ * IMPORTANT:
+ * У тебя в Vercel много Postgres env. Чтобы не “улетать” в другую БД —
+ * приоритетно используем MANUAL_POSTGRES_URL (если задан),
+ * иначе DATABASE_URL/POSTGRES_URL и т.д.
  */
 function getPool() {
   if (_pool) return _pool;
 
-  const connectionString =
-    process.env.DATABASE_URL ||
-    process.env.POSTGRES_URL ||
-    process.env.POSTGRES_CONNECTION_STRING;
+  const candidates = [
+    ["MANUAL_POSTGRES_URL", process.env.MANUAL_POSTGRES_URL],
+    ["DATABASE_URL", process.env.DATABASE_URL],
+    ["POSTGRES_URL", process.env.POSTGRES_URL],
+    ["POSTGRES_PRISMA_URL", process.env.POSTGRES_PRISMA_URL],
+    ["POSTGRES_URL_NON_POOLING", process.env.POSTGRES_URL_NON_POOLING],
+    ["POSTGRES_CONNECTION_STRING", process.env.POSTGRES_CONNECTION_STRING],
+  ];
+
+  let chosenName = null;
+  let connectionString = null;
+
+  for (const [name, val] of candidates) {
+    if (val && String(val).trim()) {
+      chosenName = name;
+      connectionString = String(val).trim();
+      break;
+    }
+  }
 
   if (!connectionString) {
     throw new Error(
-      "Missing DATABASE_URL/POSTGRES_URL env var. Set it in Vercel project settings."
+      "Missing DB connection string env var. Set one of: MANUAL_POSTGRES_URL, DATABASE_URL, POSTGRES_URL."
     );
+  }
+
+  // Helpful in Vercel logs: shows which env var is actually used (without leaking password)
+  try {
+    const u = new URL(connectionString);
+    console.log(
+      "[DB] using",
+      chosenName,
+      "host=",
+      u.hostname,
+      "db=",
+      (u.pathname || "").replace("/", "")
+    );
+  } catch {
+    console.log("[DB] using", chosenName);
   }
 
   _pool = new Pool({
     connectionString,
     ssl: { rejectUnauthorized: false },
+    max: 5,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
   });
 
   return _pool;
 }
 
 async function query(text, params) {
-  const pool = getPool();
-  return pool.query(text, params);
+  return getPool().query(text, params);
 }
 
 /**
- * Создаёт/обновляет схему БД (idempotent).
- * Важно: если у тебя уже есть дамп с DROP TABLE — просто накати дамп.
- * Но эта функция должна быть безопасной и совместимой с текущими изменениями.
+ * Создаёт/обновляет схему БД (idempotent). НИЧЕГО НЕ УДАЛЯЕТ.
  */
 async function ensureSchema() {
   // USERS
@@ -63,6 +94,26 @@ async function ensureSchema() {
     );
   `);
 
+  // TASKS
+  await query(`
+    CREATE TABLE IF NOT EXISTS tasks (
+      id                  BIGSERIAL PRIMARY KEY,
+      user_id             BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title               TEXT NOT NULL,
+      due_ts              BIGINT NULL,
+      is_done             BOOLEAN NOT NULL DEFAULT false,
+      created_at          TIMESTAMPTZ DEFAULT now(),
+      team_id             BIGINT NULL,
+      assigned_to_user_id BIGINT NULL
+    );
+  `);
+
+  // Indexes
+  await query(`CREATE INDEX IF NOT EXISTS idx_tasks_user   ON tasks(user_id);`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_tasks_due_ts ON tasks(due_ts);`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_tasks_due_active ON tasks(due_ts) WHERE is_done = false;`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_tasks_team   ON tasks(team_id);`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON tasks(assigned_to_user_id);`);
   await query(`CREATE INDEX IF NOT EXISTS idx_focuses_user ON focuses(user_id);`);
 
   // TEAMS
@@ -82,13 +133,12 @@ async function ensureSchema() {
     BEGIN
       IF NOT EXISTS (
         SELECT 1
-        FROM information_schema.table_constraints tc
-        WHERE tc.constraint_type = 'FOREIGN KEY'
-          AND tc.table_name = 'teams'
-          AND tc.constraint_name = 'fk_teams_creator'
+        FROM information_schema.table_constraints
+        WHERE table_name = 'teams'
+          AND constraint_name = 'fk_teams_created_by'
       ) THEN
         ALTER TABLE teams
-          ADD CONSTRAINT fk_teams_creator
+          ADD CONSTRAINT fk_teams_created_by
           FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL;
       END IF;
     END $$;
@@ -96,30 +146,17 @@ async function ensureSchema() {
 
   await query(`CREATE INDEX IF NOT EXISTS idx_teams_created_by ON teams(created_by_user_id);`);
 
+  // TEAM MEMBERS
   await query(`
     CREATE TABLE IF NOT EXISTS team_members (
-      team_id   BIGINT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-      user_id   BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      joined_at TIMESTAMPTZ DEFAULT now(),
+      team_id    BIGINT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+      user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      joined_at  TIMESTAMPTZ DEFAULT now(),
       PRIMARY KEY (team_id, user_id)
     );
   `);
 
   await query(`CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id);`);
-
-  // TASKS
-  await query(`
-    CREATE TABLE IF NOT EXISTS tasks (
-      id                  BIGSERIAL PRIMARY KEY,
-      user_id             BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      title               TEXT NOT NULL,
-      due_ts              BIGINT NULL,
-      is_done             BOOLEAN NOT NULL DEFAULT false,
-      created_at          TIMESTAMPTZ DEFAULT now(),
-      team_id             BIGINT NULL,
-      assigned_to_user_id BIGINT NULL
-    );
-  `);
 
   // FK tasks.team_id
   await query(`
@@ -148,49 +185,24 @@ async function ensureSchema() {
         FROM information_schema.table_constraints tc
         WHERE tc.constraint_type = 'FOREIGN KEY'
           AND tc.table_name = 'tasks'
-          AND tc.constraint_name = 'fk_tasks_assignee'
+          AND tc.constraint_name = 'fk_tasks_assigned_to'
       ) THEN
         ALTER TABLE tasks
-          ADD CONSTRAINT fk_tasks_assignee
+          ADD CONSTRAINT fk_tasks_assigned_to
           FOREIGN KEY (assigned_to_user_id) REFERENCES users(id) ON DELETE SET NULL;
       END IF;
     END $$;
   `);
 
-  // Indices
-  await query(`CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id);`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_tasks_due_ts ON tasks(due_ts);`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_tasks_due_active ON tasks(due_ts) WHERE is_done = false;`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_tasks_team ON tasks(team_id);`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON tasks(assigned_to_user_id);`);
-
   // TASK NOTIFICATIONS
   await query(`
     CREATE TABLE IF NOT EXISTS task_notifications (
-      task_id          BIGINT PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
-      sent_due_warning BOOLEAN NOT NULL DEFAULT false,
-      sent_overdue     BOOLEAN NOT NULL DEFAULT false,
-      updated_at       TIMESTAMPTZ DEFAULT now()
+      task_id           BIGINT PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
+      sent_due_warning  BOOLEAN NOT NULL DEFAULT false,
+      sent_overdue      BOOLEAN NOT NULL DEFAULT false,
+      updated_at        TIMESTAMPTZ DEFAULT now()
     );
   `);
-
-  // NOTIFICATION PREFS (digest every N hours)
-  await query(`
-    CREATE TABLE IF NOT EXISTS notification_prefs (
-      user_id        BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-      enabled        BOOLEAN NOT NULL DEFAULT false,
-      interval_hours INT NOT NULL DEFAULT 4,
-      start_hour     INT NOT NULL DEFAULT 9,
-      end_hour       INT NOT NULL DEFAULT 21,
-      tz_offset_min  INT NOT NULL DEFAULT 0,
-      last_sent_at   TIMESTAMPTZ NULL,
-      created_at     TIMESTAMPTZ DEFAULT now(),
-      updated_at     TIMESTAMPTZ DEFAULT now()
-    );
-  `);
-
-  await query(`CREATE INDEX IF NOT EXISTS idx_notification_prefs_enabled ON notification_prefs(enabled);`);
-
 
   // CHATS
   await query(`
@@ -217,51 +229,58 @@ async function ensureSchema() {
   `);
 
   await query(`CREATE INDEX IF NOT EXISTS idx_chat_messages_chat ON chat_messages(chat_id, created_at);`);
+
+  // (для уведомлений) prefs — безопасно, IF NOT EXISTS
+  await query(`
+    CREATE TABLE IF NOT EXISTS notification_prefs (
+      user_id        BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      enabled        BOOLEAN NOT NULL DEFAULT false,
+      interval_hours INT NOT NULL DEFAULT 4,
+      start_hour     INT NOT NULL DEFAULT 9,
+      end_hour       INT NOT NULL DEFAULT 21,
+      tz_offset_min  INT NOT NULL DEFAULT 0,
+      last_sent_at   TIMESTAMPTZ NULL,
+      created_at     TIMESTAMPTZ DEFAULT now(),
+      updated_at     TIMESTAMPTZ DEFAULT now()
+    );
+  `);
+
+  await query(`CREATE INDEX IF NOT EXISTS idx_notification_prefs_enabled ON notification_prefs(enabled);`);
 }
 
 async function getOrCreateUserByTg(tgUser) {
-  if (!tgUser || !tgUser.id) {
-    throw new Error("Missing tg user data (tgUser.id).");
-  }
+  const tgIdNum = Number(tgUser?.id || tgUser?.tg_id || tgUser);
+  if (!tgIdNum) throw new Error("tg_id is missing");
 
-  const tg_id = Number(tgUser.id);
-  const username = tgUser.username || null;
-  const first_name = tgUser.first_name || null;
-  const last_name = tgUser.last_name || null;
+  const username = tgUser?.username ?? null;
+  const first_name = tgUser?.first_name ?? null;
+  const last_name = tgUser?.last_name ?? null;
 
-  const existing = await query(`SELECT * FROM users WHERE tg_id = $1`, [tg_id]);
-  if (existing.rows.length) {
-    // update basic fields (optional, but helpful)
-    await query(
-      `UPDATE users SET username=$2, first_name=$3, last_name=$4 WHERE tg_id=$1`,
-      [tg_id, username, first_name, last_name]
-    );
-    return existing.rows[0];
-  }
+  const { rows } = await query(`SELECT * FROM users WHERE tg_id = $1`, [tgIdNum]);
+  if (rows.length) return rows[0];
 
-  const created = await query(
+  const ins = await query(
     `INSERT INTO users (tg_id, username, first_name, last_name)
      VALUES ($1,$2,$3,$4)
      RETURNING *`,
-    [tg_id, username, first_name, last_name]
+    [tgIdNum, username, first_name, last_name]
   );
-
-  return created.rows[0];
+  return ins.rows[0];
 }
 
-async function getOrCreateUserIdByTgId(tg_id) {
-  const tgIdNum = Number(tg_id);
-  const res = await query(`SELECT id FROM users WHERE tg_id=$1`, [tgIdNum]);
+async function getOrCreateUserIdByTgId(tgId) {
+  const tgIdNum = Number(tgId);
+  if (!tgIdNum) throw new Error("tg_id is missing");
+
+  const res = await query(`SELECT id FROM users WHERE tg_id = $1`, [tgIdNum]);
   if (res.rows.length) return res.rows[0].id;
 
-  const created = await query(
-    `INSERT INTO users (tg_id) VALUES ($1) RETURNING id`,
-    [tgIdNum]
-  );
+  const created = await query(`INSERT INTO users (tg_id) VALUES ($1) RETURNING id`, [tgIdNum]);
   return created.rows[0].id;
 }
 
 module.exports = {
+  pool: getPool,
   query,
   q: query,
   ensureSchema,
